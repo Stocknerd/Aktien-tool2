@@ -10,7 +10,7 @@ CSV_FILE = os.path.join(os.path.dirname(__file__), "stock_data.csv")
 
 # Pfad zur Schriftart für bessere Lesbarkeit (ändern, falls nötig)
 FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # Linux/macOS
-# Falls du Windows nutzt, kannst du stattdessen:
+# Falls du Windows nutzt:
 # FONT_PATH = "C:/Windows/Fonts/Arial.ttf"
 
 # Sicherstellen, dass alle benötigten Ordner existieren
@@ -24,11 +24,29 @@ def home():
 
 # 📌 Aktien-Kennzahlen aus CSV abrufen
 def get_stock_data(ticker):
-    df = pd.read_csv(CSV_FILE)
-    df["Ticker"] = df["Ticker"].str.strip().str.upper()  # Großbuchstaben & Leerzeichen bereinigen
-    row = df[df["Ticker"] == ticker]
-    if row.empty:
+    try:
+        df = pd.read_csv(CSV_FILE, delimiter=",", encoding="ISO-8859-1", on_bad_lines="skip")
+        df.columns = df.columns.str.strip()  # Spaltennamen bereinigen
+    except Exception as e:
+        print(f"Fehler beim Einlesen der CSV: {e}")
         return None
+
+    # Spalten bereinigen
+    df["Symbol"] = df["Symbol"].str.strip().str.upper()  # Ticker bereinigen
+    df["Dividendenrendite"] = pd.to_numeric(df["Dividendenrendite"], errors='coerce')
+    df["KGV"] = pd.to_numeric(df["KGV"], errors='coerce')
+    df["KUV"] = pd.to_numeric(df["KUV"], errors='coerce')
+
+    # NaN-Werte entfernen
+    df = df.dropna(subset=["Dividendenrendite", "KGV", "KUV"])
+
+    # Zeile mit dem gesuchten Ticker finden
+    row = df[df["Symbol"] == ticker]
+    if row.empty:
+        available_tickers = df["Symbol"].unique()[:10]  # Zeige 10 verfügbare Ticker zur Hilfe
+        print(f"Ticker {ticker} nicht gefunden. Verfügbare Ticker: {available_tickers}")
+        return None
+
     return {
         "Dividendenrendite": row.iloc[0]["Dividendenrendite"],
         "KGV": row.iloc[0]["KGV"],
