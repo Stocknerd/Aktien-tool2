@@ -1,103 +1,19 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Social Media Aktien-Tool</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 40px;
-        }
-        #preview {
-            max-width: 300px;
-            margin-top: 10px;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-    </style>
+    <meta charset="utf-8">
+    <title>Aktien-Bild-Generator</title>
 </head>
 <body>
+    <h1>Aktien-Bild-Generator</h1>
+    <form action="/generate_image" method="POST" enctype="multipart/form-data">
+        <label for="ticker">Ticker:</label>
+        <input type="text" name="ticker" id="ticker" required><br><br>
 
-    <h2>Social Media Aktien-Post Generator</h2>
+        <label for="background">Hintergrundbild hochladen:</label>
+        <input type="file" name="background" id="background" required><br><br>
 
-    <label for="background">Hintergrundbild hochladen:</label>
-    <input type="file" id="background" accept="image/*"><br><br>
-
-    <label for="ticker">Tickersymbol eingeben:</label>
-    <input type="text" id="ticker" placeholder="z.B. AAPL"><br><br>
-
-    <button id="generateBtn" onclick="generateImage()">Bild generieren</button>
-
-    <h3>Vorschau:</h3>
-    <img id="preview" style="display: none;">
-
-    <br><br>
-    <a id="downloadLink" style="display: none;">📥 Bild herunterladen</a>
-
-    <script>
-        async function generateImage() {
-            const fileInput = document.getElementById("background");
-            const tickerInput = document.getElementById("ticker");
-            const generateBtn = document.getElementById("generateBtn");
-            const preview = document.getElementById("preview");
-            const downloadLink = document.getElementById("downloadLink");
-
-            if (!fileInput.files.length || !tickerInput.value) {
-                alert("Bitte ein Bild hochladen und ein Tickersymbol eingeben.");
-                return;
-            }
-
-            generateBtn.disabled = true;
-            generateBtn.textContent = "Generiere...";
-
-            const formData = new FormData();
-            formData.append("background", fileInput.files[0]);
-            formData.append("ticker", tickerInput.value.toUpperCase());
-
-            try {
-                const response = await fetch("/generate", {
-                    method: "POST",
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    alert("Fehler: " + await response.text());
-                    generateBtn.disabled = false;
-                    generateBtn.textContent = "Bild generieren";
-                    return;
-                }
-
-                const blob = await response.blob();
-                const imageUrl = URL.createObjectURL(blob);
-
-                preview.src = imageUrl;
-                preview.style.display = "block";
-
-                downloadLink.href = imageUrl;
-                downloadLink.download = "aktien_post.png";
-                downloadLink.style.display = "block";
-                downloadLink.textContent = "📥 Bild herunterladen";
-            } catch (error) {
-                alert("Fehler beim Generieren des Bildes.");
-            }
-
-            generateBtn.disabled = false;
-            generateBtn.textContent = "Bild generieren";
-        }
-    </script>
-
+        <button type="submit">Bild generieren</button>
+    </form>
 </body>
 </html>

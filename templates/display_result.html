@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Ergebnis</title>
+</head>
+<body>
+    <h2>Dein generiertes Bild:</h2>
+
+    <!-- Hier wird das Bild angezeigt -->
+    <img src="{{ url_for('output_file', filename=filename) }}" alt="Generated Image" style="max-width: 600px;">
+
+    <br><br>
+    <!-- Button zum Herunterladen -->
+    <a href="{{ url_for('output_file', filename=filename) }}" download>Bild herunterladen</a>
+
+    <br><br>
+    <a href="{{ url_for('home') }}">Zurück zur Startseite</a>
+</body>
+</html>
