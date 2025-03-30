@@ -100,25 +100,33 @@ def get_stock_data(ticker):
     for col in numeric_columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    df = df.dropna(subset=numeric_columns)
-
     row = df[df["Symbol"] == ticker]
     if row.empty:
         return None
 
-    data = {col: row.iloc[0][col] for col in numeric_columns + ["Security"]}
+    row = row.iloc[0]
+    data = {"Security": row["Security"]}
+    for col in numeric_columns:
+        value = row[col]
+        data[col] = value if not pd.isna(value) else None
 
     # Beispielhafte Umrechnungen
-    if data["Dividendenrendite"] < 1:
+    if data["Dividendenrendite"] is not None and data["Dividendenrendite"] < 1:
         data["Dividendenrendite"] *= 100
-    if data["Ausschüttungsquote"] < 1:
+    if data["Ausschüttungsquote"] is not None and data["Ausschüttungsquote"] < 1:
         data["Ausschüttungsquote"] *= 100
-
-    data["Marktkapitalisierung_Mrd"] = data["Marktkapitalisierung"] / 1e9
-    data["Gewinnwachstum_5J_pct"] = data["Gewinnwachstum 5J"] * 100
-    data["Umsatzwachstum_10J_pct"] = data["Umsatzwachstum 10J"] * 100
+    data["Marktkapitalisierung_Mrd"] = (
+        data["Marktkapitalisierung"] / 1e9 if data["Marktkapitalisierung"] is not None else None
+    )
+    data["Gewinnwachstum_5J_pct"] = (
+        data["Gewinnwachstum 5J"] * 100 if data["Gewinnwachstum 5J"] is not None else None
+    )
+    data["Umsatzwachstum_10J_pct"] = (
+        data["Umsatzwachstum 10J"] * 100 if data["Umsatzwachstum 10J"] is not None else None
+    )
 
     return data
+
 
 def create_stock_image(background_path, stock_data, ticker):
     from PIL import Image, ImageDraw, ImageFont
@@ -141,7 +149,6 @@ def create_stock_image(background_path, stock_data, ticker):
     title_y = 50
     draw.text((title_x, title_y), title_text, fill="black", font=title_font)
 
-    # Logo (unverändert)
     logo_path = f"static/logos/{ticker}.png"
     if os.path.exists(logo_path):
         logo = Image.open(logo_path).convert("RGBA")
@@ -158,16 +165,18 @@ def create_stock_image(background_path, stock_data, ticker):
         logo_x = img.width // 2
         logo_y = int(0.7 * img.height)
 
-    # Kennzahlen
+    def format_value(value, suffix='', precision=2):
+        return f"{value:.{precision}f}{suffix}" if value is not None else "-"
+
     text_items = [
-        f"Dividendenrendite: {stock_data['Dividendenrendite']:.2f}%",
-        f"Ausschüttungsquote: {stock_data['Ausschüttungsquote']:.2f}%",
-        f"KUV: {stock_data['KUV']:.2f}",
-        f"KGV: {stock_data['KGV']:.2f}",
-        f"Gewinn je Aktie: {stock_data['Gewinn je Aktie']:.2f}",
-        f"Marktkapitalisierung: {stock_data['Marktkapitalisierung_Mrd']:.2f} Mrd. $",
-        f"Gewinnwachstum: {stock_data['Gewinnwachstum_5J_pct']:.2f}%",
-        f"Umsatzwachstum: {stock_data['Umsatzwachstum_10J_pct']:.2f}%"
+        f"Dividendenrendite: {format_value(stock_data.get('Dividendenrendite'), '%')}",
+        f"Ausschüttungsquote: {format_value(stock_data.get('Ausschüttungsquote'), '%')}",
+        f"KUV: {format_value(stock_data.get('KUV'))}",
+        f"KGV: {format_value(stock_data.get('KGV'))}",
+        f"Gewinn je Aktie: {format_value(stock_data.get('Gewinn je Aktie'))}",
+        f"Marktkapitalisierung: {format_value(stock_data.get('Marktkapitalisierung_Mrd'), ' Mrd. $')}",
+        f"Gewinnwachstum: {format_value(stock_data.get('Gewinnwachstum_5J_pct'), '%')}",
+        f"Umsatzwachstum: {format_value(stock_data.get('Umsatzwachstum_10J_pct'), '%')}"
     ]
 
     items_per_row = 2
@@ -191,14 +200,13 @@ def create_stock_image(background_path, stock_data, ticker):
         draw.text((x_pos, y_pos), text, fill="black", font=font)
 
     if os.path.exists(logo_path):
-        logo = Image.open(logo_path).convert("RGBA")
-        logo = logo.resize((new_width, new_height), Image.Resampling.LANCZOS)
         img.paste(logo, (logo_x, logo_y), logo)
 
     output_filename = f"{ticker}_stock_image.png"
     output_path = os.path.join(OUTPUT_FOLDER, output_filename)
     img.save(output_path, "PNG")
     return output_path
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
