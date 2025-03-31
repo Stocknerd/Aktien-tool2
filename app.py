@@ -111,10 +111,9 @@ def get_stock_data(ticker):
         data[col] = value if not pd.isna(value) else None
 
     # Beispielhafte Umrechnungen
-    if data["Dividendenrendite"] is not None and data["Dividendenrendite"] < 1:
-        data["Dividendenrendite"] *= 100
     if data["Ausschüttungsquote"] is not None and data["Ausschüttungsquote"] < 1:
         data["Ausschüttungsquote"] *= 100
+
     data["Marktkapitalisierung_Mrd"] = (
         data["Marktkapitalisierung"] / 1e9 if data["Marktkapitalisierung"] is not None else None
     )
