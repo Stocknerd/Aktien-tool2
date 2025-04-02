@@ -111,7 +111,9 @@ def get_stock_data(ticker):
         data[col] = value if not pd.isna(value) else None
 
     # Beispielhafte Umrechnungen
-    if data["Ausschüttungsquote"] is not None and data["Ausschüttungsquote"] < 1:
+
+
+    if data["Ausschüttungsquote"] < 1:
         data["Ausschüttungsquote"] *= 100
 
     data["Marktkapitalisierung_Mrd"] = (
@@ -125,6 +127,27 @@ def get_stock_data(ticker):
     )
 
     return data
+
+
+
+def wrap_text(text, font, max_width):
+    """Zerteilt einen Text in mehrere Zeilen, sodass jede Zeile maximal max_width Pixel breit ist."""
+    words = text.split(' ')
+    lines = []
+    current_line = words[0]
+
+    for word in words[1:]:
+        # Prüfe, ob das Hinzufügen des nächsten Wortes die maximale Breite überschreitet
+        test_line = current_line + ' ' + word
+        line_width = font.getbbox(test_line)[2] - font.getbbox(test_line)[0]
+        if line_width <= max_width:
+            current_line = test_line
+        else:
+            lines.append(current_line)
+            current_line = word
+    lines.append(current_line)
+    return lines
+
 
 
 def create_stock_image(background_path, stock_data, ticker):
@@ -148,14 +171,28 @@ def create_stock_image(background_path, stock_data, ticker):
     title_y = 50
     draw.text((title_x, title_y), title_text, fill="black", font=title_font)
 
+
+
+
+    # Logo (unverändert)
     logo_path = f"static/logos/{ticker}.png"
     if os.path.exists(logo_path):
         logo = Image.open(logo_path).convert("RGBA")
         orig_w, orig_h = logo.size
         target_height = 200
+        # Berechne zuerst die neue Größe basierend auf target_height
         scale_factor = target_height / float(orig_h)
         new_width = int(orig_w * scale_factor)
         new_height = target_height
+
+        # Definiere den maximal verfügbaren Platz (z.B. 100 Pixel Rand auf jeder Seite)
+        available_width = img.width - 200
+        if new_width > available_width:
+            # Berechne neu, wenn das Logo zu breit ist
+            scale_factor = available_width / orig_w
+            new_width = available_width
+            new_height = int(orig_h * scale_factor)
+
         logo = logo.resize((new_width, new_height), Image.Resampling.LANCZOS)
         logo_center_y = int(0.7 * img.height)
         logo_x = (img.width - new_width) // 2
