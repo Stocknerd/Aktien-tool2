@@ -1,5 +1,6 @@
 from flask import Flask, request, send_file, render_template, redirect, url_for, send_from_directory
 from PIL import Image, ImageDraw, ImageFont
+from datetime import datetime
 import pandas as pd
 import os
 import math
@@ -110,6 +111,22 @@ def get_stock_data(ticker):
         value = row[col]
         data[col] = value if not pd.isna(value) else None
 
+    # Neuen Code einfügen: Abfragedatum ins deutsche Format umwandeln
+    original_date = row.get("Abfragedatum")
+    if original_date:
+        try:
+            # Hier wird angenommen, dass das Datum im CSV-Format "YYYY-MM-DD" vorliegt.
+            parsed_date = datetime.strptime(original_date, "%Y-%m-%d")
+            data["Abfragedatum"] = parsed_date.strftime("%d.%m.%Y")
+        except Exception as e:
+            # Falls das Parsing fehlschlägt, wird der Originalwert beibehalten.
+            data["Abfragedatum"] = original_date
+    else:
+        data["Abfragedatum"] = "-"
+
+    # Übernehme auch die Datenquelle
+    data["Datenquelle"] = row.get("Datenquelle", "-")
+
     # Beispielhafte Umrechnungen
 
 
@@ -163,16 +180,28 @@ def create_stock_image(background_path, stock_data, ticker):
         font = ImageFont.load_default()
         title_font = font
 
+    # Neuer Abschnitt: Automatischer Zeilenumbruch für den Titel,
+    # wobei title_y und title_height für den späteren Gebrauch berechnet werden.
+
     title_text = f"Aktie: {stock_data['Security']} ({ticker})"
-    title_bbox = title_font.getbbox(title_text)
-    title_width = title_bbox[2] - title_bbox[0]
-    title_height = title_bbox[3] - title_bbox[1]
-    title_x = (img.width - title_width) // 2
-    title_y = 50
-    draw.text((title_x, title_y), title_text, fill="black", font=title_font)
+    max_title_width = img.width - 100  # Maximale Breite mit Rand
+    title_lines = wrap_text(title_text, title_font, max_title_width)
 
+    title_y = 50  # Start-Y-Position der Überschrift
+    current_y = title_y
+    for line in title_lines:
+        line_bbox = title_font.getbbox(line)
+        line_width = line_bbox[2] - line_bbox[0]
+        line_height = line_bbox[3] - line_bbox[1]
+        line_x = (img.width - line_width) // 2
+        draw.text((line_x, current_y), line, fill="black", font=title_font)
+        current_y += line_height + 10  # Abstand zwischen den Zeilen
 
+    # Berechne die Gesamthöhe der Überschrift, ohne den letzten zusätzlichen Abstand
+    title_height = current_y - title_y - 10
 
+    # Für den nächsten Bereich (z. B. die Tabelle) wird grid_top so berechnet wie zuvor:
+    grid_top = title_y + title_height + 100
 
     # Logo (unverändert)
     logo_path = f"static/logos/{ticker}.png"
@@ -210,7 +239,7 @@ def create_stock_image(background_path, stock_data, ticker):
         f"KUV: {format_value(stock_data.get('KUV'))}",
         f"KGV: {format_value(stock_data.get('KGV'))}",
         f"Gewinn je Aktie: {format_value(stock_data.get('Gewinn je Aktie'))}",
-        f"Marktkapitalisierung: {format_value(stock_data.get('Marktkapitalisierung_Mrd'), ' Mrd. $')}",
+        f"Marktkap.: {format_value(stock_data.get('Marktkapitalisierung_Mrd'), ' Mrd. $')}",
         f"Gewinnwachstum: {format_value(stock_data.get('Gewinnwachstum_5J_pct'), '%')}",
         f"Umsatzwachstum: {format_value(stock_data.get('Umsatzwachstum_10J_pct'), '%')}"
     ]
@@ -237,6 +266,35 @@ def create_stock_image(background_path, stock_data, ticker):
 
     if os.path.exists(logo_path):
         img.paste(logo, (logo_x, logo_y), logo)
+
+    # Falls das Logo existiert, wird es eingefügt:
+    if os.path.exists(logo_path):
+        img.paste(logo, (logo_x, logo_y), logo)
+        # Bestimme die Position der Fußnote: ein paar Pixel unter dem Logo
+        footnote_y = logo_y + new_height + 20
+    else:
+        # Falls kein Logo vorhanden ist, definiere eine Standardposition
+        footnote_y = int(0.7 * img.height) + 20
+
+    # Erstelle einen kleineren Font für die Fußnote
+    try:
+        footnote_font = ImageFont.truetype(FONT_PATH, 20)
+    except:
+        footnote_font = ImageFont.load_default()
+
+    # Formatiere den Fußnotentext
+    footnote_text = (
+        f"Abfragedatum: {stock_data.get('Abfragedatum', '-')}, "
+        f"Datenquelle: {stock_data.get('Datenquelle', '-')}"
+    )
+
+    # Zentriere den Fußnotentext horizontal
+    footnote_bbox = footnote_font.getbbox(footnote_text)
+    footnote_width = footnote_bbox[2] - footnote_bbox[0]
+    footnote_x = (img.width - footnote_width) // 2
+
+    # Zeichne den Fußnotentext
+    draw.text((footnote_x, footnote_y), footnote_text, fill="black", font=footnote_font)
 
     output_filename = f"{ticker}_stock_image.png"
     output_path = os.path.join(OUTPUT_FOLDER, output_filename)
