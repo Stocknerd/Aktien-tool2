@@ -1,6 +1,8 @@
 from flask import Flask, request, send_file, render_template, redirect, url_for, send_from_directory
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
+import threading
+import time
 import pandas as pd
 import os
 import math
@@ -11,6 +13,17 @@ UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'output'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+# Log-Verzeichnis
+os.makedirs("logs", exist_ok=True)
+LOG_FILE = os.path.join("logs", "ticker_log.csv")
+
+def log_ticker_usage(ticker):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(LOG_FILE, "a") as f:
+        f.write(f"{timestamp},{ticker}\n")
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("output", exist_ok=True)
+
 
 CSV_FILE = 'stock_data.csv'
 FONT_PATH = 'static/fonts/Montserrat-Bold.ttf'
@@ -31,6 +44,7 @@ def generate_image():
     stock_data = get_stock_data(ticker)
     if not stock_data:
         return f"Keine Daten für Ticker '{ticker}' gefunden.", 400
+    log_ticker_usage(ticker)
 
     # Ab hier ENTFERNT: kein Upload mehr nötig
     # ----------------------------------------------------------
@@ -300,6 +314,20 @@ def create_stock_image(background_path, stock_data, ticker):
     output_path = os.path.join(OUTPUT_FOLDER, output_filename)
     img.save(output_path, "PNG")
     return output_path
+
+def cleanup_old_images(interval=300, max_age=1800):  # alle 5 Min prüfen, 30 Min alt
+    while True:
+        now = time.time()
+        for filename in os.listdir("output"):
+            filepath = os.path.join("output", filename)
+            if os.path.isfile(filepath):
+                if now - os.path.getmtime(filepath) > max_age:
+                    os.remove(filepath)
+        time.sleep(interval)
+
+# Thread starten
+cleanup_thread = threading.Thread(target=cleanup_old_images, daemon=True)
+cleanup_thread.start()
 
 
 if __name__ == '__main__':
