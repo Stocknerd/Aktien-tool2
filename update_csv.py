@@ -34,6 +34,11 @@ def get_financial_data(ticker):
         stock = yf.Ticker(ticker)
         info = stock.info
 
+        # Wenn kritische Felder fehlen oder leer sind → Fehler auslösen
+        required_keys = ["sector", "marketCap", "previousClose"]
+        if not all(k in info and info[k] is not None for k in required_keys):
+            raise ValueError(f"Unvollständige Daten für {ticker}")
+
         return [
             info.get("currency"),
             info.get("region"),
@@ -49,15 +54,17 @@ def get_financial_data(ticker):
             info.get("returnOnEquity"),
             info.get("freeCashflow"),
             info.get("operatingCashflow"),
-            info.get("revenueGrowth"),  # als Proxy für Umsatzwachstum 10J
-            info.get("revenueGrowth"),  # für Zukunft - gleiche Quelle (vereinfachend)
+            info.get("revenueGrowth"),
+            info.get("revenueGrowth"),
             info.get("forwardEps"),
             info.get("earningsQuarterlyGrowth"),
             info.get("debtToEquity")
         ]
+
     except Exception as e:
-        print(f"Fehler bei {ticker}: {e}")
+        print(f"⚠️ Fehler bei {ticker}: {e}")
         return [None] * len(spalten)
+
 
 # Fortschrittsbalken und Fehlerprotokollierung
 fehlgeschlagen = []
