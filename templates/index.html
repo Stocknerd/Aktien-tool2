@@ -1,13 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Aktien-Bild-Generator - Suche</title>
     <style>
-      /* Styles für die Autocomplete-Ergebnisse */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+      }
+      label {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      input[type="text"] {
+        padding: 8px;
+        font-size: 1rem;
+        margin-top: 5px;
+      }
       #results {
         border: 1px solid #ccc;
-        max-width: 300px;
+        max-width: 100%;
         position: absolute;
         background-color: white;
         z-index: 10;
@@ -19,32 +39,69 @@
       .result-item:hover {
         background-color: #eee;
       }
+      fieldset {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ccc;
+      }
+      legend {
+        font-weight: bold;
+      }
+      .metrics-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 5px;
+      }
+      .submit-btn {
+        margin-top: 20px;
+        padding: 10px;
+        font-size: 1rem;
+        background-color: #007BFF;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .submit-btn:hover {
+        background-color: #0056b3;
+      }
     </style>
 </head>
 <body>
     <h1>Aktien-Bild-Generator</h1>
-    <form action="/generate_image" method="POST">
-        <!-- Suchfeld für den Unternehmensnamen -->
+    <form action="{{ url_for('generate_image') }}" method="POST">
         <label for="search-box">Unternehmen suchen:</label>
-        <input type="text" id="search-box" placeholder="Unternehmen eingeben...">
+        <input type="text" id="search-box" placeholder="Unternehmen eingeben..." autocomplete="off">
         <div id="results"></div>
-        <br><br>
-        <!-- Ticker-Feld, das automatisch befüllt wird -->
+
         <label for="ticker">Ticker:</label>
         <input type="text" name="ticker" id="ticker" required readonly>
-        <br><br>
-        <button type="submit">Bild generieren</button>
+
+        <fieldset>
+            <legend>Wähle bis zu 8 Kennzahlen:</legend>
+            <div class="metrics-container">
+                {% for metric in metrics_options %}
+                <label>
+                    <input type="checkbox" name="metrics" value="{{ metric }}">
+                    {{ metric }}
+                </label>
+                {% endfor %}
+            </div>
+        </fieldset>
+
+        <button type="submit" class="submit-btn">Bild generieren</button>
     </form>
 
     <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Autocomplete für die Suche
       const searchBox = document.getElementById('search-box');
       const resultsDiv = document.getElementById('results');
       const tickerInput = document.getElementById('ticker');
 
-      // Bei Eingabe im Suchfeld: AJAX-Request an den /search-Endpoint
       searchBox.addEventListener('input', function() {
           const query = this.value.trim();
-          if(query.length < 2) {
+          if (query.length < 2) {
               resultsDiv.innerHTML = "";
               return;
           }
@@ -57,7 +114,6 @@
                       div.className = 'result-item';
                       div.textContent = `${item.Security} (${item.Symbol})`;
                       div.addEventListener('click', function() {
-                          // Bei Klick: Ticker-Feld füllen und Suchfeld mit dem Firmennamen befüllen
                           tickerInput.value = item.Symbol;
                           searchBox.value = item.Security;
                           resultsDiv.innerHTML = "";
@@ -65,10 +121,25 @@
                       resultsDiv.appendChild(div);
                   });
               })
-              .catch(error => {
-                  console.error('Fehler bei der Suche:', error);
-              });
+              .catch(error => console.error('Fehler bei der Suche:', error));
       });
+
+      // Limit für Checkbox-Auswahl
+      const maxChecks = 8;
+      const updateCheckboxListeners = () => {
+        const boxes = document.querySelectorAll('input[name="metrics"]');
+        boxes.forEach(box => {
+          box.addEventListener('change', () => {
+              const checked = document.querySelectorAll('input[name="metrics"]:checked');
+              if (checked.length > maxChecks) {
+                  box.checked = false;
+                  alert(`Du kannst maximal ${maxChecks} Kennzahlen auswählen.`);
+              }
+          });
+        });
+      };
+      updateCheckboxListeners();
+    });
     </script>
 </body>
 </html>
