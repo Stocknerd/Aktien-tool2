@@ -25,12 +25,19 @@
         font-size: 1rem;
         margin-top: 5px;
       }
+      .autocomplete-container {
+        position: relative;
+      }
       #results {
-        border: 1px solid #ccc;
-        max-width: 100%;
         position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        border: 1px solid #ccc;
         background-color: white;
         z-index: 10;
+        display: none;
+        max-width: 100%;
       }
       .result-item {
         padding: 5px;
@@ -71,8 +78,10 @@
     <h1>Aktien-Bild-Generator</h1>
     <form action="{{ url_for('generate_image') }}" method="POST">
         <label for="search-box">Unternehmen suchen:</label>
-        <input type="text" id="search-box" placeholder="Unternehmen eingeben..." autocomplete="off">
-        <div id="results"></div>
+        <div class="autocomplete-container">
+          <input type="text" id="search-box" placeholder="Unternehmen eingeben..." autocomplete="off">
+          <div id="results"></div>
+        </div>
 
         <label for="ticker">Ticker:</label>
         <input type="text" name="ticker" id="ticker" required readonly>
@@ -82,7 +91,7 @@
             <div class="metrics-container">
                 {% for metric in metrics_options %}
                 <label>
-                    <input type="checkbox" name="metrics" value="{{ metric }}">
+                    <input type="checkbox" name="metrics" value="{{ metric }}" {% if metric in selected_metrics %}checked{% endif %}>
                     {{ metric }}
                 </label>
                 {% endfor %}
@@ -94,7 +103,7 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Autocomplete für die Suche
+      const searchUrl = "{{ url_for('search') }}";
       const searchBox = document.getElementById('search-box');
       const resultsDiv = document.getElementById('results');
       const tickerInput = document.getElementById('ticker');
@@ -103,12 +112,17 @@
           const query = this.value.trim();
           if (query.length < 2) {
               resultsDiv.innerHTML = "";
+              resultsDiv.style.display = 'none';
               return;
           }
-          fetch(`/search?q=${encodeURIComponent(query)}`)
-              .then(response => response.json())
+          fetch(`${searchUrl}?q=${encodeURIComponent(query)}`)
+              .then(resp => resp.ok ? resp.json() : Promise.resolve({results: []}))
               .then(data => {
                   resultsDiv.innerHTML = "";
+                  if (!data.results || !data.results.length) {
+                      resultsDiv.style.display = 'none';
+                      return;
+                  }
                   data.results.forEach(item => {
                       const div = document.createElement('div');
                       div.className = 'result-item';
@@ -117,28 +131,35 @@
                           tickerInput.value = item.Symbol;
                           searchBox.value = item.Security;
                           resultsDiv.innerHTML = "";
+                          resultsDiv.style.display = 'none';
                       });
                       resultsDiv.appendChild(div);
                   });
+                  resultsDiv.style.display = 'block';
               })
-              .catch(error => console.error('Fehler bei der Suche:', error));
+              .catch(error => {
+                  console.error('Fehler bei der Suche:', error);
+                  resultsDiv.innerHTML = "";
+                  resultsDiv.style.display = 'none';
+              });
       });
 
       // Limit für Checkbox-Auswahl
       const maxChecks = 8;
-      const updateCheckboxListeners = () => {
-        const boxes = document.querySelectorAll('input[name="metrics"]');
-        boxes.forEach(box => {
-          box.addEventListener('change', () => {
-              const checked = document.querySelectorAll('input[name="metrics"]:checked');
-              if (checked.length > maxChecks) {
-                  box.checked = false;
-                  alert(`Du kannst maximal ${maxChecks} Kennzahlen auswählen.`);
-              }
-          });
+      const metricBoxes = document.querySelectorAll('input[name="metrics"]');
+      metricBoxes.forEach(box => {
+        box.addEventListener('change', () => {
+            const checkedCount = document.querySelectorAll('input[name="metrics"]:checked').length;
+            metricBoxes.forEach(cb => {
+              cb.disabled = !cb.checked && (checkedCount >= maxChecks);
+            });
+            if (checkedCount > maxChecks) {
+                box.checked = false;
+                alert(`Du kannst maximal ${maxChecks} Kennzahlen auswählen.`);
+                metricBoxes.forEach(cb => cb.disabled = false);
+            }
         });
-      };
-      updateCheckboxListeners();
+      });
     });
     </script>
 </body>

@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, send_from_directory
+from flask import Flask, request, render_template, redirect, url_for, send_from_directory, jsonify
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 import threading, time, os, math
@@ -13,6 +13,18 @@ LOG_FOLDER         = 'logs'
 CSV_FILE           = 'stock_data.csv'
 FONT_PATH          = 'static/fonts/Montserrat-Bold.ttf'
 DEFAULT_BACKGROUND = 'static/default_background.png'
+
+# Hier deine DEFAULT-Kennzahlen  (max. 8)
+DEFAULT_METRICS = [
+    "Dividendenrendite",
+    "Ausschüttungsquote",
+    "KUV",
+    "KGV",
+    "Gewinn je Aktie",
+    "Marktkapitalisierung",
+    "Gewinnwachstum 5J",
+    "Umsatzwachstum 10J",
+]
 
 # Globale Liste aller Kennzahlen
 NUMERIC_COLUMNS = [
@@ -73,16 +85,20 @@ def log_ticker_usage(ticker):
 def get_stock_data(ticker):
     """Liest die CSV ein, filtert nach Symbol und liefert ein Dict."""
     try:
-        df = pd.read_csv(CSV_FILE, delimiter=",", encoding="ISO-8859-1", on_bad_lines="skip")
+        df = pd.read_csv(
+            CSV_FILE,
+            sep=None,
+            engine="python",
+            encoding="ISO-8859-1",
+            on_bad_lines="skip"
+        )
         df.columns = df.columns.str.strip()
-        # Spaltenumbenennung für korrekte Zeichencodierung
         df.rename(columns={"AusschÃ¼ttungsquote": "Ausschüttungsquote"}, inplace=True)
     except Exception as e:
         print(f"CSV-Fehler: {e}")
         return None
 
     df["Symbol"] = df["Symbol"].str.strip().str.upper()
-    # Numerische Spalten konvertieren
     for col in NUMERIC_COLUMNS:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -93,11 +109,9 @@ def get_stock_data(ticker):
     row = row.iloc[0]
 
     data = {"Security": row.get("Security", "-")}
-    # Werte sammeln
     for col in NUMERIC_COLUMNS:
         data[col] = None if pd.isna(row.get(col)) else row.get(col)
 
-    # Datum und Quelle
     orig = row.get("Abfragedatum")
     if orig:
         try:
@@ -131,7 +145,6 @@ def wrap_text(text, font, max_width):
 def create_stock_image(bg_path, stock_data, ticker, metrics):
     img = Image.open(bg_path).convert("RGBA")
     draw = ImageDraw.Draw(img)
-    # Fonts
     try:
         title_font = ImageFont.truetype(FONT_PATH, 50)
         body_font  = ImageFont.truetype(FONT_PATH, 30)
@@ -139,7 +152,6 @@ def create_stock_image(bg_path, stock_data, ticker, metrics):
     except:
         title_font = body_font = foot_font = ImageFont.load_default()
 
-    # Titel
     title = f"Aktie: {stock_data['Security']} ({ticker})"
     lines = wrap_text(title, title_font, img.width - 100)
     y = 50
@@ -150,7 +162,6 @@ def create_stock_image(bg_path, stock_data, ticker, metrics):
         y += (bbox[3]-bbox[1]) + 10
     title_h = y - 50 - 10
 
-    # Logo
     logo_path = f"static/logos/{ticker}.png"
     if os.path.exists(logo_path):
         logo = Image.open(logo_path).convert("RGBA")
@@ -170,7 +181,6 @@ def create_stock_image(bg_path, stock_data, ticker, metrics):
         logo_x = img.width//2
         logo_y = int(0.7*img.height)
 
-    # Kennzahlen formatieren
     def fmt(val, suffix, prec):
         if val is None:
             return '-'
@@ -184,7 +194,6 @@ def create_stock_image(bg_path, stock_data, ticker, metrics):
         text = fmt(raw, SUFFIX_MAP.get(key,''), PRECISION_MAP.get(key,2))
         items.append(f"{key}: {text}")
 
-    # Grid-Layout
     cols = 2
     rows = math.ceil(len(items)/cols)
     top = 50 + title_h + 100
@@ -199,20 +208,17 @@ def create_stock_image(bg_path, stock_data, ticker, metrics):
         y = top + r*row_h
         draw.text((x, y), txt, fill="black", font=body_font)
 
-    # Logo einfügen
     if logo:
         img.paste(logo, (logo_x, logo_y), logo)
         foot_y = logo_y + logo.size[1] + 20
     else:
         foot_y = int(0.7*img.height) + 20
 
-    # Fußnote
     foot = f"Abfragedatum: {stock_data.get('Abfragedatum','-')}, Datenquelle: {stock_data.get('Datenquelle','-')}"
     fb = foot_font.getbbox(foot)
     fx = (img.width - (fb[2]-fb[0]))//2
     draw.text((fx, foot_y), foot, fill="black", font=foot_font)
 
-    # Speichern
     out_fn = f"{ticker}_stock_image.png"
     out_fp = os.path.join(OUTPUT_FOLDER, out_fn)
     img.save(out_fp, "PNG")
@@ -222,22 +228,21 @@ def create_stock_image(bg_path, stock_data, ticker, metrics):
 
 @app.route('/')
 def home():
-    return render_template("index.html", metrics_options=NUMERIC_COLUMNS)
+    return render_template("index.html", metrics_options=NUMERIC_COLUMNS, selected_metrics=DEFAULT_METRICS)
 
 @app.route('/generate_image', methods=['POST'])
 def generate_image():
     ticker   = request.form.get('ticker','').upper().strip()
     selected = request.form.getlist('metrics')
-    # Validierung
     if not ticker:
-        return render_template("index.html", metrics_options=NUMERIC_COLUMNS, error="Bitte einen Ticker angeben!"), 400
+        return render_template("index.html", metrics_options=NUMERIC_COLUMNS,selected_metrics=DEFAULT_METRICS, error="Bitte einen Ticker angeben!"), 400
     if not selected:
-        return render_template("index.html", metrics_options=NUMERIC_COLUMNS, error="Bitte mindestens eine Kennzahl wählen!"), 400
+        return render_template("index.html", metrics_options=NUMERIC_COLUMNS,selected_metrics=DEFAULT_METRICS, error="Bitte mindestens eine Kennzahl wählen!"), 400
     if len(selected) > 8:
-        return render_template("index.html", metrics_options=NUMERIC_COLUMNS, error="Maximal 8 Kennzahlen erlaubt!"), 400
+        return render_template("index.html", metrics_options=NUMERIC_COLUMNS,selected_metrics=DEFAULT_METRICS, error="Maximal 8 Kennzahlen erlaubt!"), 400
     data = get_stock_data(ticker)
     if not data:
-        return render_template("index.html", metrics_options=NUMERIC_COLUMNS, error=f"Keine Daten für Ticker '{ticker}' gefunden."), 400
+        return render_template("index.html", metrics_options=NUMERIC_COLUMNS,selected_metrics=DEFAULT_METRICS, error=f"Keine Daten für Ticker '{ticker}' gefunden."), 400
     log_ticker_usage(ticker)
     out_fp = create_stock_image(DEFAULT_BACKGROUND, data, ticker, selected)
     return redirect(url_for('display_result', filename=os.path.basename(out_fp)))
@@ -252,19 +257,39 @@ def output_file(filename):
 
 @app.route('/search', methods=['GET'])
 def search():
-    q = request.args.get('q','').strip().lower()
-    if not q:
-        return {"results":[]}, 200
+    q = request.args.get('q', '').strip().lower()
+    if len(q) < 2:
+        return jsonify(results=[])
+
     try:
-        df = pd.read_csv(CSV_FILE, delimiter=",", encoding="ISO-8859-1", on_bad_lines="skip")
+        df = pd.read_csv(
+            CSV_FILE,
+            sep=None,
+            engine="python",
+            encoding="ISO-8859-1",
+            on_bad_lines="skip"
+        )
         df.columns = df.columns.str.strip()
         df.rename(columns={"AusschÃ¼ttungsquote": "Ausschüttungsquote"}, inplace=True)
-    except Exception as e:
-        return {"error":f"CSV-Fehler: {e}"}, 500
-    df['sec_low'] = df['Security'].str.lower()
-    res = df[df['sec_low'].str.contains(q)]
-    out = res[['Symbol','Security']].head(10).to_dict(orient='records')
-    return {"results":out}, 200
+    except Exception:
+        return jsonify(results=[]), 500
+
+    if "Symbol" not in df.columns or "Security" not in df.columns:
+        return jsonify(results=[])
+
+    df["__name_low"] = df["Security"].astype(str).str.lower()
+    hits = df[df["__name_low"].str.contains(q, na=False)]
+
+    results = []
+    for _, row in hits.iterrows():
+        results.append({
+            "Symbol": row["Symbol"],
+            "Security": row["Security"]
+        })
+        if len(results) >= 10:
+            break
+
+    return jsonify(results=results)
 
 # --- Cleanup-Thread -------------------------------------------------------
 
