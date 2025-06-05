@@ -1,0 +1,60 @@
+2025-06-05 05:56:52,535 INFO: Stock DataFrame geladen (Zeilen: 1843), MTime: 1749095339.4153452.
+2025-06-05 05:56:52,581 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.239:5000
+2025-06-05 05:56:52,581 INFO: [33mPress CTRL+C to quit[0m
+2025-06-05 05:56:52,583 INFO:  * Restarting with stat
+2025-06-05 05:56:53,452 INFO: Stock DataFrame geladen (Zeilen: 1843), MTime: 1749095339.4153452.
+2025-06-05 05:56:53,471 WARNING:  * Debugger is active!
+2025-06-05 05:56:53,475 INFO:  * Debugger PIN: 113-786-042
+2025-06-05 05:56:55,903 INFO: 127.0.0.1 - - [05/Jun/2025 05:56:55] "GET / HTTP/1.1" 200 -
+2025-06-05 05:56:59,289 INFO: 127.0.0.1 - - [05/Jun/2025 05:56:59] "GET /search?q=ap HTTP/1.1" 200 -
+2025-06-05 05:56:59,440 INFO: 127.0.0.1 - - [05/Jun/2025 05:56:59] "GET /search?q=app HTTP/1.1" 200 -
+2025-06-05 05:57:02,024 INFO: 127.0.0.1 - - [05/Jun/2025 05:57:02] "[32mPOST /generate_image HTTP/1.1[0m" 302 -
+2025-06-05 05:57:02,035 INFO: 127.0.0.1 - - [05/Jun/2025 05:57:02] "GET /display_result/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 05:57:02,125 INFO: 127.0.0.1 - - [05/Jun/2025 05:57:02] "GET /output/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 05:57:09,292 INFO: 127.0.0.1 - - [05/Jun/2025 05:57:09] "GET / HTTP/1.1" 200 -
+2025-06-05 05:57:12,850 INFO: 127.0.0.1 - - [05/Jun/2025 05:57:12] "GET /search?q=ap HTTP/1.1" 200 -
+2025-06-05 05:57:17,069 INFO: 127.0.0.1 - - [05/Jun/2025 05:57:17] "[32mPOST /generate_image HTTP/1.1[0m" 302 -
+2025-06-05 05:57:17,075 INFO: 127.0.0.1 - - [05/Jun/2025 05:57:17] "GET /display_result/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 05:57:17,100 INFO: 127.0.0.1 - - [05/Jun/2025 05:57:17] "GET /output/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 05:57:24,317 INFO: 127.0.0.1 - - [05/Jun/2025 05:57:24] "GET / HTTP/1.1" 200 -
+2025-06-05 05:58:00,624 INFO: 127.0.0.1 - - [05/Jun/2025 05:58:00] "GET / HTTP/1.1" 200 -
+2025-06-05 05:58:04,215 INFO: 127.0.0.1 - - [05/Jun/2025 05:58:04] "GET /search?q=ap HTTP/1.1" 200 -
+2025-06-05 05:58:04,376 INFO: 127.0.0.1 - - [05/Jun/2025 05:58:04] "GET /search?q=app HTTP/1.1" 200 -
+2025-06-05 05:58:11,157 INFO: 127.0.0.1 - - [05/Jun/2025 05:58:11] "[32mPOST /generate_image HTTP/1.1[0m" 302 -
+2025-06-05 05:58:11,170 INFO: 127.0.0.1 - - [05/Jun/2025 05:58:11] "GET /display_result/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 05:58:11,199 INFO: 127.0.0.1 - - [05/Jun/2025 05:58:11] "GET /output/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 05:58:15,321 INFO: 127.0.0.1 - - [05/Jun/2025 05:58:15] "GET /output/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 06:01:42,011 INFO: Stock DataFrame geladen (Zeilen: 1843), MTime: 1749095339.4153452.
+2025-06-05 06:01:42,104 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.0.239:5000
+2025-06-05 06:01:42,104 INFO: [33mPress CTRL+C to quit[0m
+2025-06-05 06:01:42,108 INFO:  * Restarting with stat
+2025-06-05 06:01:42,996 INFO: Stock DataFrame geladen (Zeilen: 1843), MTime: 1749095339.4153452.
+2025-06-05 06:01:43,013 WARNING:  * Debugger is active!
+2025-06-05 06:01:43,017 INFO:  * Debugger PIN: 113-786-042
+2025-06-05 06:01:44,462 INFO: 127.0.0.1 - - [05/Jun/2025 06:01:44] "GET / HTTP/1.1" 200 -
+2025-06-05 06:01:47,750 INFO: 127.0.0.1 - - [05/Jun/2025 06:01:47] "GET /search?q=aa HTTP/1.1" 200 -
+2025-06-05 06:01:49,921 INFO: 127.0.0.1 - - [05/Jun/2025 06:01:49] "GET /search?q=ap HTTP/1.1" 200 -
+2025-06-05 06:01:50,080 INFO: 127.0.0.1 - - [05/Jun/2025 06:01:50] "GET /search?q=app HTTP/1.1" 200 -
+2025-06-05 06:01:52,638 INFO: 127.0.0.1 - - [05/Jun/2025 06:01:52] "[32mPOST /generate_image HTTP/1.1[0m" 302 -
+2025-06-05 06:01:52,674 INFO: 127.0.0.1 - - [05/Jun/2025 06:01:52] "GET /display_result/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 06:01:52,784 INFO: 127.0.0.1 - - [05/Jun/2025 06:01:52] "GET /output/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 06:01:58,532 INFO: 127.0.0.1 - - [05/Jun/2025 06:01:58] "GET / HTTP/1.1" 200 -
+2025-06-05 06:02:04,005 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:04] "[31m[1mPOST /generate_image HTTP/1.1[0m" 400 -
+2025-06-05 06:02:06,743 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:06] "[31m[1mPOST /generate_image HTTP/1.1[0m" 400 -
+2025-06-05 06:02:10,582 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:10] "GET /search?q=ap HTTP/1.1" 200 -
+2025-06-05 06:02:15,562 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:15] "[32mPOST /generate_image HTTP/1.1[0m" 302 -
+2025-06-05 06:02:15,567 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:15] "GET /display_result/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 06:02:15,589 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:15] "GET /output/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 06:02:21,655 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:21] "GET / HTTP/1.1" 200 -
+2025-06-05 06:02:23,649 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:23] "GET /search?q=ap HTTP/1.1" 200 -
+2025-06-05 06:02:23,777 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:23] "GET /search?q=app HTTP/1.1" 200 -
+2025-06-05 06:02:28,963 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:28] "[32mPOST /generate_image HTTP/1.1[0m" 302 -
+2025-06-05 06:02:28,968 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:28] "GET /display_result/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 06:02:28,987 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:28] "GET /output/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 06:02:38,583 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:38] "GET /output/AAPL_stock_image.png HTTP/1.1" 200 -
