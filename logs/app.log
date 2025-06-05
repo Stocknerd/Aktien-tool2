@@ -58,3 +58,4 @@
 2025-06-05 06:02:28,968 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:28] "GET /display_result/AAPL_stock_image.png HTTP/1.1" 200 -
 2025-06-05 06:02:28,987 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:28] "GET /output/AAPL_stock_image.png HTTP/1.1" 200 -
 2025-06-05 06:02:38,583 INFO: 127.0.0.1 - - [05/Jun/2025 06:02:38] "GET /output/AAPL_stock_image.png HTTP/1.1" 200 -
+2025-06-05 06:19:06,083 WARNING: CSV enthält keine Spalte 'Symbol'.

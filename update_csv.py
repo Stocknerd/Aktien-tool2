@@ -119,7 +119,7 @@ for idx, row in tqdm(df.iterrows(), total=len(df), desc="Daten werden abgerufen"
     df.at[idx, "Datenquelle"] = "Yahoo Finance"
 
     # Kurz warten, um Rate-Limits abzudämpfen
-    time.sleep(0.1)
+    time.sleep(1)
 
 # Ausgabe der fehlgeschlagenen Ticker (falls vorhanden)
 if fehlgeschlagen:
