@@ -1,192 +1,188 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
-import textwrap
-import pandas as pd
-import os
+from flask import (
+    Flask, render_template, request, jsonify,
+    redirect, url_for, send_from_directory
+)
+import os, pandas as pd
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
+from typing import List
 
-# ---------------------------------------------------------------------------
-# Konfiguration
-# ---------------------------------------------------------------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# ───────────────────────── Konfiguration ─────────────────────────
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
-CSV_FILE = os.path.join(BASE_DIR, "stock_data.csv")
-BACKGROUND_FILE = os.path.join(STATIC_DIR, "default_background.png")
-LOGO_DIR = os.path.join(STATIC_DIR, "logos")            # static/logos/<TICKER>.png
-FONT_DIR = os.path.join(STATIC_DIR, "fonts")
-MONTSERRAT_BOLD = os.path.join(FONT_DIR, "Montserrat-Bold.ttf")
-MONTSERRAT_REG = os.path.join(FONT_DIR, "Montserrat-Regular.ttf")
-GENERATED_DIR = os.path.join(STATIC_DIR, "generated")
+CSV_FILE   = os.path.join(BASE_DIR, "stock_data.csv")
+BACKGROUND = os.path.join(STATIC_DIR, "default_background.png")
+LOGO_DIR   = os.path.join(STATIC_DIR, "logos")
+FONT_DIR   = os.path.join(STATIC_DIR, "fonts")
+MONTS_BOLD = os.path.join(FONT_DIR, "Montserrat-Bold.ttf")
+MONTS_REG  = os.path.join(FONT_DIR, "Montserrat-Regular.ttf")
+OUT_DIR    = os.path.join(STATIC_DIR, "generated")
+os.makedirs(OUT_DIR, exist_ok=True)
 
-os.makedirs(GENERATED_DIR, exist_ok=True)
+# Acht Standard-Kennzahlen, die oben stehen & vor‑angekreuzt sind
+DEFAULT_METRICS = [
+    "Dividendenrendite", "Ausschüttungsquote",
+    "KUV", "KGV",
+    "Gewinn je Aktie", "Marktkapitalisierung",
+    "Forward PE", "KBV",
+]
+
+METRIC_LABELS = {
+    "Dividendenrendite":    "Dividendenrendite",
+    "Ausschüttungsquote":   "Ausschüttungsquote",
+    "KUV":                  "KUV",
+    "KGV":                  "KGV",
+    "Forward PE":           "Forward P/E",
+    "KBV":                  "KBV",
+    "Gewinn je Aktie":      "Gewinn je Aktie",
+    "Marktkapitalisierung": "Marktkap.",
+    "Gewinnwachstum":       "Gewinnwachstum",
+    "Umsatzwachstum":       "Umsatzwachstum",
+}
+
+EXCLUDE_COLS = {"Symbol", "Security", "Abfragedatum", "Datenquelle"}
 
 app = Flask(__name__)
 
-# ---------------------------------------------------------------------------
-# CSV Cache
-# ---------------------------------------------------------------------------
-_df_cache: pd.DataFrame | None = None
+# ───────────────────────── CSV Cache ─────────────────────────
+_df: pd.DataFrame | None = None
 
-def load_dataframe() -> pd.DataFrame:
-    global _df_cache
-    if _df_cache is None:
+def load_df() -> pd.DataFrame:
+    global _df
+    if _df is None:
         df = pd.read_csv(CSV_FILE, delimiter=",", encoding="utf-8-sig", on_bad_lines="skip")
         df.columns = df.columns.str.replace("\ufeff", "").str.strip()
-        df["Symbol"] = df["Symbol"].astype(str).str.strip().str.upper()
+        df["Symbol"]   = df["Symbol"].astype(str).str.strip().str.upper()
         df["Security"] = df["Security"].astype(str).str.strip()
-        _df_cache = df
-    return _df_cache
+        _df = df
+    return _df
 
-# ---------------------------------------------------------------------------
-# Helper
-# ---------------------------------------------------------------------------
+def all_metric_keys() -> List[str]:
+    return [c for c in load_df().columns if c not in EXCLUDE_COLS]
 
-def get_stock_row(ticker: str):
-    df = load_dataframe()
-    r = df[df["Symbol"] == ticker]
+# ───────────────────────── Helper ─────────────────────────
+
+def get_row(tkr: str):
+    df = load_df()
+    r  = df[df["Symbol"] == tkr]
     return r.iloc[0] if not r.empty else None
 
-
-def _fmt_number(val, dec: int = 2):
+def fmt(val, dec: int = 2):
     if pd.isna(val):
         return "–"
     if isinstance(val, (int, float)):
         return f"{val:,.{dec}f}".replace(",", ".")
-    return str(val)
+    try:
+        num = float(str(val).replace(",", "."))
+        return f"{num:,.{dec}f}".replace(",", ".")
+    except ValueError:
+        return str(val)
 
-# ---------------------------------------------------------------------------
-# Font helper
-# ---------------------------------------------------------------------------
-
-def _font(path: str, size: int, fallback):
+def _font(path: str, size: int, backup):
     try:
         return ImageFont.truetype(path, size)
     except OSError:
-        return fallback
+        return backup
 
-# ---------------------------------------------------------------------------
-# Bildgenerierung
-# ---------------------------------------------------------------------------
+# ───────────────────────── Bildgenerator ─────────────────────────
 
-def create_stock_image(bg: str, ticker: str) -> str:
-    row = get_stock_row(ticker)
+def create_stock_image(bg: str, ticker: str, keys: List[str]) -> str:
+    row = get_row(ticker)
     if row is None:
         raise ValueError("Ticker not found")
 
-    img = Image.open(bg).convert("RGBA")
+    img  = Image.open(bg).convert("RGBA")
     draw = ImageDraw.Draw(img)
 
-    fallback = ImageFont.load_default()
-    f_title = _font(MONTSERRAT_BOLD, 58, fallback)
-    f_label = _font(MONTSERRAT_BOLD, 32, fallback)
-    f_small = _font(MONTSERRAT_REG, 22, fallback)
+    f_def = ImageFont.load_default()
+    f_ttl = _font(MONTS_BOLD, 58, f_def)
+    f_lbl = _font(MONTS_BOLD, 32, f_def)
+    f_sml = _font(MONTS_REG , 22, f_def)
 
-    # ------------------------------ Zentrierter Titel mit Wrap ------------------------------
-    max_width = img.width - 160
-    title_raw = f"Aktie: {row['Security'].upper()} ({ticker})"
-    words = title_raw.split()
-    lines, current = [], ""
-    for w in words:
-        test = f"{current} {w}".strip()
-        if draw.textlength(test, font=f_title) > max_width and current:
-            lines.append(current)
-            current = w
+    # Titel (center + wrap)
+    max_w = img.width - 160
+    raw   = f"Aktie: {row['Security'].upper()} ({ticker})"
+    lines, cur = [], ""
+    for w in raw.split():
+        test = f"{cur} {w}".strip()
+        if draw.textlength(test, font=f_ttl) > max_w and cur:
+            lines.append(cur); cur = w
         else:
-            current = test
-    if current:
-        lines.append(current)
-
+            cur = test
+    lines.append(cur)
     y = 25
     for l in lines:
-        w = draw.textlength(l, font=f_title)
-        draw.text(((img.width - w) // 2, y), l, fill="black", font=f_title)
-        y += f_title.size + 8
+        draw.text(((img.width - draw.textlength(l,font=f_ttl))//2, y), l, fill="black", font=f_ttl)
+        y += f_ttl.size + 8
 
-    # ------------------------------ Kennzahlen ----------------------------------
-    raw_mcap = row.get('Marktkapitalisierung', row.get('Marktkap.', None))
-    mcap_bil = raw_mcap / 1_000_000_000 if pd.notna(raw_mcap) else pd.NA
+    # Kennzahlen dynamisch (max 8)
+    def val(k):
+        if k == "Marktkapitalisierung":
+            raw = row.get("Marktkapitalisierung", row.get("Marktkap.", None))
+            return f"{fmt(raw/1_000_000_000)} Mrd. $" if pd.notna(raw) else "–"
+        if k == "Ausschüttungsquote":
+            v = row.get(k)
+            if pd.notna(v):
+                v = v*100 if v < 1 else v
+            return f"{fmt(v)}%"
+        if k in {"Dividendenrendite", "Gewinnwachstum", "Umsatzwachstum"}:
+            return f"{fmt(row.get(k))}%"
+        return fmt(row.get(k))
 
-    metrics = [
-        ("Dividendenrendite", f"{_fmt_number(row.get('Dividendenrendite'))}%"),
-        ("Ausschüttungsquote", f"{_fmt_number(row.get('Ausschüttungsquote'))}%"),
-        ("KUV", _fmt_number(row.get('KUV'))),
-        ("KGV", _fmt_number(row.get('KGV'))),
-        ("Gewinn je Aktie", _fmt_number(row.get('Gewinn je Aktie'))),
-        ("Marktkap.", f"{_fmt_number(mcap_bil)} Mrd. $") ,
-        ("Gewinnwachstum", f"{_fmt_number(row.get('Gewinnwachstum'))}%"),
-        ("Umsatzwachstum", f"{_fmt_number(row.get('Umsatzwachstum'))}%"),
-    ]
-
-    col_x = [100, img.width // 2 + 40]
-    y_start = y + 90
-    y_cursor = [y_start, y_start]
-    line_h = f_label.size + 60
-
-    for i, (lab, val) in enumerate(metrics):
+    metrics = [(METRIC_LABELS.get(k,k), val(k)) for k in keys]
+    col_x  = [100, img.width//2 + 40]
+    y_cur  = [y+90, y+90]
+    line_h = f_lbl.size + 60
+    for i,(lab,v) in enumerate(metrics):
         col = i % 2
-        draw.text((col_x[col], y_cursor[col]), f"{lab}: {val}", fill="black", font=f_label)
-        y_cursor[col] += line_h
+        draw.text((col_x[col], y_cur[col]), f"{lab}: {v}", fill="black", font=f_lbl)
+        y_cur[col] += line_h
 
-    # ------------------------------ Logo ---------------------------------------
-    logo_path = next((os.path.join(LOGO_DIR, v) for v in (f"{ticker}.png", f"{ticker.lower()}.png", f"{ticker.upper()}.png") if os.path.exists(os.path.join(LOGO_DIR, v))), None)
+    # Logo simple (keine Upscale-Änderung mehr hier)
+    logo_path = next((p for p in (f"{ticker}.png", f"{ticker.lower()}.png", f"{ticker.upper()}.png") if os.path.exists(os.path.join(LOGO_DIR,p))), None)
     if logo_path:
-        logo = Image.open(logo_path).convert("RGBA")
-        # Flexible Skalierung – auch Upscale
-        #   • Max 80 % Bildbreite
-        #   • Max 30 % Bildhöhe (25 % für AR > 4)
-        max_w = img.width * 0.80
-        max_h_std = img.height * 0.30
-        max_h_wide = img.height * 0.25
-
-        scale_w = max_w / logo.width
-        scale_h = (max_h_wide if (logo.width / logo.height) > 4 else max_h_std) / logo.height
-        scale = min(scale_w, scale_h)
-
-        logo = logo.resize((int(logo.width * scale), int(logo.height * scale)), Image.LANCZOS)
-
-        y_logo = max(y_cursor) + 40
-        x_logo = (img.width - logo.width) // 2
-        img.alpha_composite(logo, (x_logo, y_logo))
-        y_footer_start = y_logo + logo.height + 40
+        logo = Image.open(os.path.join(LOGO_DIR, logo_path)).convert("RGBA")
+        max_w = img.width*0.18
+        scale = min(1, max_w/logo.width)
+        logo  = logo.resize((int(logo.width*scale), int(logo.height*scale)), Image.LANCZOS)
+        y_logo = max(y_cur)+40
+        img.alpha_composite(logo, ((img.width-logo.width)//2, y_logo))
+        y_footer = y_logo + logo.height + 40
     else:
-        y_footer_start = max(y_cursor) + 80
+        y_footer = max(y_cur)+80
 
-    # ------------------------------ Footer ------------------------------------- ------------------------------------- ------------------------------------- -------------------------------------
     footer = f"Abfragedatum: {datetime.now():%d.%m.%Y}, Datenquelle: Yahoo Finance"
-    w = draw.textlength(footer, font=f_small)
-    draw.text(((img.width - w) // 2, y_footer_start), footer, fill="black", font=f_small)
+    draw.text(((img.width - draw.textlength(footer,font=f_sml))//2, y_footer), footer, fill="black", font=f_sml)
 
-    out_path = os.path.join(GENERATED_DIR, f"{ticker}_{int(datetime.now().timestamp())}.png")
-    img.save(out_path)
-    return out_path
+    out = os.path.join(OUT_DIR, f"{ticker}_{int(datetime.now().timestamp())}.png")
+    img.save(out)
+    return out
 
-# ---------------------------------------------------------------------------
-# Routes
-# ---------------------------------------------------------------------------
-
+# ───────────────────────── Routes ─────────────────────────
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template('index.html',
+        available_metrics=[{"key":k, "label":METRIC_LABELS.get(k,k)} for k in all_metric_keys()],
+        default_metrics=DEFAULT_METRICS)
 
 @app.route('/search')
 def search():
-    q = request.args.get('q', '').strip()
-    if not q:
-        return jsonify([])
-    df = load_dataframe()
-    mask = df['Symbol'].str.contains(q, case=False, na=False) | df['Security'].str.contains(q, case=False, na=False)
-    return jsonify([{ 'symbol': s, 'name': n } for s, n in df.loc[mask, ['Symbol', 'Security']].head(20).to_records(index=False)])
+    q = request.args.get('q','').strip()
+    if not q: return jsonify([])
+    df = load_df()
+    m  = df['Symbol'].str.contains(q,case=False,na=False) | df['Security'].str.contains(q,case=False,na=False)
+    return jsonify([{"symbol":s,"name":n} for s,n in df.loc[m,['Symbol','Security']].head(20).to_records(index=False)])
 
 @app.route('/generate_image', methods=['POST'])
 def generate_image():
-    ticker = request.form.get('ticker', '').strip().upper()
+    ticker  = request.form.get('ticker','').strip().upper()
+    metrics = request.form.getlist('metrics')[:8] or DEFAULT_METRICS
     if not ticker:
         return 'Ticker fehlt', 400
-    if get_stock_row(ticker) is None:
+    if get_row(ticker) is None:
         return f"Ticker '{ticker}' nicht gefunden", 400
-    if not os.path.exists(BACKGROUND_FILE):
-        return 'Standard-Hintergrund nicht gefunden', 500
-    path = create_stock_image(BACKGROUND_FILE, ticker)
+
+    path = create_stock_image(BACKGROUND, ticker, metrics)
     return redirect(url_for('display_result', filename=os.path.basename(path)))
 
 @app.route('/result/<filename>')
@@ -195,14 +191,12 @@ def display_result(filename):
 
 @app.route('/static/generated/<path:filename>')
 def generated_file(filename):
-        return send_from_directory(GENERATED_DIR, filename)
+    return send_from_directory(OUT_DIR, filename)
+
 @app.route('/output/<path:filename>')
 def output_file(filename):
-    return send_from_directory(GENERATED_DIR, filename)
+    return send_from_directory(OUT_DIR, filename)
 
-# ---------------------------------------------------------------------------
+# ───────────────────────── Main ─────────────────────────
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-
-
-

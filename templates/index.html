@@ -1,160 +1,86 @@
 <!DOCTYPE html>
 <html lang="de">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Stock Visualizer</title>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aktien‑Bild Generator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    #suggestions{display:none;max-height:220px;overflow-y:auto;z-index:1050}
+    #suggestions li:hover{background:#f0f0f0;cursor:pointer}
+  </style>
+</head>
+<body class="bg-light">
+  <div class="container py-5">
+    <h1 class="text-center mb-4">Aktien‑Bild erstellen</h1>
 
-    <!-- Bootstrap 5 für Layout/Styles -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    <form class="card shadow-sm p-4 mx-auto" style="max-width:640px" method="post" action="{{ url_for('generate_image') }}">
+      <!-- Suche / Ticker -->
+      <div class="mb-3 position-relative">
+        <label for="stock-search" class="form-label">Aktie suchen</label>
+        <input id="stock-search" type="text" class="form-control" placeholder="Apple, BASF…" autocomplete="off">
+        <ul id="suggestions" class="list-group position-absolute top-100 start-0 w-100 shadow"></ul>
+      </div>
+      <div class="mb-3">
+        <label for="ticker" class="form-label">Ticker (Pflichtfeld)</label>
+        <input id="ticker" name="ticker" class="form-control" required>
+      </div>
 
-    <style>
-      /* Dropdown für Autocomplete */
-      #suggestions {
-        display: none;
-        max-height: 240px;
-        overflow-y: auto;
-        z-index: 1050;
-        cursor: pointer;
-      }
-      #suggestions li:hover {
-        background: var(--bs-secondary-bg-subtle, #f8f9fa);
-      }
-    </style>
-  </head>
-  <body class="bg-light">
-    <div class="container py-5">
-      <h1 class="mb-4 text-center">Aktien‑Chart mit Standard‑Hintergrund</h1>
+      <!-- Kennzahlen -->
+      <label class="form-label d-flex justify-content-between align-items-center">
+        Kennzahlen (max 8)
+        <small id="metric-counter" class="text-muted">0 / 8</small>
+      </label>
 
-      <!-- Formular: Live‑Suche ODER manueller Ticker -->
-      <form
-        class="card shadow-sm p-4 mx-auto"
-        style="max-width: 540px;"
-        action="{{ url_for('generate_image') }}"
-        method="post"
-      >
-        <!-- Live-Suche -->
-        <div class="mb-3 position-relative">
-          <label for="stock-search" class="form-label">Aktie suchen (optional)</label>
-          <input
-            type="text"
-            id="stock-search"
-            class="form-control"
-            placeholder="Apple, Microsoft …"
-            autocomplete="off"
-          />
-          <ul
-            id="suggestions"
-            class="list-group position-absolute top-100 start-0 w-100 shadow"
-          ></ul>
+      <!-- Default‑Kennzahlen (immer sichtbar) -->
+      <div class="row row-cols-2 g-2 mb-2">
+        {% for m in available_metrics if m.key in default_metrics %}
+        <div class="col form-check">
+          <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}" id="chk_{{ m.key|replace(' ','_') }}" checked>
+          <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">{{ m.label }}</label>
         </div>
+        {% endfor %}
+      </div>
 
-        <!-- Manueller Ticker (Pflicht) -->
-        <div class="mb-3">
-          <label for="ticker" class="form-label">Ticker&nbsp;<span class="text-muted">(Pflichtfeld)</span></label>
-          <input
-            type="text"
-            id="ticker"
-            name="ticker"
-            class="form-control"
-            placeholder="AAPL, MSFT, BASF …"
-            required
-          />
+      <!-- Button zum Aufklappen -->
+      <p>
+        <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#moreMetrics" role="button" aria-expanded="false" aria-controls="moreMetrics">
+          Weitere Kennzahlen anzeigen ▼
+        </a>
+      </p>
+
+      <!-- Versteckte weiteren Kennzahlen -->
+      <div class="collapse" id="moreMetrics">
+        <div class="row row-cols-2 g-2 mb-3">
+          {% for m in available_metrics if m.key not in default_metrics %}
+          <div class="col form-check">
+            <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}" id="chk_{{ m.key|replace(' ','_') }}">
+            <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">{{ m.label }}</label>
+          </div>
+          {% endfor %}
         </div>
+      </div>
 
-        <button type="submit" class="btn btn-primary w-100">Chart erzeugen</button>
-      </form>
-    </div>
+      <button class="btn btn-primary w-100">Bild erzeugen</button>
+    </form>
+  </div>
 
-    <!-- Konfig‑Tag: Falls als Template gerendert, trägt Jinja hier den Pfad ein -->
-    <script id="config" data-search-url="{{ url_for('search') }}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ─── Autocomplete ────────────────────────────────────────────
+    const search=document.getElementById('stock-search');
+    const ticker=document.getElementById('ticker');
+    const sugg=document.getElementById('suggestions');
+    async function fetchMatches(q){if(!q)return[];const r=await fetch(`/search?q=${encodeURIComponent(q)}`);return r.ok?await r.json():[]}
+    search.addEventListener('input',async e=>{const q=e.target.value.trim();if(!q){sugg.style.display='none';return}const d=await fetchMatches(q);if(!d.length){sugg.style.display='none';return}sugg.innerHTML=d.map(o=>`<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name}</li>`).join('');sugg.style.display='block';});
+    sugg.addEventListener('click',e=>{const li=e.target.closest('li[data-sym]');if(!li)return;search.value=ticker.value=li.dataset.sym;sugg.style.display='none';});
+    document.addEventListener('click',e=>{if(!search.contains(e.target)&&!sugg.contains(e.target))sugg.style.display='none';});
 
-    <!-- Autocomplete & Form‑Handling -->
-    <script>
-      // ---- Konfiguration ----
-      const SEARCH_URL =
-        document.getElementById("config").dataset.searchUrl || "/search"; // Fallback für reine HTML-Auslieferung
-
-      // ---- Utility: HTML‑Escape für Dropdown-Einträge ----
-      const htmlEscape = (str) =>
-        str.replace(/[&<>"']/g, (c) => ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;",
-        }[c]));
-
-      // ---- DOM-Knoten ----
-      const searchInput = document.getElementById("stock-search");
-      const tickerInput = document.getElementById("ticker");
-      const suggestions = document.getElementById("suggestions");
-
-      // ---- Helper: Fetch‑Abfrage an /search ----
-      async function fetchMatches(query) {
-        try {
-          const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(query)}`);
-          if (!res.ok) {
-            console.warn("/search Status", res.status);
-            return [];
-          }
-          const data = await res.json();
-          return Array.isArray(data) ? data : [];
-        } catch (err) {
-          console.error("/search Fehler", err);
-          return [];
-        }
-      }
-
-      // ---- Eingabe-Listener ----
-      searchInput.addEventListener("input", async ({ target }) => {
-        const q = target.value.trim();
-        if (!q) return hideSuggestions();
-
-        const data = await fetchMatches(q);
-        if (!data.length) return hideSuggestions();
-
-        suggestions.innerHTML = data
-          .slice(0, 10)
-          .map((item) => {
-            // Backend kann Symbol/Name in verschiedenen Key‑Varianten schicken
-            const symbol = item.symbol || item.Symbol || "";
-            const name = item.name || item.Security || item.security || "";
-            return `<li class="list-group-item" data-symbol="${symbol}">${htmlEscape(
-              symbol
-            )} – ${htmlEscape(name)}</li>`;
-          })
-          .join("");
-
-        suggestions.style.display = "block";
-      });
-
-      // ---- Klick auf Vorschlag ----
-      suggestions.addEventListener("click", (e) => {
-        const li = e.target.closest("li[data-symbol]");
-        if (!li) return;
-        const { symbol } = li.dataset;
-        searchInput.value = symbol;
-        tickerInput.value = symbol;
-        hideSuggestions();
-        tickerInput.focus();
-      });
-
-      // ---- Klick außerhalb → Dropdown schließen ----
-      document.addEventListener("click", (e) => {
-        if (!searchInput.contains(e.target) && !suggestions.contains(e.target)) {
-          hideSuggestions();
-        }
-      });
-
-      // ---- Utils ----
-      function hideSuggestions() {
-        suggestions.style.display = "none";
-        suggestions.innerHTML = "";
-      }
-    </script>
-  </body>
+    // ─── Checkbox‑Limit ─────────────────────────────────────────
+    const MAX=8;const chks=[...document.querySelectorAll('.metric-chk')];const counter=document.getElementById('metric-counter');
+    function enforce(){const sel=chks.filter(c=>c.checked);counter.textContent=`${sel.length} / ${MAX}`;if(sel.length>=MAX){chks.forEach(c=>{if(!c.checked)c.disabled=true;});}else{chks.forEach(c=>c.disabled=false);} }
+    chks.forEach(c=>c.addEventListener('change',enforce));
+    enforce();
+  </script>
+</body>
 </html>
