@@ -1,179 +1,197 @@
-from flask import Flask, request, render_template, redirect, url_for, send_from_directory, jsonify
-from PIL import Image, ImageDraw, ImageFont
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
+import textwrap
 import pandas as pd
 import os
-import math
+from datetime import datetime
+from PIL import Image, ImageDraw, ImageFont
+
+# ---------------------------------------------------------------------------
+# Konfiguration
+# ---------------------------------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+CSV_FILE = os.path.join(BASE_DIR, "stock_data.csv")
+BACKGROUND_FILE = os.path.join(STATIC_DIR, "default_background.png")
+LOGO_DIR = os.path.join(STATIC_DIR, "logos")            # static/logos/<TICKER>.png
+FONT_DIR = os.path.join(STATIC_DIR, "fonts")
+MONTSERRAT_BOLD = os.path.join(FONT_DIR, "Montserrat-Bold.ttf")
+MONTSERRAT_REG = os.path.join(FONT_DIR, "Montserrat-Regular.ttf")
+GENERATED_DIR = os.path.join(STATIC_DIR, "generated")
+
+os.makedirs(GENERATED_DIR, exist_ok=True)
 
 app = Flask(__name__)
 
-# -------------------------------------------------
-# Ordner & Pfade
-# -------------------------------------------------
-UPLOAD_FOLDER = "uploads"
-OUTPUT_FOLDER = "output"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+# ---------------------------------------------------------------------------
+# CSV Cache
+# ---------------------------------------------------------------------------
+_df_cache: pd.DataFrame | None = None
 
-CSV_FILE = "stock_data.csv"
-# Passe bei Bedarf an (Windows: C:/Windows/Fonts/Arial.ttf o. Ä.)
-FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-
-# -------------------------------------------------
-# Start‑ & Ergebnis‑Seiten
-# -------------------------------------------------
-@app.route("/")
-def home():
-    """Startseite mit Upload‑Formular und Live‑Suche."""
-    return render_template("index.html")
-
-
-@app.route("/generate_image", methods=["POST"])
-def generate_image():
-    """Erzeugt aus Ticker & Background ein Bild und leitet auf die Ergebnis‑Seite um."""
-    ticker = request.form.get("ticker", "").strip().upper()
-    if not ticker:
-        return "Bitte einen Ticker angeben!", 400
-
-    stock_data = get_stock_data(ticker)
-    if not stock_data:
-        return f"Keine Daten für Ticker '{ticker}' gefunden.", 400
-
-    # ---------- Hintergrundbild verarbeiten ----------
-    if "background" not in request.files:
-        return "Bitte ein Hintergrundbild hochladen!", 400
-    background_file = request.files["background"]
-    if background_file.filename == "":
-        return "Ungültiger Dateiname.", 400
-
-    background_path = os.path.join(UPLOAD_FOLDER, background_file.filename)
-    background_file.save(background_path)
-
-    # ---------- Bild erzeugen ----------
-    output_path = create_stock_image(background_path, stock_data, ticker)
-
-    return redirect(url_for("display_result", filename=os.path.basename(output_path)))
-
-
-@app.route("/display_result/<filename>")
-def display_result(filename):
-    """Zeigt das generierte PNG an."""
-    return render_template("display_result.html", filename=filename)
-
-
-@app.route("/output/<path:filename>")
-def output_file(filename):
-    """Reicht die Bilddatei aus /output durch."""
-    return send_from_directory(OUTPUT_FOLDER, filename)
-
-# -------------------------------------------------
-# Live‑Suche‑Endpoint -----------------------------
-# -------------------------------------------------
-_df_cache = None  # Lazy‑Loaded Global‑Cache
-
-def load_dataframe():
-    """Lädt die CSV einmalig in den Speicher (Lazy‑Cache)."""
+def load_dataframe() -> pd.DataFrame:
     global _df_cache
     if _df_cache is None:
-        df = pd.read_csv(CSV_FILE, delimiter=",", encoding="ISO-8859-1", on_bad_lines="skip")
-        df.columns = df.columns.str.strip()
-        df["Symbol"] = df["Symbol"].str.strip().str.upper()
-        df["Security"] = df["Security"].str.strip()
-        for col in ["Dividendenrendite", "KGV", "KUV"]:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-        df.dropna(subset=["Dividendenrendite", "KGV", "KUV"], inplace=True)
+        df = pd.read_csv(CSV_FILE, delimiter=",", encoding="utf-8-sig", on_bad_lines="skip")
+        df.columns = df.columns.str.replace("\ufeff", "").str.strip()
+        df["Symbol"] = df["Symbol"].astype(str).str.strip().str.upper()
+        df["Security"] = df["Security"].astype(str).str.strip()
         _df_cache = df
     return _df_cache
 
+# ---------------------------------------------------------------------------
+# Helper
+# ---------------------------------------------------------------------------
 
-@app.get("/search")
-def search():
-    """Liefert max. 10 Treffer, deren Symbol oder Firmenname mit *q* beginnt (JSON)."""
-    q = request.args.get("q", "").strip().upper()
-    if not q:
-        return jsonify([])
-
+def get_stock_row(ticker: str):
     df = load_dataframe()
-    mask = df["Symbol"].str.startswith(q) | df["Security"].str.upper().str.startswith(q)
-    results = df.loc[mask, ["Symbol", "Security"]].head(10)
-    return jsonify([
-        {"symbol": row.Symbol, "name": row.Security} for row in results.itertuples()
-    ])
+    r = df[df["Symbol"] == ticker]
+    return r.iloc[0] if not r.empty else None
 
-# -------------------------------------------------
-# Datenzugriff ------------------------------------
-# -------------------------------------------------
 
-def get_stock_data(ticker: str):
-    """Gibt ein Dict mit Kennzahlen für *ticker* zurück oder *None*."""
-    df = load_dataframe()
-    row = df.loc[df["Symbol"] == ticker]
-    if row.empty:
-        return None
-    return {
-        "Unternehmensname": row.iloc[0]["Security"],
-        "Dividendenrendite": row.iloc[0]["Dividendenrendite"],
-        "KGV": row.iloc[0]["KGV"],
-        "KUV": row.iloc[0]["KUV"],
-    }
+def _fmt_number(val, dec: int = 2):
+    if pd.isna(val):
+        return "–"
+    if isinstance(val, (int, float)):
+        return f"{val:,.{dec}f}".replace(",", ".")
+    return str(val)
 
-# -------------------------------------------------
-# Bild‑Generator ----------------------------------
-# -------------------------------------------------
+# ---------------------------------------------------------------------------
+# Font helper
+# ---------------------------------------------------------------------------
 
-def create_stock_image(background_path: str, stock_data: dict, ticker: str) -> str:
-    """Erzeugt die PNG‑Grafik mit Kennzahlen im Kreis und optionalem Logo."""
-    img = Image.open(background_path).convert("RGBA")
+def _font(path: str, size: int, fallback):
+    try:
+        return ImageFont.truetype(path, size)
+    except OSError:
+        return fallback
+
+# ---------------------------------------------------------------------------
+# Bildgenerierung
+# ---------------------------------------------------------------------------
+
+def create_stock_image(bg: str, ticker: str) -> str:
+    row = get_stock_row(ticker)
+    if row is None:
+        raise ValueError("Ticker not found")
+
+    img = Image.open(bg).convert("RGBA")
     draw = ImageDraw.Draw(img)
 
-    try:
-        font = ImageFont.truetype(FONT_PATH, 40)
-        title_font = ImageFont.truetype(FONT_PATH, 60)
-    except OSError:
-        font = ImageFont.load_default()
-        title_font = font
+    fallback = ImageFont.load_default()
+    f_title = _font(MONTSERRAT_BOLD, 58, fallback)
+    f_label = _font(MONTSERRAT_BOLD, 32, fallback)
+    f_small = _font(MONTSERRAT_REG, 22, fallback)
 
-    # ---------- Logo (falls vorhanden) ----------
-    logo_size = 250
-    center_x = img.width // 2
-    center_y = img.height // 2
-    logo_center = (center_x, center_y)
+    # ------------------------------ Zentrierter Titel mit Wrap ------------------------------
+    max_width = img.width - 160
+    title_raw = f"Aktie: {row['Security'].upper()} ({ticker})"
+    words = title_raw.split()
+    lines, current = [], ""
+    for w in words:
+        test = f"{current} {w}".strip()
+        if draw.textlength(test, font=f_title) > max_width and current:
+            lines.append(current)
+            current = w
+        else:
+            current = test
+    if current:
+        lines.append(current)
 
-    logo_path = f"static/logos/{ticker}.png"
-    if os.path.exists(logo_path):
-        logo = Image.open(logo_path).convert("RGBA").resize((logo_size, logo_size))
-        logo_center = (center_x - logo_size // 2, center_y - logo_size // 2 + 50)
-        img.paste(logo, logo_center, logo)
+    y = 25
+    for l in lines:
+        w = draw.textlength(l, font=f_title)
+        draw.text(((img.width - w) // 2, y), l, fill="black", font=f_title)
+        y += f_title.size + 8
 
-    # ---------- Titel ----------
-    title_text = f"Aktie: {stock_data['Unternehmensname']}"
-    title_w = title_font.getbbox(title_text)[2]
-    draw.text((img.width // 2 - title_w // 2, 50), title_text, fill="black", font=title_font)
+    # ------------------------------ Kennzahlen ----------------------------------
+    # Marktkapitalisierung in Milliarden umrechnen
+    raw_mcap = row.get('Marktkapitalisierung', row.get('Marktkap.', None))
+    mcap_bil = raw_mcap / 1_000_000_000 if pd.notna(raw_mcap) else pd.NA
 
-    # ---------- Kennzahlen ----------
-    radius = 250
-    text_items = [
-        f"Dividendenrendite: {stock_data['Dividendenrendite']:.2f}%",
-        f"KGV: {stock_data['KGV']:.2f}",
-        f"KUV: {stock_data['KUV']:.2f}",
+    metrics = [
+        ("Dividendenrendite", f"{_fmt_number(row.get('Dividendenrendite'))}%"),
+        ("Ausschüttungsquote", f"{_fmt_number(row.get('Ausschüttungsquote'))}%"),
+        ("KUV", _fmt_number(row.get('KUV'))),
+        ("KGV", _fmt_number(row.get('KGV'))),
+        ("Gewinn je Aktie", _fmt_number(row.get('Gewinn je Aktie'))),
+        ("Marktkap.", f"{_fmt_number(mcap_bil)} Mrd. $") ,
+        ("Gewinnwachstum", f"{_fmt_number(row.get('Gewinnwachstum'))}%"),
+        ("Umsatzwachstum", f"{_fmt_number(row.get('Umsatzwachstum'))}%"),
     ]
-    angle_step = 360 / len(text_items)
-    logo_center_x = logo_center[0] + logo_size // 2
-    logo_center_y = logo_center[1] + logo_size // 2
 
-    for i, text in enumerate(text_items):
-        angle = math.radians(i * angle_step)
-        x = int(logo_center_x + radius * math.cos(angle))
-        y = int(logo_center_y + radius * math.sin(angle))
-        draw.text((x, y), text, fill="black", font=font, anchor="mm")
+    col_x = [100, img.width // 2 + 40]
+    y_start = y + 90
+    y_cursor = [y_start, y_start]
+    line_h = f_label.size + 60  # größerer Zeilenabstand
 
-    # ---------- Speichern ----------
-    output_filename = f"{ticker}_stock_image.png"
-    output_path = os.path.join(OUTPUT_FOLDER, output_filename)
-    img.save(output_path, "PNG")
-    return output_path
+    for i, (lab, val) in enumerate(metrics):
+        col = i % 2
+        draw.text((col_x[col], y_cursor[col]), f"{lab}: {val}", fill="black", font=f_label)
+        y_cursor[col] += line_h
 
-# -------------------------------------------------
-# Main --------------------------------------------
-# -------------------------------------------------
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    # ------------------------------ Logo ---------------------------------------
+    logo_path = next((os.path.join(LOGO_DIR, v) for v in (f"{ticker}.png", f"{ticker.lower()}.png", f"{ticker.upper()}.png") if os.path.exists(os.path.join(LOGO_DIR, v))), None)
+    if logo_path:
+        logo = Image.open(logo_path).convert("RGBA")
+        max_w = int(img.width * 0.18)
+        scale = min(1, max_w / logo.width)
+        logo = logo.resize((int(logo.width * scale), int(logo.height * scale)), Image.LANCZOS)
+        y_logo = max(y_cursor) + 40  # Logo leicht höher
+        x_logo = (img.width - logo.width) // 2
+        img.alpha_composite(logo, (x_logo, y_logo))
+        y_footer_start = y_logo + logo.height + 40  # Footer etwas höher
+    else:
+        y_footer_start = max(y_cursor) + 80
+
+    # ------------------------------ Footer -------------------------------------
+    footer = f"Abfragedatum: {datetime.now():%d.%m.%Y}, Datenquelle: Yahoo Finance"
+    w = draw.textlength(footer, font=f_small)
+    draw.text(((img.width - w) // 2, y_footer_start), footer, fill="black", font=f_small)
+
+    out_path = os.path.join(GENERATED_DIR, f"{ticker}_{int(datetime.now().timestamp())}.png")
+    img.save(out_path)
+    return out_path
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/search')
+def search():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify([])
+    df = load_dataframe()
+    mask = df['Symbol'].str.contains(q, case=False, na=False) | df['Security'].str.contains(q, case=False, na=False)
+    return jsonify([{ 'symbol': s, 'name': n } for s, n in df.loc[mask, ['Symbol', 'Security']].head(20).to_records(index=False)])
+
+@app.route('/generate_image', methods=['POST'])
+def generate_image():
+    ticker = request.form.get('ticker', '').strip().upper()
+    if not ticker:
+        return 'Ticker fehlt', 400
+    if get_stock_row(ticker) is None:
+        return f"Ticker '{ticker}' nicht gefunden", 400
+    if not os.path.exists(BACKGROUND_FILE):
+        return 'Standard-Hintergrund nicht gefunden', 500
+    path = create_stock_image(BACKGROUND_FILE, ticker)
+    return redirect(url_for('display_result', filename=os.path.basename(path)))
+
+@app.route('/result/<filename>')
+def display_result(filename):
+    return render_template('display_result.html', filename=filename)
+
+@app.route('/static/generated/<path:filename>')
+def generated_file(filename):
+    return send_from_directory(GENERATED_DIR, filename)
+
+@app.route('/output/<path:filename>')
+def output_file(filename):
+    return send_from_directory(GENERATED_DIR, filename)
+
+# ---------------------------------------------------------------------------
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
