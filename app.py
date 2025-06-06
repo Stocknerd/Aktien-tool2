@@ -103,7 +103,6 @@ def create_stock_image(bg: str, ticker: str) -> str:
         y += f_title.size + 8
 
     # ------------------------------ Kennzahlen ----------------------------------
-    # Marktkapitalisierung in Milliarden umrechnen
     raw_mcap = row.get('Marktkapitalisierung', row.get('Marktkap.', None))
     mcap_bil = raw_mcap / 1_000_000_000 if pd.notna(raw_mcap) else pd.NA
 
@@ -121,7 +120,7 @@ def create_stock_image(bg: str, ticker: str) -> str:
     col_x = [100, img.width // 2 + 40]
     y_start = y + 90
     y_cursor = [y_start, y_start]
-    line_h = f_label.size + 60  # größerer Zeilenabstand
+    line_h = f_label.size + 60
 
     for i, (lab, val) in enumerate(metrics):
         col = i % 2
@@ -132,17 +131,27 @@ def create_stock_image(bg: str, ticker: str) -> str:
     logo_path = next((os.path.join(LOGO_DIR, v) for v in (f"{ticker}.png", f"{ticker.lower()}.png", f"{ticker.upper()}.png") if os.path.exists(os.path.join(LOGO_DIR, v))), None)
     if logo_path:
         logo = Image.open(logo_path).convert("RGBA")
-        max_w = int(img.width * 0.18)
-        scale = min(1, max_w / logo.width)
+        # Flexible Skalierung – auch Upscale
+        #   • Max 80 % Bildbreite
+        #   • Max 30 % Bildhöhe (25 % für AR > 4)
+        max_w = img.width * 0.80
+        max_h_std = img.height * 0.30
+        max_h_wide = img.height * 0.25
+
+        scale_w = max_w / logo.width
+        scale_h = (max_h_wide if (logo.width / logo.height) > 4 else max_h_std) / logo.height
+        scale = min(scale_w, scale_h)
+
         logo = logo.resize((int(logo.width * scale), int(logo.height * scale)), Image.LANCZOS)
-        y_logo = max(y_cursor) + 40  # Logo leicht höher
+
+        y_logo = max(y_cursor) + 40
         x_logo = (img.width - logo.width) // 2
         img.alpha_composite(logo, (x_logo, y_logo))
-        y_footer_start = y_logo + logo.height + 40  # Footer etwas höher
+        y_footer_start = y_logo + logo.height + 40
     else:
         y_footer_start = max(y_cursor) + 80
 
-    # ------------------------------ Footer -------------------------------------
+    # ------------------------------ Footer ------------------------------------- ------------------------------------- ------------------------------------- -------------------------------------
     footer = f"Abfragedatum: {datetime.now():%d.%m.%Y}, Datenquelle: Yahoo Finance"
     w = draw.textlength(footer, font=f_small)
     draw.text(((img.width - w) // 2, y_footer_start), footer, fill="black", font=f_small)
@@ -186,8 +195,7 @@ def display_result(filename):
 
 @app.route('/static/generated/<path:filename>')
 def generated_file(filename):
-    return send_from_directory(GENERATED_DIR, filename)
-
+        return send_from_directory(GENERATED_DIR, filename)
 @app.route('/output/<path:filename>')
 def output_file(filename):
     return send_from_directory(GENERATED_DIR, filename)
@@ -195,3 +203,6 @@ def output_file(filename):
 # ---------------------------------------------------------------------------
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+
+
