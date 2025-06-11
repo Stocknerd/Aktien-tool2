@@ -64,8 +64,7 @@ def get_financial_data(ticker):
             "Eigenkapitalrendite": info.get("returnOnEquity"),
             "Return on Assets": info.get("returnOnAssets"),
             "ROIC": info.get("returnOnCapital"),
-            # Umsatzwachstum über 10 Jahre liefert yfinance nicht direkt;
-            # hier vorerst None. Eine manuelle Berechnung aus historischen Jahresabschlüssen wäre nötig.
+            # Umsatzwachstum über 10 Jahre liefert yfinance nicht direkt
             "Umsatzwachstum 10J": None,
             "Umsatzwachstum 3J (erwartet)": info.get("revenueGrowth"),
             "Gewinn je Aktie": info.get("forwardEps"),
@@ -95,31 +94,44 @@ for idx, row in tqdm(df.iterrows(), total=len(df), desc="Daten werden abgerufen"
     ticker = row["valid_yahoo_ticker"]
     data = get_financial_data(ticker)
 
+    # Wenn überhaupt kein Dictionary zurückkam, überspringen (alte Werte bleiben erhalten)
     if not data:
         fehlgeschlagen.append(ticker)
         fehler_counter += 1
         continue
 
-    # Schreibe alle zurückgegebenen Kennzahlen in das DataFrame
-    for key, value in data.items():
-        if key in spalten_kennzahlen:
-            df.at[idx, key] = value
+    # Flag, ob wir mindestens eine Kennzahl wirklich aktualisiert haben
+    geändert = False
 
-    # Free Cashflow Yield berechnen (falls Free Cashflow & Marktkapitalisierung vorhanden)
+    # Nur aktualisieren, wenn value nicht None und nicht NaN ist
+    for key, value in data.items():
+        if key in spalten_kennzahlen and value is not None and pd.notna(value):
+            # Ändern nur, wenn der neue Wert anders ist als der alte
+            alt = df.at[idx, key]
+            if pd.isna(alt) or alt != value:
+                df.at[idx, key] = value
+                geändert = True
+
+    # Free Cashflow Yield berechnen, aber nur, wenn freeCashflow und marketCap gültig sind
     fc = data.get("Free Cashflow")
     mc = data.get("Marktkapitalisierung")
-    if fc is not None and mc:
+    if (fc is not None and pd.notna(fc)) and (mc is not None and pd.notna(mc)):
         try:
-            df.at[idx, "Free Cashflow Yield"] = fc / mc
+            neu_fcy = fc / mc
+            alt_fcy = df.at[idx, "Free Cashflow Yield"]
+            if pd.isna(alt_fcy) or alt_fcy != neu_fcy:
+                df.at[idx, "Free Cashflow Yield"] = neu_fcy
+                geändert = True
         except Exception:
-            df.at[idx, "Free Cashflow Yield"] = None
+            pass  # Im Fehlerfall nichts ändern
 
-    # Abfragedatum und Datenquelle setzen
-    df.at[idx, "Abfragedatum"] = heute
-    df.at[idx, "Datenquelle"] = "Yahoo Finance"
+    # Abfragedatum und Datenquelle nur setzen, wenn mindestens eine Kennzahl geändert wurde
+    if geändert:
+        df.at[idx, "Abfragedatum"] = heute
+        df.at[idx, "Datenquelle"] = "Yahoo Finance"
 
     # Kurz warten, um Rate-Limits abzudämpfen
-    time.sleep(1)
+    time.sleep(0.1)
 
 # Ausgabe der fehlgeschlagenen Ticker (falls vorhanden)
 if fehlgeschlagen:

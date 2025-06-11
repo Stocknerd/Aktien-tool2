@@ -151,7 +151,28 @@ def create_stock_image(bg: str, ticker: str, keys: List[str]) -> str:
     else:
         y_footer = max(y_cur)+80
 
-    footer = f"Abfragedatum: {datetime.now():%d.%m.%Y}, Datenquelle: Yahoo Finance"
+    # --- Footer ---------------------------------------------------------
+    # Abfragedatum formatieren (falls vorhanden sonst heutiges Datum)
+    raw_date = row.get("Abfragedatum")
+    if pd.notna(raw_date):
+        try:
+            date_str = pd.to_datetime(raw_date).strftime("%d.%m.%Y")
+        except Exception:
+            date_str = str(raw_date)
+    else:
+        date_str = datetime.now().strftime("%d.%m.%Y")
+
+    # Datenquelle aus der CSV, Fallback wie bisher
+    source_str = row.get("Datenquelle") or "Yahoo Finance"
+
+    footer = f"Abfragedatum: {date_str}, Datenquelle: {source_str}"
+    draw.text(
+        ((img.width - draw.textlength(footer, font=f_sml)) // 2, y_footer),
+        footer,
+        fill="black",
+        font=f_sml,
+    )
+
     draw.text(((img.width - draw.textlength(footer,font=f_sml))//2, y_footer), footer, fill="black", font=f_sml)
 
     out = os.path.join(OUT_DIR, f"{ticker}_{int(datetime.now().timestamp())}.png")
