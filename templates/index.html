@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Aktien‑Bild Generator</title>
+  <title>Aktien-Bild Generator</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
     #suggestions{display:none;max-height:220px;overflow-y:auto;z-index:1050}
@@ -12,7 +12,7 @@
 </head>
 <body class="bg-light">
   <div class="container py-5">
-    <h1 class="text-center mb-4">Aktien‑Bild erstellen</h1>
+    <h1 class="text-center mb-4">Aktien-Bild erstellen</h1>
 
     <form class="card shadow-sm p-4 mx-auto" style="max-width:640px" method="post" action="{{ url_for('generate_image') }}">
       <!-- Suche / Ticker -->
@@ -32,30 +32,36 @@
         <small id="metric-counter" class="text-muted">0 / 8</small>
       </label>
 
-      <!-- Default‑Kennzahlen (immer sichtbar) -->
+      <!-- Default-Kennzahlen -->
       <div class="row row-cols-2 g-2 mb-2">
         {% for m in available_metrics if m.key in default_metrics %}
         <div class="col form-check">
           <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}" id="chk_{{ m.key|replace(' ','_') }}" checked>
-          <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">{{ m.label }}</label>
+          <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">
+            {{ m.label }}
+            <span class="ms-1 text-info" tabindex="0" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
+          </label>
         </div>
         {% endfor %}
       </div>
 
-      <!-- Button zum Aufklappen -->
+      <!-- Aufklapp-Button -->
       <p>
         <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#moreMetrics" role="button" aria-expanded="false" aria-controls="moreMetrics">
           Weitere Kennzahlen anzeigen ▼
         </a>
       </p>
 
-      <!-- Versteckte weiteren Kennzahlen -->
+      <!-- Weitere Kennzahlen -->
       <div class="collapse" id="moreMetrics">
         <div class="row row-cols-2 g-2 mb-3">
           {% for m in available_metrics if m.key not in default_metrics %}
           <div class="col form-check">
             <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}" id="chk_{{ m.key|replace(' ','_') }}">
-            <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">{{ m.label }}</label>
+            <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">
+              {{ m.label }}
+              <span class="ms-1 text-info" tabindex="0" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
+            </label>
           </div>
           {% endfor %}
         </div>
@@ -65,22 +71,72 @@
     </form>
   </div>
 
+  <!-- Bootstrap Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Beschreibungen (JSON) -->
+  <script id="metric-desc-json" type="application/json">
+    {{ metric_descriptions | tojson }}
+  </script>
+
   <script>
     // ─── Autocomplete ────────────────────────────────────────────
-    const search=document.getElementById('stock-search');
-    const ticker=document.getElementById('ticker');
-    const sugg=document.getElementById('suggestions');
-    async function fetchMatches(q){if(!q)return[];const r=await fetch(`/search?q=${encodeURIComponent(q)}`);return r.ok?await r.json():[]}
-    search.addEventListener('input',async e=>{const q=e.target.value.trim();if(!q){sugg.style.display='none';return}const d=await fetchMatches(q);if(!d.length){sugg.style.display='none';return}sugg.innerHTML=d.map(o=>`<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name}</li>`).join('');sugg.style.display='block';});
-    sugg.addEventListener('click',e=>{const li=e.target.closest('li[data-sym]');if(!li)return;search.value=ticker.value=li.dataset.sym;sugg.style.display='none';});
-    document.addEventListener('click',e=>{if(!search.contains(e.target)&&!sugg.contains(e.target))sugg.style.display='none';});
+    const search = document.getElementById('stock-search');
+    const ticker = document.getElementById('ticker');
+    const sugg   = document.getElementById('suggestions');
+    async function fetchMatches(q){
+      if(!q) return [];
+      const r = await fetch(`/search?q=${encodeURIComponent(q)}`);
+      return r.ok ? await r.json() : [];
+    }
+    search.addEventListener('input', async e=>{
+      const q = e.target.value.trim();
+      if(!q){sugg.style.display='none';return;}
+      const d = await fetchMatches(q);
+      if(!d.length){sugg.style.display='none';return;}
+      sugg.innerHTML = d.map(o=>`<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name}</li>`).join('');
+      sugg.style.display='block';
+    });
+    sugg.addEventListener('click', e=>{
+      const li = e.target.closest('li[data-sym]');
+      if(!li) return;
+      search.value = ticker.value = li.dataset.sym;
+      sugg.style.display='none';
+    });
+    document.addEventListener('click', e=>{
+      if(!search.contains(e.target) && !sugg.contains(e.target)) sugg.style.display='none';
+    });
 
-    // ─── Checkbox‑Limit ─────────────────────────────────────────
-    const MAX=8;const chks=[...document.querySelectorAll('.metric-chk')];const counter=document.getElementById('metric-counter');
-    function enforce(){const sel=chks.filter(c=>c.checked);counter.textContent=`${sel.length} / ${MAX}`;if(sel.length>=MAX){chks.forEach(c=>{if(!c.checked)c.disabled=true;});}else{chks.forEach(c=>c.disabled=false);} }
-    chks.forEach(c=>c.addEventListener('change',enforce));
+    // ─── Checkbox-Limit ─────────────────────────────────────────
+    const MAX = 8;
+    const chks = Array.from(document.querySelectorAll('.metric-chk'));
+    const counter = document.getElementById('metric-counter');
+    function enforce(){
+      const sel = chks.filter(c=>c.checked);
+      counter.textContent = `${sel.length} / ${MAX}`;
+      if(sel.length >= MAX){
+        chks.forEach(c=>{ if(!c.checked) c.disabled = true; });
+      }else{
+        chks.forEach(c=>c.disabled = false);
+      }
+    }
+    chks.forEach(c=>c.addEventListener('change', enforce));
     enforce();
+
+    // ─── Info-Popovers (hover) ──────────────────────────────────
+    const desc = JSON.parse(document.getElementById('metric-desc-json').textContent);
+    document.querySelectorAll('[data-key]').forEach(el=>{
+      const key  = el.dataset.key;
+      const text = desc[key] || 'Keine Beschreibung verfügbar.';
+      const pop  = new bootstrap.Popover(el,{
+        trigger: 'hover focus',
+        html:    true,
+        content: `<div class="small">${text}</div>`,
+        container: 'body'
+      });
+      // Klicks auf das Icon nicht zum Label durchreichen
+      el.addEventListener('click', e=>e.stopPropagation());
+    });
   </script>
 </body>
 </html>
