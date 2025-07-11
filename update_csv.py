@@ -160,8 +160,28 @@ for grp in tqdm(chunkify(tickers, BATCH_SIZE), total=math.ceil(len(tickers)/BATC
 # --------------------------------------------------
 # Speichern & Report
 # --------------------------------------------------
+# ------------------------------------------------------------
+#  Statusmeldung zu eventuell fehlgeschlagenen Ticks
+# ------------------------------------------------------------
 if fehlgeschlagen:
     print(f"⚠️ Fehlgeschlagene Ticker: {len(fehlgeschlagen)} – z. B. {fehlgeschlagen[:10]}")
 
-df.to_csv(FILE_OUTPUT, index=False, encoding="utf-8-sig")
-print(f"✅ Fertig – Daten in '{FILE_OUTPUT.name}' gespeichert.")
+# ------------------------------------------------------------
+#  CSV NUR speichern, wenn genügend Datensätze gültig sind
+# ------------------------------------------------------------
+erfolg_total   = len(df)                 # df = DataFrame mit allen ERFOLGreichen Rows
+ticker_total   = len(tickers)            # komplette Wunschliste
+mind_quote     = 0.80                    # 80 % Mindest-Erfolgsquote
+
+if ticker_total == 0:
+    print("❌ Ticker-Liste leer – CSV bleibt unverändert.")
+elif erfolg_total / ticker_total < mind_quote:
+    print(
+        f"❌ Nur {erfolg_total}/{ticker_total} Ticker erfolgreich "
+        f"({erfolg_total/ticker_total:.0%}) – CSV bleibt unverändert."
+    )
+else:
+    df.to_csv(FILE_OUTPUT, index=False, encoding="utf-8-sig")
+    print(f"✅ Fertig – Daten in '{FILE_OUTPUT.name}' gespeichert "
+          f"({erfolg_total}/{ticker_total} Ticker).")
+
