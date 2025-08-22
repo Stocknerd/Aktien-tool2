@@ -1,7 +1,7 @@
 from flask import (
     Flask, request, jsonify, send_from_directory, render_template_string
 )
-import os, time, math
+import os, time, math, re
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
 import pandas as pd
@@ -21,9 +21,9 @@ os.makedirs(OUT_DIR, exist_ok=True)
 # ───────────────────────── Render- und Layout-Parameter ─────────────────────────
 OUTPUT_WIDTH  = 1080
 OUTPUT_HEIGHT = 1350
-SAFE_MARGIN_X = 0.06
-SAFE_TOP_FRAC = 0.08
-SAFE_BOTTOM_FRAC = 0.22
+SAFE_MARGIN_X = 0.06          # Seiten-Sicherheitsrand
+SAFE_TOP_FRAC = 0.08          # Titel-Safe-Zone
+SAFE_BOTTOM_FRAC = 0.18       # etwas mehr Raum für Footer/Branding
 
 # ───────────────────────── Fonts ─────────────────────────
 FONT_REG_PATH = os.path.join(FONT_DIR, "Montserrat-Regular.ttf")
@@ -109,7 +109,7 @@ COLUMN_ALIASES: Dict[str, List[str]] = {
     "Umsatzwachstum 3J (erwartet)": ["Umsatzwachstum 3J (erwartet)","Revenue Growth 3Y (fwd)","revenueGrowth3YForward"],
 }
 
-# ───────────────────────── Utils: CSV laden ─────────────────────────
+# ───────────────────────── CSV laden ─────────────────────────
 _df: Optional[pd.DataFrame] = None
 _df_mtime: Optional[float] = None
 
@@ -130,7 +130,8 @@ def load_df() -> pd.DataFrame:
         raise last_err
     return _df
 
-# ───────────────────────── Utils: Formatierung ─────────────────────────
+# ───────────────────────── Formatierung ─────────────────────────
+
 def _fmt_locale(x: float, dec: int = 2) -> str:
     s = f"{x:,.{dec}f}".replace(",", "_").replace(".", ",").replace("_", ".")
     if "," in s and dec > 0:
@@ -146,7 +147,7 @@ def fmt_number(val: Any, dec: int = 2) -> str:
         return str(val)
     return _fmt_locale(num, dec)
 
-def fmt_percent_for(key: str, val: Any, dec: int = 2) -> str:
+def fmt_percent_for(key: str, val: Any, dec: int = 1):  # 1 Nachkommastelle reicht optisch
     if pd.isna(val):
         return "–"
     s_raw = str(val).strip().replace("%", "")
@@ -163,10 +164,11 @@ def currency_label(row: pd.Series) -> str:
     sym = CURRENCY_SYMBOL.get(cur, cur or "$")
     return f"Mrd {sym}"
 
-def fcur(x: float, sym: str) -> str:
-    return f"{sym}{_fmt_locale(x,2)}" if sym in {"$","€","£","¥"} else f"{_fmt_locale(x,2)}{sym}"
+def fcur(x: float, sym: str, dec: int = 0) -> str:  # Werte in Pills ohne Nachkommastellen
+    return f"{sym}{_fmt_locale(x,dec)}" if sym in {"$","€","£","¥"} else f"{_fmt_locale(x,dec)}{sym}"
 
-# ───────────────────────── Utils: Column-Resolve ─────────────────────────
+# ───────────────────────── Column-Resolve & Value-Checks ─────────────────────────
+
 def resolve_col(row_or_df, key: str) -> Optional[str]:
     cols = row_or_df.index if isinstance(row_or_df, pd.Series) else row_or_df.columns
     if key in cols:
@@ -176,7 +178,6 @@ def resolve_col(row_or_df, key: str) -> Optional[str]:
             return alt
     return None
 
-# ───────────────────────── Utils: Zahlenzugriff ─────────────────────────
 def _to_float(x: Any) -> Optional[float]:
     if x is None or (isinstance(x, float) and math.isnan(x)):
         return None
@@ -190,6 +191,20 @@ def _get_val(row: pd.Series, key: str) -> Any:
     if col:
         return row.get(col)
     return None
+
+def has_value(row: pd.Series, key: str) -> bool:
+    col = resolve_col(row, key)
+    if not col:
+        return False
+    v = row.get(col)
+    if pd.isna(v):
+        return False
+    s = str(v).strip()
+    if not s or s == "–":
+        return False
+    if key in {"KGV","Forward PE","KUV","Marktkapitalisierung","Operativer Cashflow","Free Cashflow"} or key in PERCENT_KEYS:
+        return _to_float(v) is not None
+    return True
 
 def numeric_value(key: str, row: pd.Series) -> Optional[float]:
     val = _get_val(row, key)
@@ -206,7 +221,11 @@ def display_value(key: str, row: pd.Series) -> str:
         num = v / 1e9
         return _fmt_locale(num, 1) + f" {currency_label(row)}"
     if key in {"KGV","Forward PE","KUV"}:
-        return fmt_number(val, 2)
+        v = _to_float(val)
+        if v is None:
+            return "–"
+        dec = 0 if abs(v) >= 100 else 2
+        return fmt_number(v, dec)
     if key in {"Operativer Cashflow","Free Cashflow"}:
         v = _to_float(val)
         if v is None:
@@ -215,7 +234,8 @@ def display_value(key: str, row: pd.Series) -> str:
         return _fmt_locale(num, 1) + f" {currency_label(row)}"
     return fmt_number(val, 2)
 
-# ───────────────────────── Bild-/Layout-Helfer ─────────────────────────
+# ───────────────────────── Layout-Helpers ─────────────────────────
+
 def resize_cover(im: Image.Image, target_w: int, target_h: int) -> Image.Image:
     w, h = im.size
     scale = max(target_w / w, target_h / h)
@@ -304,13 +324,66 @@ def split_two_lines(draw, text, font, max_w):
         s = s[:-1]
     return (s + "…", None)
 
-# ───────────────────────── Cards / Zusatz-Widgets ─────────────────────────
-def draw_company_card(
-    img: Image.Image, draw: ImageDraw.ImageDraw, rect: Tuple[int,int,int,int],
-    row: pd.Series, symbol: str, name: str, metrics: List[str],
-    chip_widths: Dict[str,int],
-    f_title, f_lbl, f_val
-):
+def trim_numeric_text_to_fit(draw, text, font, max_width):
+    """
+    Kürzt Dezimalstellen (z. B. '28,33' -> '28,3' -> '28'),
+    bevor Ellipsen gesetzt werden. Prozent/Einheiten bleiben erhalten.
+    """
+    if draw.textlength(text, font=font) <= max_width:
+        return text
+    s = text
+    while draw.textlength(s, font=font) > max_width:
+        m = list(re.finditer(r"(\d+),(\d+)(?=[^0-9%]|$|%)", s))
+        if not m:
+            break
+        i = m[-1].start(2)
+        grp = m[-1].group(2)
+        if len(grp) > 1:
+            s = s[:i] + grp[:-1] + s[i+len(grp):]
+        else:
+            s = s[:m[-1].start(1)+len(m[-1].group(1))] + s[m[-1].end(2):]
+    if draw.textlength(s, font=font) <= max_width:
+        return s
+    return ellipsize_to_fit(draw, s, font, max_width)
+
+# ───────────────────────── Kürzere Label-Fallbacks & Card-Parameter ─────────────────────────
+CHIP_MAX_FRAC   = 0.40   # maximale Chipbreite (Anteil am Inhaltsbereich)
+LABEL_MIN_FRAC  = 0.50   # mindestens so viel Platz für Label
+
+ALT_LABELS2 = {
+    "Eigenkapitalrendite": ["EK-Rendite", "ROE"],
+    "Free Cashflow Yield": ["FCF-Yield", "FCF%"],
+    "Operative Marge": ["Oper. Marge", "Op.-Marge"],
+    "Nettomarge": ["Nettomarge", "Net-Marge"],
+    "Bruttomarge": ["Bruttomarge", "Gross-Marge"],
+    "Umsatzwachstum 3J (erwartet)": ["Umsatzw. 3J", "Rev. 3J"],
+    "Marktkapitalisierung": ["Marktkap.", "Mkt Cap"],
+}
+
+def shrink_label_to_fit_for_key(draw, key, base_label_with_colon, font, max_w):
+    if draw.textlength(base_label_with_colon, font=font) <= max_w:
+        return font, base_label_with_colon
+    size = font.size
+    min_px = max(14, int(size * 0.82))
+    path = getattr(font, "path", FONT_REG_PATH)
+    f = font
+    while size > min_px and draw.textlength(base_label_with_colon, font=f) > max_w:
+        size -= 1
+        f = ImageFont.truetype(path, size)
+    if draw.textlength(base_label_with_colon, font=f) <= max_w:
+        return f, base_label_with_colon
+    for alt in ALT_LABELS2.get(key, []):
+        cand = alt + (":" if base_label_with_colon.endswith(":") else "")
+        if draw.textlength(cand, font=f) <= max_w:
+            return f, cand
+    return f, ellipsize_to_fit(draw, base_label_with_colon, f, max_w)
+
+# ───────────────────────── Zeichnen: Cards, Pills, Bar ─────────────────────────
+
+def draw_company_card(img, draw, rect, row, symbol, metrics, chip_widths, f_lbl, f_val, ticker_font):
+    """Card-Header: **zentriertes Logo** + **Ticker-Badge**, KEIN Firmenname mehr (der steht jetzt oben im Titel).
+    Danach 6 Kennzahlenzeilen.
+    """
     x1, y1, x2, y2 = rect
     _drop_shadow(img, rect, radius=20, blur=18, color=(0,0,0,70))
     _rounded_rect(img, rect, radius=18, fill=PALETTE["card_bg"])
@@ -318,67 +391,71 @@ def draw_company_card(
     pad = int(img.width * 0.035)
     gy = y1 + pad
 
-    # Header: Logo + zweizeiliger Name
+    # Logo mittig (horizontal) in der Karte
     logo = _load_logo(symbol)
-    logo = _fit_logo(logo, target_h=int(f_title.size*1.2), max_w=int((x2-x1)*0.55)) if logo else None
-
-    pref_name = str(row.get("resolved_name") or row.get("Security") or symbol)
-    name_max_w = (x2 - x1) - pad*2 - (logo.width + 12 if logo else 0)
-    f_title_fit, _ = shrink_to_fit(draw, pref_name, f_title, name_max_w, min_px=max(20, f_title.size-14), font_path=FONT_BLD_PATH)
-    name_draw = ellipsize_to_fit(draw, pref_name, f_title_fit, name_max_w)
-
     if logo:
-        img.alpha_composite(logo, (x1 + pad, gy))
-        lx = x1 + pad + logo.width + 12
-        name1, name2 = split_two_lines(draw, name_draw, f_title_fit, (x2 - lx - pad))
-        draw.text((lx, gy), name1, fill=COLOR_TEXT, font=f_title_fit)
-        gy += f_title_fit.size + int(f_title_fit.size*0.10)
-        if name2:
-            draw.text((lx, gy), name2, fill=COLOR_TEXT, font=f_title_fit)
-            gy += f_title_fit.size + int(f_title_fit.size*0.20)
-        gy = max(gy, y1 + pad + logo.height) + int(f_title_fit.size*0.15)
-    else:
-        name1, name2 = split_two_lines(draw, name_draw, f_title_fit, (x2 - (x1 + pad) - pad))
-        draw.text((x1 + pad, gy), name1, fill=COLOR_TEXT, font=f_title_fit)
-        gy += f_title_fit.size + int(f_title_fit.size*0.10)
-        if name2:
-            draw.text((x1 + pad, gy), name2, fill=COLOR_TEXT, font=f_title_fit)
-            gy += f_title_fit.size + int(f_title_fit.size*0.20)
+        logo = _fit_logo(logo, target_h=int(ticker_font.size * 2.0), max_w=(x2 - x1) - 2*pad)
+        if logo:
+            lx = x1 + ((x2 - x1) - logo.width)//2
+            img.alpha_composite(logo, (lx, gy))
+            gy += logo.height + int(ticker_font.size * 0.25)
+
+    # Ticker-Badge mittig
+    ticker_txt = symbol
+    badge_w = int(draw.textlength(ticker_txt, font=ticker_font)) + 20
+    badge_h = ticker_font.size + 10
+    bx = x1 + ((x2 - x1) - badge_w)//2
+    by = gy
+    _rounded_rect(img, (bx, by, bx + badge_w, by + badge_h), radius=999, fill=(235,240,246,255))
+    draw.text((bx + 10, by + 5), ticker_txt, fill=COLOR_MUTED, font=ticker_font)
+    gy += badge_h + int(ticker_font.size * 0.4)
 
     # Tabellenbereich
-    line_h = int(max(f_lbl.size, f_val.size) * 1.5)
-    for i, key in enumerate(metrics[:6]):
-        y = gy + i*line_h
-        if i % 2 == 1:
-            _rounded_rect(img, (x1 + pad - 8, y - int(line_h*0.15), x2 - pad + 8, y + int(line_h*0.95)), radius=10, fill=PALETTE["zebra"])
+    content_w   = (x2 - x1) - 2*pad
+    max_chip_w  = int(content_w * CHIP_MAX_FRAC)
+    min_label_w = int(content_w * LABEL_MIN_FRAC)
+    line_h      = int(max(f_lbl.size, f_val.size) * 1.5)
 
-        label = LABELS.get(key, key) + ":"
-        max_label_w = (x2 - x1) - pad*2 - int(f_val.size * 6.2)
-        label_fit = ellipsize_to_fit(draw, label, f_lbl, max_label_w)
-        draw.text((x1 + pad, y), label_fit, fill=COLOR_TEXT, font=f_lbl)
+    for i, key in enumerate(metrics[:6]):
+        y = gy + i * line_h
+        if i % 2 == 1:
+            _rounded_rect(img, (x1 + pad - 8, y - int(line_h*0.15), x2 - pad + 8, y + int(line_h*0.95)),
+                          radius=10, fill=PALETTE["zebra"])
 
         val_txt = display_value(key, row)
-        nx = numeric_value(key, row)
-        is_pct = key in PERCENT_KEYS
         has_val = (val_txt is not None) and (val_txt.strip() != "–")
+        chip_w  = 0
+        chip_h  = f_val.size + 12
+        if has_val:
+            base_w = int(draw.textlength(val_txt, font=f_val)) + 24
+            suggested = max(base_w, chip_widths.get(key, base_w))
+            chip_w = min(suggested, max_chip_w)
+            if content_w - chip_w - 16 < min_label_w:
+                chip_w = max( int(content_w * 0.30), content_w - 16 - min_label_w )
+            val_txt = trim_numeric_text_to_fit(draw, val_txt, f_val, chip_w - 20)
+
+        raw_label = LABELS.get(key, key)
+        label_txt = raw_label + ":"
+        max_label_w = content_w - (chip_w if has_val else int(f_val.size*2.5)) - 16
+        f_lbl_fit, label_fit = shrink_label_to_fit_for_key(draw, key, label_txt, f_lbl, max_label_w)
+        draw.text((x1 + pad, y), label_fit, fill=COLOR_TEXT, font=f_lbl_fit)
 
         if has_val:
+            nx = numeric_value(key, row)
+            is_pct = key in PERCENT_KEYS
             color = (COLOR_BETTER if (is_pct and nx is not None and nx >= 0)
                      else COLOR_WORSE if (is_pct and nx is not None and nx < 0)
                      else COLOR_TEXT)
-            pad_x, pad_y = 12, 6
-            tw = int(draw.textlength(val_txt, font=f_val))
-            base_w = tw + pad_x*2
-            chip_w = max(base_w, chip_widths.get(key, base_w))
-            chip_h = f_val.size + pad_y*2
             vx = x2 - pad - chip_w
             vy = y - int((chip_h - f_val.size)/2)
             _rounded_rect(img, (vx, vy, vx + chip_w, vy + chip_h), radius=10, fill=PALETTE["chip_bg"])
+            tw = int(draw.textlength(val_txt, font=f_val))
             draw.text((vx + (chip_w - tw)//2, y), val_txt, fill=color, font=f_val)
         else:
             vw = int(draw.textlength("–", font=f_val))
             vx = x2 - pad - vw
             draw.text((vx, y), "–", fill=COLOR_MUTED, font=f_val)
+
 
 def _price_target_data(row: pd.Series) -> Optional[Tuple[float,float,str]]:
     p = _to_float(row.get("Vortagesschlusskurs"))
@@ -391,6 +468,7 @@ def _price_target_data(row: pd.Series) -> Optional[Tuple[float,float,str]]:
 def _currency_sym(cur: str) -> str:
     return CURRENCY_SYMBOL.get(cur, cur or "$")
 
+
 def draw_stat_pills(img, draw, center_x, y, row, f_lbl, f_val, card_w=None):
     info = _price_target_data(row)
     if not info:
@@ -401,9 +479,9 @@ def draw_stat_pills(img, draw, center_x, y, row, f_lbl, f_val, card_w=None):
     arrow = "▲" if pot >= 0 else "▼"
 
     items = [
-        ("Kurs",      fcur(price, sym)),
-        ("Kursziel",  fcur(target, sym)),
-        ("Potential", f"{arrow} {_fmt_locale(pot,1)}%"),
+        ("Kurs", fcur(price, sym, 0)),
+        ("Ziel", fcur(target, sym, 0)),
+        ("Pot.", f"{arrow} {_fmt_locale(pot,1)}%"),
     ]
 
     avail = int((card_w or img.width//2) * 0.92)
@@ -412,27 +490,19 @@ def draw_stat_pills(img, draw, center_x, y, row, f_lbl, f_val, card_w=None):
     w = (avail - gap*(n-1)) // n
     start_x = center_x - (w*n + gap*(n-1))//2
 
-    pill_h = f_val.size*2 + 18
+    pill_h = f_val.size*2 + 10
     for i, (lab, val) in enumerate(items):
         x1 = start_x + i*(w+gap); x2 = x1 + w
         _rounded_rect(img, (x1, y, x2, y + pill_h), radius=14, fill=PALETTE["chip_bg"])
         lw = int(draw.textlength(lab, font=f_lbl))
-        draw.text((x1 + (w - lw)//2, y + 6), lab, fill=COLOR_MUTED, font=f_lbl)
-        col = COLOR_BETTER if lab=="Potential" and pot>=0 else (COLOR_WORSE if lab=="Potential" else COLOR_TEXT)
-        vw = int(draw.textlength(val, font=f_val))
-        draw.text((x1 + (w - vw)//2, y + 6 + f_lbl.size + 6), val, fill=col, font=f_val)
+        draw.text((x1 + (w - lw)//2, y + 4), lab, fill=COLOR_MUTED, font=f_lbl)
+        vfit = trim_numeric_text_to_fit(draw, val, f_val, w - 20)
+        vw = int(draw.textlength(vfit, font=f_val))
+        draw.text((x1 + (w - vw)//2, y + 4 + f_lbl.size + 4), vfit, fill=COLOR_TEXT, font=f_val)
     return y + pill_h
 
-def draw_analyst_bar(
-    img: Image.Image,
-    draw: ImageDraw.ImageDraw,
-    center_x: int,
-    y: int,
-    width: int,
-    row: pd.Series,
-    f_lbl,
-    f_val
-):
+
+def draw_analyst_bar(img, draw, center_x, y, width, row, f_lbl, f_val):
     mean = _to_float(row.get("Empfehlungsdurchschnitt"))
     if mean is None or not (0.5 <= mean <= 5.5):
         return y
@@ -443,32 +513,72 @@ def draw_analyst_bar(
 
     x1 = center_x - width // 2
     x2 = center_x + width // 2
-    bar_h = max(14, int(f_val.size * 0.55))
-    cap_gap = 6
+    bar_h = max(14, int(f_val.size * 0.50))
 
+    # Hintergrund + Kaufanteil
     _rounded_rect(img, (x1, y, x2, y + bar_h), radius=bar_h // 2, fill=PALETTE["bar_hold"])
     gx2 = x1 + int(width * buy_frac)
     if gx2 > x1:
         _rounded_rect(img, (x1, y, gx2, y + bar_h), radius=bar_h // 2, fill=COLOR_BETTER)
 
-    lbl_y = y - f_lbl.size - 4
-    draw.text((x1, lbl_y), "Kaufen", fill=COLOR_TEXT, font=f_lbl)
-    rw = int(draw.textlength("Halten", font=f_lbl))
-    draw.text((x2 - rw, lbl_y), "Halten", fill=COLOR_TEXT, font=f_lbl)
-
-    bp = f"{buy_pct} %"
-    hp = f"{hold_pct} %"
+    # Prozentwerte **nur innerhalb** der Bar – keine doppelten Labels darüber
+    bp = f"{buy_pct}%"; hp = f"{hold_pct}%"
     draw.text((x1 + 8, y + (bar_h - f_val.size)//2), bp, fill=(255,255,255), font=f_val)
     tw_h = int(draw.textlength(hp, font=f_val))
     draw.text((x2 - tw_h - 8, y + (bar_h - f_val.size)//2), hp, fill=(30,30,30), font=f_val)
 
-    sub = f"Einstufung & Empfehlung von Analysten  •  Ø {fmt_number(mean,2)}/5"
+    # Unterzeile (auf Balkenbreite geklemmt)
+    sub = f"Analysten-Ø {fmt_number(mean,2)} (1=K–5=V)"
+    sub = ellipsize_to_fit(draw, sub, f_lbl, width)
     ts = int(draw.textlength(sub, font=f_lbl))
-    draw.text((center_x - ts//2, y + bar_h + cap_gap), sub, fill=COLOR_MUTED, font=f_lbl)
+    draw.text((center_x - ts//2, y + bar_h + 4), sub, fill=COLOR_MUTED, font=f_lbl)
 
-    return y + bar_h + cap_gap + f_lbl.size + 4
+    return y + bar_h + 4 + f_lbl.size + 2
 
-# ───────────────────────── Haupt-Renderfunktion ─────────────────────────
+# ───────────────────────── Auswahl-Logik für Kennzahlen ─────────────────────────
+
+def select_metrics(rows: List[pd.Series], req_metrics: List[str], sec_key: Optional[str]) -> List[str]:
+    if req_metrics:
+        base = [m for m in req_metrics if isinstance(m, str) and m.strip()]
+    else:
+        base = SECTOR_METRICS.get(sec_key, ["KGV","Forward PE","KUV","Nettomarge","Eigenkapitalrendite","Umsatzwachstum 3J (erwartet)"])
+    fallback = ["KGV","Forward PE","KUV","Nettomarge","Operative Marge","Bruttomarge",
+                "Eigenkapitalrendite","Free Cashflow Yield","Marktkapitalisierung",
+                "Umsatzwachstum 3J (erwartet)","Umsatzwachstum 10J","Dividendenrendite"]
+
+    order: List[str] = []
+    for key in base + [k for k in fallback if k not in base]:
+        if key not in order and (resolve_col(rows[0], key) or resolve_col(rows[1], key)):
+            order.append(key)
+
+    both, either = [], []
+    for key in order:
+        a = has_value(rows[0], key)
+        b = has_value(rows[1], key)
+        if a and b:
+            both.append(key)
+        elif a or b:
+            either.append(key)
+
+    sel = (both + either)[:6]
+    if len(sel) < 3:
+        sel = [k for k in order if k not in sel][:6]
+    return sel
+
+# ───────────────────────── Datum aus CSV im deutschen Format ─────────────────────────
+
+def fmt_de_date_from_row(row: pd.Series) -> Optional[str]:
+    val = row.get("Abfragedatum")
+    if pd.isna(val):
+        return None
+    try:
+        dt = pd.to_datetime(val)
+        return dt.strftime("%d.%m.%Y")
+    except Exception:
+        return None
+
+# ───────────────────────── Render ─────────────────────────
+
 def render_compare(rows: List[pd.Series], metrics: List[str]) -> Image.Image:
     if os.path.exists(BACKGROUND):
         bg = Image.open(BACKGROUND).convert('RGBA')
@@ -481,87 +591,115 @@ def render_compare(rows: List[pd.Series], metrics: List[str]) -> Image.Image:
     draw = ImageDraw.Draw(img)
 
     base_w = img.width
-    TITLE_SZ = max(48, int(base_w * 0.062))
+    TITLE_SZ = max(42, int(base_w * 0.058))           # Titel etwas kleiner (weil jetzt Firmennamen)
     LABEL_SZ = max(26, int(base_w * 0.034))
     VAL_SZ   = max(28, int(base_w * 0.036))
+    TICKER_SZ= max(22, int(base_w * 0.028))
     FOOT_SZ  = max(20, int(base_w * 0.026))
 
     f_title = _font(FONT_BLD_PATH, TITLE_SZ, ImageFont.load_default())
     f_lbl   = _font(FONT_REG_PATH, LABEL_SZ, ImageFont.load_default())
     f_val   = _font(FONT_REG_PATH, VAL_SZ,   ImageFont.load_default())
+    f_tick  = _font(FONT_BLD_PATH, TICKER_SZ,ImageFont.load_default())
     f_foot  = _font(FONT_REG_PATH, FOOT_SZ,  ImageFont.load_default())
+
+    # kleine Fonts für den unteren Bereich
+    f_lbl_small = _font(FONT_REG_PATH, max(18, int(LABEL_SZ * 0.84)), ImageFont.load_default())
+    f_val_small = _font(FONT_REG_PATH, max(18, int(VAL_SZ   * 0.84)), ImageFont.load_default())
 
     sym_a = str(rows[0].get('Symbol') or '')
     sym_b = str(rows[1].get('Symbol') or '')
-    title = f"{sym_a}   vs   {sym_b}"
+
+    # Titel: Firmennamen statt Ticker
+    name_a = str(rows[0].get('resolved_name') or rows[0].get('Security') or sym_a)
+    name_b = str(rows[1].get('resolved_name') or rows[1].get('Security') or sym_b)
+    title = f"{name_a}   vs   {name_b}"
+    f_title, _ = shrink_to_fit(draw, title, f_title, int(img.width*0.92), min_px=int(TITLE_SZ*0.60), font_path=FONT_BLD_PATH)
     tw = draw.textlength(title, font=f_title)
     draw.text(((img.width - tw)//2, int(img.height * SAFE_TOP_FRAC)), title, fill=COLOR_TEXT, font=f_title)
 
-    # Metriken – sektorabhängige Defaults (max. 6), robust
+    # Sektor-Key & smarte Auswahl
     sec_raw = str(rows[0].get("GICS Sector") or rows[0].get("Sektor") or "").strip().lower()
     sec_key = next((k for k in SECTOR_METRICS if k in sec_raw), None)
-    req_metrics = [m for m in (metrics or []) if isinstance(m, str) and m.strip()]
-    if not req_metrics:
-        defaults = SECTOR_METRICS.get(sec_key, ["KGV","Forward PE","KUV","Nettomarge","Eigenkapitalrendite","Umsatzwachstum 3J (erwartet)"])
-        series0 = rows[0]
-        metrics = [m for m in defaults if resolve_col(series0, m)]
-    else:
-        metrics = req_metrics
-    metrics = metrics[:6]
+    metrics = select_metrics(rows, metrics, sec_key)
 
     # Karten-Bereich
-    top = int(img.height * (SAFE_TOP_FRAC + 0.085))
+    top = int(img.height * (SAFE_TOP_FRAC + 0.075))
     margin_x = int(img.width * SAFE_MARGIN_X)
     gap = int(img.width * 0.04)
     card_w = (img.width - margin_x*2 - gap) // 2
-    card_h = int(img.height * 0.50)
+    card_h = int(img.height * 0.42)
 
     card_a = (margin_x, top, margin_x + card_w, top + card_h)
     card_b = (margin_x + card_w + gap, top, margin_x + card_w*2 + gap, top + card_h)
 
-    # Gleichbreite Chips je Kennzahl (max über beide Cards)
+    # Notbremse: Bei knapper Cardhöhe auf 5 Zeilen reduzieren
+    max_lines = 6
+    if card_h < int(img.height * 0.41):
+        max_lines = 5
+    metrics = metrics[:max_lines]
+
+    # Gleichbreite Chips je Kennzahl (max über beide Cards; finale Clamp pro Card)
     chip_widths: Dict[str,int] = {}
-    pad_x_measure = 12
     for key in metrics[:6]:
         t1 = display_value(key, rows[0]); t2 = display_value(key, rows[1])
         tw1 = int(draw.textlength(t1, font=f_val)) if t1 and t1.strip() != "–" else 0
         tw2 = int(draw.textlength(t2, font=f_val)) if t2 and t2.strip() != "–" else 0
         mx = max(tw1, tw2)
         if mx > 0:
-            chip_widths[key] = mx + pad_x_measure*2
+            chip_widths[key] = mx + 24
 
     # Cards
-    draw_company_card(img, draw, card_a, rows[0], sym_a, "", metrics, chip_widths, f_title, f_lbl, f_val)
-    draw_company_card(img, draw, card_b, rows[1], sym_b, "", metrics, chip_widths, f_title, f_lbl, f_val)
+    draw_company_card(img, draw, card_a, rows[0], sym_a, metrics, chip_widths, f_lbl, f_val, f_tick)
+    draw_company_card(img, draw, card_b, rows[1], sym_b, metrics, chip_widths, f_lbl, f_val, f_tick)
 
-    # Geplante Höhen für Pills/Bar -> Bottom-Clamp vor dem Zeichnen
-    est_pill_h = f_val.size*2 + 18
-    est_bar_h  = max(14, int(f_val.size*0.55)) + 6 + f_lbl.size + 4
+    # Vorab-Layout für unteren Bereich (Bottom-Clamp)
+    est_pill_h = f_val_small.size*2 + 10
+    est_bar_h  = max(14, int(f_val_small.size * 0.50)) + 4 + f_lbl_small.size + 2
     y_pills = max(card_a[3], card_b[3]) + int(img.height * 0.012)
-    safe_bottom = img.height - int(img.height * SAFE_BOTTOM_FRAC) - 10
-    need_bottom = y_pills + est_pill_h + int(img.height * 0.016) + est_bar_h
-    overflow = need_bottom - safe_bottom
-    if overflow > 0:
-        y_pills = max(max(card_a[3], card_b[3]) + 2, y_pills - overflow)
 
-    # Pills zeichnen
+    # verfügbare Unterkante (oberhalb der Fußzone)
+    safe_bottom = img.height - int(img.height * SAFE_BOTTOM_FRAC) - 12
+
+    # Platzbedarf berechnen
+    need_bottom = y_pills + est_pill_h + int(img.height * 0.014) + est_bar_h
+    extra = safe_bottom - need_bottom
+
+    if extra < 0:
+        # Zu wenig Platz → nach oben schieben
+        y_pills += extra  # extra ist negativ
+        y_pills = max(max(card_a[3], card_b[3]) + 2, y_pills)
+    else:
+        # Luft vorhanden → Mindestpolster zum Footer (~1 %) behalten
+        y_pills += max(0, extra - int(img.height * 0.01))
+
+    # pauschal etwas anheben (1.5% Höhe), um Abschneiden ganz zu vermeiden
+    y_pills -= int(img.height * 0.015)
+
+    # Pills
     center_a = (card_a[0] + card_a[2]) // 2
     center_b = (card_b[0] + card_b[2]) // 2
-    y_after_a = draw_stat_pills(img, draw, center_a, y_pills, rows[0], f_lbl, f_val, card_w=card_w)
-    y_after_b = draw_stat_pills(img, draw, center_b, y_pills, rows[1], f_lbl, f_val, card_w=card_w)
+    y_after_a = draw_stat_pills(img, draw, center_a, y_pills, rows[0], f_lbl_small, f_val_small, card_w=card_w)
+    y_after_b = draw_stat_pills(img, draw, center_b, y_pills, rows[1], f_lbl_small, f_val_small, card_w=card_w)
 
     # Analysten-Bar
-    bar_w = int(card_w * 0.88)
-    y_bar = max(y_after_a, y_after_b) + int(img.height * 0.016)
-    y_bar_a = draw_analyst_bar(img, draw, center_a, y_bar, bar_w, rows[0], f_lbl, f_val)
-    y_bar_b = draw_analyst_bar(img, draw, center_b, y_bar, bar_w, rows[1], f_lbl, f_val)
+    bar_w = int(card_w * 0.84)
+    y_bar = max(y_after_a, y_after_b) + int(img.height * 0.012)
+    y_bar_a = draw_analyst_bar(img, draw, center_a, y_bar, bar_w, rows[0], f_lbl_small, f_val_small)
+    y_bar_b = draw_analyst_bar(img, draw, center_b, y_bar, bar_w, rows[1], f_lbl_small, f_val_small)
 
-    # Footer
-    footer_top = max(y_bar_a, y_bar_b) + int(img.height * 0.028)
-    foot = f"Stand: {datetime.today().strftime('%d.%m.%Y')}  •  Quelle: Yahoo Finance"
+    # Footer – mit CSV-Abfragedatum je Aktie
+    date_a = fmt_de_date_from_row(rows[0])
+    date_b = fmt_de_date_from_row(rows[1])
+    if not date_a and not date_b:
+        foot = f"Stand: {datetime.today().strftime('%d.%m.%Y')}  •  Quelle: Yahoo Finance"
+    else:
+        part_a = f"{sym_a} {date_a or '-'}"
+        part_b = f"{sym_b} {date_b or '-'}"
+        foot = f"Stand: {part_a}  •  {part_b}  •  Quelle: Yahoo Finance"
     fw = draw.textlength(foot, font=f_foot)
     fx = (img.width - int(fw)) // 2
-    fy = max(footer_top, img.height - int(img.height * SAFE_BOTTOM_FRAC * 0.85))
+    fy = max(max(y_bar_a, y_bar_b) + int(img.height * 0.020), img.height - int(img.height * SAFE_BOTTOM_FRAC * 0.96))
     draw.text((fx, fy), foot, fill=(30, 34, 38), font=f_foot)
 
     return img
@@ -640,15 +778,15 @@ def generate_compare():
 
     rel = f"/static/generated/{fname}"
     return render_template_string(
-        """<!doctype html><html><head><meta charset="utf-8"><title>Vergleich</title>
+        """<!doctype html><html><head><meta charset=\"utf-8\"><title>Vergleich</title>
         <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;margin:24px}
         .wrap{max-width:1120px;margin:auto;text-align:center}
         img{max-width:100%;height:auto;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
         a.btn{display:inline-block;margin-top:14px;padding:10px 16px;border-radius:10px;background:#111;color:#fff;text-decoration:none}
-        </style></head><body><div class="wrap">
+        </style></head><body><div class=\"wrap\">
         <h1>Bild erzeugt</h1>
-        <p><a class="btn" href="{{ rel }}" download>PNG herunterladen</a></p>
-        <img src="{{ rel }}" alt="Compare">
+        <p><a class=\"btn\" href=\"{{ rel }}\" download>PNG herunterladen</a></p>
+        <img src=\"{{ rel }}\" alt=\"Compare\">
         </div></body></html>""",
         rel=rel
     )
@@ -666,9 +804,7 @@ COMPOSE_HTML = r"""
 <title>Aktien-Vergleich</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-:root{
-  --bg:#0f1b2b; --panel:#0c1624; --f:#e9eef6; --muted:#9fb0c7; --acc:#10b981;
-}
+:root{ --bg:#0f1b2b; --panel:#0c1624; --f:#e9eef6; --muted:#9fb0c7; --acc:#10b981; }
 *{box-sizing:border-box}
 body{margin:0;font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Inter,Arial;background:radial-gradient(1000px 600px at 50% -100px,#13243d 0%,#0b1625 60%,#091221 100%);color:var(--f)}
 .container{max-width:980px;margin:32px auto;padding:0 16px}
@@ -803,4 +939,3 @@ b.addEventListener('change', updateCount);
 # ───────────────────────── Run ─────────────────────────
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5050)
-
