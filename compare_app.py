@@ -33,9 +33,20 @@ def _font(path: str, size: int, backup):
     try:
         f = ImageFont.truetype(path, size)
         f.path = path  # type: ignore[attr-defined]
+        f.size = size
         return f
     except OSError:
-        return backup
+        try:
+            f = ImageFont.truetype('DejaVuSans.ttf', size)
+            f.size = size
+            return f
+        except Exception:
+            f = backup
+            try:
+                f.size = size
+            except Exception:
+                pass
+            return f
 
 # ───────────────────────── Farben/Palette ─────────────────────────
 COLOR_TEXT      = (20, 24, 28)
@@ -67,6 +78,35 @@ PERCENT_KEYS = {
     "Umsatzwachstum 3J (erwartet)", "Umsatzwachstum 10J", "Umsatzwachstum 5J",
     "52Wochen Change", "Insider_Anteil", "Institutioneller_Anteil", "Short Interest"
 }
+
+# Bewertung: Was ist "besser"?
+BETTER_HIGH = {
+    "Dividendenrendite","Bruttomarge","Operative Marge","Nettomarge",
+    "Eigenkapitalrendite","Return on Assets","ROIC","Free Cashflow Yield",
+    "Umsatzwachstum","Umsatzwachstum 3J (erwartet)","Umsatzwachstum 5J","Umsatzwachstum 10J",
+    "52Wochen Change"
+}
+BETTER_LOW  = {"KGV","Forward PE","KUV","Ausschüttungsquote"}
+
+def _metric_value_for_compare(row: pd.Series, key: str) -> Optional[float]:
+    v = numeric_value(key, row)
+    return v
+
+def compare_metrics(row_left: pd.Series, row_right: pd.Series, metrics: list[str]) -> dict[str,int]:
+    out = {}
+    for key in metrics[:6]:
+        a = _metric_value_for_compare(row_left, key)
+        b = _metric_value_for_compare(row_right, key)
+        if a is None or b is None:
+            out[key] = 0
+            continue
+        # niedrig besser?
+        if key in BETTER_LOW:
+            out[key] = 1 if a < b else (-1 if a > b else 0)
+        else:
+            # Standard/Prozent: höher ist besser
+            out[key] = 1 if a > b else (-1 if a < b else 0)
+    return out
 
 SECTOR_METRICS: Dict[str, List[str]] = {
     "communication":            ["KGV","KUV","Nettomarge","Operative Marge","Bruttomarge","Umsatzwachstum 10J"],
@@ -469,6 +509,36 @@ def _currency_sym(cur: str) -> str:
     return CURRENCY_SYMBOL.get(cur, cur or "$")
 
 
+def draw_winner_badge_below_cards(img: Image.Image, draw: ImageDraw.ImageDraw, card_a, card_b, text: str, color):
+    """Plaziert eine runde Badge mittig UNTER den Cards."""
+    cx = (card_a[2] + card_b[0]) // 2
+    try:
+        f = ImageFont.truetype(FONT_BLD_PATH, max(20, int(img.width*0.030)))
+    except Exception:
+        f = ImageFont.load_default()
+    try:
+        f.size = getattr(f, 'size', max(20, int(img.width*0.030)))
+    except Exception:
+        pass
+    tw = int(draw.textlength(text, font=f))
+    bw = tw + 32
+    bh = f.size + 14
+    x1 = cx - bw//2
+    cards_bottom = max(card_a[3], card_b[3])
+    y1 = cards_bottom + int(img.height * 0.010)
+    x2 = x1 + bw
+    y2 = y1 + bh
+    _rounded_rect(img, (x1, y1, x2, y2), radius=bh//2, fill=(255,255,255,235))
+    try:
+        bd = Image.new("RGBA", (bw, bh), (0,0,0,0))
+        gd = ImageDraw.Draw(bd)
+        gd.rounded_rectangle((0,0,bw-1,bh-1), radius=bh//2, outline=color, width=2)
+        img.paste(bd, (x1, y1), bd)
+    except Exception:
+        pass
+    draw.text((x1 + (bw - tw)//2, y1 + (bh - f.size)//2 - 1), text, fill=color, font=f)
+
+
 def draw_stat_pills(img, draw, center_x, y, row, f_lbl, f_val, card_w=None):
     info = _price_target_data(row)
     if not info:
@@ -527,13 +597,24 @@ def draw_analyst_bar(img, draw, center_x, y, width, row, f_lbl, f_val):
     tw_h = int(draw.textlength(hp, font=f_val))
     draw.text((x2 - tw_h - 8, y + (bar_h - f_val.size)//2), hp, fill=(30,30,30), font=f_val)
 
-    # Unterzeile (auf Balkenbreite geklemmt)
-    sub = f"Analysten-Ø {fmt_number(mean,2)} (1=K–5=V)"
-    sub = ellipsize_to_fit(draw, sub, f_lbl, width)
-    ts = int(draw.textlength(sub, font=f_lbl))
-    draw.text((center_x - ts//2, y + bar_h + 4), sub, fill=COLOR_MUTED, font=f_lbl)
+    # Zweizeilige Unterzeile: Zeile 1 = Ø-Rating, Zeile 2 = Erklärung
+    sub1 = f"Ø-Rating {fmt_number(mean,2)} (1–5)"
+    sub1 = ellipsize_to_fit(draw, sub1, f_lbl, width)
+    w1 = int(draw.textlength(sub1, font=f_lbl))
+    y_sub1 = y + bar_h + 4
+    draw.text((center_x - w1//2, y_sub1), sub1, fill=COLOR_MUTED, font=f_lbl)
 
-    return y + bar_h + 4 + f_lbl.size + 2
+    # Kürzere Erklärung + kleinere Schrift, falls nötig automatisch schrumpfen
+    sub2 = "1=K • 3=H • 5=V"
+    f_small = _font(FONT_REG_PATH, max(12, int(f_lbl.size * 0.90)), ImageFont.load_default())
+    # notfalls weiter schrumpfen bis es passt
+    while int(draw.textlength(sub2, font=f_small)) > width and f_small.size > 10:
+        f_small = _font(FONT_REG_PATH, f_small.size - 1, ImageFont.load_default())
+    w2 = int(draw.textlength(sub2, font=f_small))
+    y_sub2 = y_sub1 + f_lbl.size + 0
+    draw.text((center_x - w2//2, y_sub2), sub2, fill=COLOR_MUTED, font=f_small)
+
+    return y_sub2 + f_small.size + 2
 
 # ───────────────────────── Auswahl-Logik für Kennzahlen ─────────────────────────
 
@@ -649,9 +730,29 @@ def render_compare(rows: List[pd.Series], metrics: List[str]) -> Image.Image:
         if mx > 0:
             chip_widths[key] = mx + 24
 
-    # Cards
+    
+    # Vergleich + Punkte für Sieger-Badge
+    _cmp = compare_metrics(rows[0], rows[1], metrics)
+    left_pts = right_pts = 0.0
+    for k, sign in _cmp.items():
+        if sign > 0: left_pts += 1.0
+        elif sign < 0: right_pts += 1.0
+        else: left_pts += 0.5; right_pts += 0.5
+# Cards
     draw_company_card(img, draw, card_a, rows[0], sym_a, metrics, chip_widths, f_lbl, f_val, f_tick)
     draw_company_card(img, draw, card_b, rows[1], sym_b, metrics, chip_widths, f_lbl, f_val, f_tick)
+
+    # Sieger-Badge mittig zwischen den Cards
+    if abs(left_pts - right_pts) < 1e-6:
+        badge_text = f"Unentschieden {int(left_pts)} : {int(right_pts)}"
+        bcol = COLOR_MUTED
+    elif left_pts > right_pts:
+        badge_text = f"{name_a} gewinnt {int(left_pts)} : {int(right_pts)}"
+        bcol = COLOR_BETTER
+    else:
+        badge_text = f"{name_b} gewinnt {int(right_pts)} : {int(left_pts)}"
+        bcol = COLOR_BETTER
+    draw_winner_badge_below_cards(img, draw, card_a, card_b, badge_text, bcol)
 
     # Vorab-Layout für unteren Bereich (Bottom-Clamp)
     est_pill_h = f_val_small.size*2 + 10
@@ -705,10 +806,24 @@ def render_compare(rows: List[pd.Series], metrics: List[str]) -> Image.Image:
     return img
 
 # ───────────────────────── Flask ─────────────────────────
+# ── Optional WordPress-SSO/Newsletter Bridge ───────────────────────────────
+try:
+    from flask_wp_sso_bridge_v2 import gate_wp_modes, is_premium  # type: ignore
+except Exception:
+    # Fallback: keine Gate-Checks, alles durchlassen
+    def gate_wp_modes():
+        return {}
+    def is_premium(user):
+        return False
+
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'change-me')
 
 @app.route("/")
 def compare_home():
+    guard = gate_wp_modes()
+    if guard is not None and not isinstance(guard, dict):
+        return guard
     return render_template_string(COMPOSE_HTML)
 
 @app.route('/search')
@@ -717,14 +832,10 @@ def search():
     df = load_df()
     if not q:
         return jsonify([])
-    out = []
-    for _, row in df.iterrows():
-        sym = str(row.get('Symbol') or '')
-        sec = str(row.get('Security') or '')
-        if q in sym.lower() or q in sec.lower():
-            out.append({'symbol': sym, 'name': sec})
-        if len(out) >= 12:
-            break
+    # nur eindeutige Symbole zurückgeben
+    mask = df['Symbol'].astype(str).str.lower().str.contains(q) | df['Security'].astype(str).str.lower().str.contains(q)
+    sub = df.loc[mask, ['Symbol','Security']].drop_duplicates('Symbol').head(20)
+    out = [{'symbol': r.Symbol, 'name': r.Security} for _, r in sub.iterrows()]
     return jsonify(out)
 
 @app.route('/api/peers')
@@ -735,7 +846,7 @@ def peers():
     if row.empty:
         return jsonify([])
     sector = str(row.iloc[0].get('GICS Sector') or '')
-    peers_df = df[(df['GICS Sector'] == sector) & (df['Symbol'] != ticker)]
+    peers_df = df[(df['GICS Sector'] == sector) & (df['Symbol'] != ticker)][['Symbol','Security']].drop_duplicates('Symbol')
     out = [{'symbol': r['Symbol'], 'name': r['Security']} for _, r in peers_df.head(40).iterrows()]
     return jsonify(out)
 
@@ -755,6 +866,9 @@ def api_default_metrics():
 
 @app.route('/generate')
 def generate_compare():
+    guard = gate_wp_modes()
+    if guard is not None and not isinstance(guard, dict):
+        return guard
     ticker_a = (request.args.get('ticker_a') or '').upper().strip()
     ticker_b = (request.args.get('ticker_b') or '').upper().strip()
     metrics = request.args.getlist('metrics') or []
