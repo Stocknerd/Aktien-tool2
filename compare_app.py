@@ -917,6 +917,63 @@ COMPOSE_HTML = r"""
 <meta charset="utf-8" />
 <title>Aktien-Vergleich</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+<script>
+  window.googletag = window.googletag || {cmd: []};
+  const AD_UNIT_PATH = '/23319221469/rewarded_compare'; // Dein GAM-Pfad
+  let rewardedSlot = null;
+  let __resolveReward = null;
+  let __rewardTimeout = null;
+
+  googletag.cmd.push(function () {
+    rewardedSlot = googletag.defineOutOfPageSlot(
+      AD_UNIT_PATH,
+      googletag.enums.OutOfPageFormat.REWARDED
+    );
+
+    if (!rewardedSlot) {
+      console.warn('Rewarded nicht verfügbar (Seite muss mobil-optimiert sein).');
+      return;
+    }
+
+    rewardedSlot.addService(googletag.pubads());
+
+    // Ad ist bereit -> Google-Overlay sichtbar machen
+    googletag.pubads().addEventListener('rewardedSlotReady', function (evt) {
+      try { evt.makeRewardedVisible(); } catch(e){}
+    });
+
+    // Belohnung erteilt -> Promise auflösen (true)
+    googletag.pubads().addEventListener('rewardedSlotGranted', function () {
+      if (__resolveReward) { clearTimeout(__rewardTimeout); __resolveReward(true); __resolveReward = null; }
+    });
+
+    // Overlay geschlossen / keine Ausspielung -> Promise (false) oder gnädig weiterlassen
+    googletag.pubads().addEventListener('rewardedSlotClosed', function () {
+      if (__resolveReward) { clearTimeout(__rewardTimeout); __resolveReward(false); __resolveReward = null; }
+    });
+
+    googletag.enableServices();
+  });
+
+  // Aufrufen, wenn dein Gate triggern soll; resolved mit true/false
+  function showRewardedAd() {
+    return new Promise(function(resolve){
+      __resolveReward = resolve;
+      googletag.cmd.push(function () {
+        if (rewardedSlot) {
+          googletag.display(rewardedSlot);
+          // Failsafe: nach 15s nicht hängen bleiben
+          __rewardTimeout = setTimeout(function(){
+            if (__resolveReward) { __resolveReward(false); __resolveReward = null; }
+          }, 15000);
+        } else {
+          resolve(false);
+        }
+      });
+    });
+  }
+</script>
 <style>
 :root{ --bg:#0f1b2b; --panel:#0c1624; --f:#e9eef6; --muted:#9fb0c7; --acc:#10b981; }
 *{box-sizing:border-box}
@@ -1045,6 +1102,33 @@ a.addEventListener('change', async ()=>{
 });
 
 b.addEventListener('change', updateCount);
+// ── Freemium-Gate: 3 freie Vergleiche, danach Rewarded ──
+const SC_MAX_FREE = 3;
+const SC_RUNS_KEY = 'sc_compare_runs_v1';
+const hasNewsletter = () => document.cookie.includes('sc_newsletter=1');
+const getRuns = () => parseInt(localStorage.getItem(SC_RUNS_KEY) || '0', 10);
+const incRuns  = () => localStorage.setItem(SC_RUNS_KEY, String(getRuns()+1));
+const shouldGate = () => !hasNewsletter() && getRuns() >= SC_MAX_FREE;
+
+const frm = document.getElementById('frm');
+if (frm) {
+  frm.addEventListener('submit', async (e) => {
+    if (shouldGate()) {
+      e.preventDefault();
+      const granted = await showRewardedAd(); // kommt aus dem <head>-Block
+      if (granted === true) {
+        frm.submit();   // nach Prämie fortfahren
+        incRuns();      // Run zählen
+      } else {
+        // Abgebrochen oder keine Ausspielung -> hier blocken
+        // Alternativ: einmalige "Gnade" erlauben, indem du frm.submit() aufrufst.
+      }
+    } else {
+      // Kein Gate -> normal fortfahren
+      incRuns();
+    }
+  });
+}
 </script>
 </body>
 </html>
