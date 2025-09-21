@@ -920,12 +920,21 @@ COMPOSE_HTML = r"""
 <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
 <script>
   window.googletag = window.googletag || {cmd: []};
+  console.log('[GAM] GPT init');
   const AD_UNIT_PATH = '/23319221469/rewarded_compare'; // Dein GAM-Pfad
   let rewardedSlot = null;
   let __resolveReward = null;
   let __rewardTimeout = null;
 
   googletag.cmd.push(function () {
+    try {
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        console.log('[GAM] Localhost detected -> request NPA and set page_url');
+        googletag.pubads().setRequestNonPersonalizedAds(1);
+        googletag.pubads().set('page_url', 'https://compare.schatzsuche40.de/');
+      }
+    } catch(e) { console.warn('[GAM] NPA/page_url setup failed', e); }
+
     rewardedSlot = googletag.defineOutOfPageSlot(
       AD_UNIT_PATH,
       googletag.enums.OutOfPageFormat.REWARDED
@@ -940,16 +949,19 @@ COMPOSE_HTML = r"""
 
     // Ad ist bereit -> Google-Overlay sichtbar machen
     googletag.pubads().addEventListener('rewardedSlotReady', function (evt) {
+      console.log('[GAM] rewardedSlotReady');
       try { evt.makeRewardedVisible(); } catch(e){}
     });
 
     // Belohnung erteilt -> Promise auflösen (true)
     googletag.pubads().addEventListener('rewardedSlotGranted', function () {
+      console.log('[GAM] rewardedSlotGranted');
       if (__resolveReward) { clearTimeout(__rewardTimeout); __resolveReward(true); __resolveReward = null; }
     });
 
     // Overlay geschlossen / keine Ausspielung -> Promise (false) oder gnädig weiterlassen
     googletag.pubads().addEventListener('rewardedSlotClosed', function () {
+      console.log('[GAM] rewardedSlotClosed');
       if (__resolveReward) { clearTimeout(__rewardTimeout); __resolveReward(false); __resolveReward = null; }
     });
 
@@ -961,6 +973,14 @@ COMPOSE_HTML = r"""
     return new Promise(function(resolve){
       __resolveReward = resolve;
       googletag.cmd.push(function () {
+    try {
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        console.log('[GAM] Localhost detected -> request NPA and set page_url');
+        googletag.pubads().setRequestNonPersonalizedAds(1);
+        googletag.pubads().set('page_url', 'https://compare.schatzsuche40.de/');
+      }
+    } catch(e) { console.warn('[GAM] NPA/page_url setup failed', e); }
+
         if (rewardedSlot) {
           googletag.display(rewardedSlot);
           // Failsafe: nach 15s nicht hängen bleiben
@@ -1102,6 +1122,45 @@ a.addEventListener('change', async ()=>{
 });
 
 b.addEventListener('change', updateCount);
+
+// === Fallback-Gate (wenn kein Rewarded geliefert wird) ===
+function scShowFallbackGate(seconds = 10) {
+  return new Promise((resolve) => {
+    const host = document.createElement('div');
+    host.id = 'sc-fallback-gate';
+    host.innerHTML = `
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998"></div>
+      <div style="position:fixed;left:50%;top:12%;transform:translateX(-50%);max-width:720px;background:#fff;padding:1.1rem;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);z-index:9999">
+        <h3 style="margin:.25rem 0 0.5rem 0;">Weiter vergleichen?</h3>
+        <p style="margin:0 0 .5rem 0;">Aktuell ist keine Werbung verfügbar. Bitte warte kurz – danach geht's weiter.</p>
+        <p id="sc-fallback-timer" style="font-weight:600;margin:0 0 .75rem 0;"></p>
+        <div style="display:flex;gap:.5rem;justify-content:flex-end">
+          <button id="sc-fallback-btn" style="padding:.6rem .9rem;border-radius:10px;border:1px solid #ddd;background:#f7f7f7;cursor:not-allowed" disabled>Weiter</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(host);
+    const btn = document.getElementById('sc-fallback-btn');
+    const timer = document.getElementById('sc-fallback-timer');
+    let remain = seconds;
+    const tick = () => {
+      timer.textContent = `Weiter in ${remain}s …`;
+      if (remain <= 0) {
+        btn.disabled = false;
+        btn.style.cursor = 'pointer';
+        btn.textContent = 'Weiter';
+      } else {
+        remain -= 1;
+        setTimeout(tick, 1000);
+      }
+    };
+    tick();
+    btn.addEventListener('click', () => {
+      host.remove();
+      resolve(true);
+    }, {once:true});
+  });
+}
 // ── Freemium-Gate: 3 freie Vergleiche, danach Rewarded ──
 const SC_MAX_FREE = 3;
 const SC_RUNS_KEY = 'sc_compare_runs_v1';
@@ -1120,8 +1179,9 @@ if (frm) {
         frm.submit();   // nach Prämie fortfahren
         incRuns();      // Run zählen
       } else {
-        // Abgebrochen oder keine Ausspielung -> hier blocken
-        // Alternativ: einmalige "Gnade" erlauben, indem du frm.submit() aufrufst.
+        console.warn('[GAM] Kein Rewarded gewährt/verfügbar -> Fallback-Gate');
+        const ok = await scShowFallbackGate(8);
+        if (ok) { frm.submit(); incRuns(); }
       }
     } else {
       // Kein Gate -> normal fortfahren
@@ -1129,6 +1189,58 @@ if (frm) {
     }
   });
 }
+
+// === Auto-Detect Compare Navigations (Form + Links) ===
+(function(){
+  function isCompareURL(url) {
+    try {
+      const u = new URL(url, location.href);
+      return (u.origin === location.origin &&
+              u.pathname === location.pathname &&
+              (u.searchParams.has('a') && u.searchParams.has('b')));
+    } catch(e){ return false; }
+  }
+  async function handleCompareNavigation(targetHref, inc = true){
+    if (shouldGate()) {
+      console.log('[GAM] Gate before navigation');
+      const granted = await showRewardedAd();
+      if (!granted) {
+        console.warn('[GAM] Rewarded declined/unavailable -> fallback');
+        const ok = await scShowFallbackGate(8);
+        if (!ok) return;
+      }
+    }
+    if (inc) incRuns();
+    location.href = targetHref;
+  }
+
+  // 1) Intercept clicks on anchors that look like compare actions (?a= & ?b=)
+  document.addEventListener('click', function(e){
+    const a = e.target.closest && e.target.closest('a');
+    if (!a) return;
+    if (isCompareURL(a.href)) {
+      e.preventDefault();
+      handleCompareNavigation(a.href);
+    }
+  }, true);
+
+  // 2) Count a run on result pages loaded via navigation (GET ?a=&b=)
+  function markCountedOnce() {
+    const key = 'counted:' + location.pathname + location.search;
+    if (!sessionStorage.getItem(key) && (new URLSearchParams(location.search).has('a') && new URLSearchParams(location.search).has('b'))) {
+      console.log('[Gate] Counting run for result page');
+      incRuns();
+      sessionStorage.setItem(key, '1');
+    }
+  }
+  window.addEventListener('pageshow', function(){ 
+    // Re-bind after BFCache restore and count if needed
+    markCountedOnce();
+  });
+  // Initial call
+  markCountedOnce();
+})();
+
 </script>
 </body>
 </html>
