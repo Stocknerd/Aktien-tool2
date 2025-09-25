@@ -927,6 +927,8 @@ COMPOSE_HTML = r"""
   let __rewardTimeout = null;
 
   googletag.cmd.push(function () {
+    googletag.pubads().setRequestNonPersonalizedAds(1);
+    console.log("[GAM] NPA=1 (forced)");
     try {
       if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
         console.log('[GAM] Localhost detected -> request NPA and set page_url');
