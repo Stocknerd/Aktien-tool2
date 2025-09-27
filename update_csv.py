@@ -91,6 +91,8 @@ SPALTEN_KENNZAHLEN = [
     "Marktkapitalisierung", "Free Cashflow", "Free Cashflow Yield", "Operativer Cashflow",
     # Renditen & Wachstum
     "Eigenkapitalrendite", "Return on Assets", "ROIC", "Umsatzwachstum 3J (erwartet)",
+    # Analysten
+    "Empfehlungsdurchschnitt", "Anzahl Analystenmeinungen", "Analysten_Kursziel", "Kursziel_Hoch", "Kursziel_Tief",
 ]
 META_SPALTEN = ["Abfragedatum", "Datenquelle"]
 
@@ -136,7 +138,13 @@ def map_info(info: Dict) -> Dict:
         "Return on Assets": info.get("returnOnAssets"),
         "ROIC": info.get("returnOnCapital"),
         "Umsatzwachstum 3J (erwartet)": info.get("revenueGrowth"),
-    }
+    
+        "Empfehlungsdurchschnitt": info.get("recommendationMean"),
+        "Anzahl Analystenmeinungen": info.get("numberOfAnalystOpinions"),
+        "Analysten_Kursziel": info.get("targetMeanPrice"),
+        "Kursziel_Hoch": info.get("targetHighPrice"),
+        "Kursziel_Tief": info.get("targetLowPrice"),
+}
 
 
 def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: float = BACKOFF_START, jitter=(0.3, 0.6)) -> Dict:

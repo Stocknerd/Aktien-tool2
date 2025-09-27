@@ -7,6 +7,36 @@ from typing import List, Dict, Any, Optional, Tuple
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
+# ───────────────────────── Analysten/YF-Fallback ─────────────────────────
+_YF_CACHE: Dict[str, Dict[str, Any]] = {}
+
+def _yf_fetch_analyst_info(ticker: str) -> Dict[str, Any]:
+    """Holt recommendationMean, numberOfAnalystOpinions, targetMeanPrice per yfinance (mit kleinem Cache)."""
+    t = (ticker or "").strip().upper()
+    if not t:
+        return {}
+    if t in _YF_CACHE:
+        return _YF_CACHE[t]
+    try:
+        import yfinance as yf  # optional dependency
+        info = (yf.Ticker(t).info) or {}
+        out = {
+            "recommendationMean": info.get("recommendationMean"),
+            "numberOfAnalystOpinions": info.get("numberOfAnalystOpinions"),
+            "targetMeanPrice": info.get("targetMeanPrice"),
+        }
+        _YF_CACHE[t] = out
+        return out
+    except Exception:
+        return {}
+
+def _row_ticker_for_yf(row: pd.Series) -> str:
+    for key in ("valid_yahoo_ticker", "Symbol", "symbol", "Ticker", "ticker"):
+        if key in row.index and str(row.get(key) or "").strip():
+            return str(row.get(key)).strip()
+    return ""
+
+
 # ───────────────────────── Basis / Pfade ─────────────────────────
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -498,8 +528,16 @@ def draw_company_card(img, draw, rect, row, symbol, metrics, chip_widths, f_lbl,
 
 
 def _price_target_data(row: pd.Series) -> Optional[Tuple[float,float,str]]:
-    p = _to_float(row.get("Vortagesschlusskurs"))
-    t = _to_float(row.get("Analysten_Kursziel"))
+    # Preis & Kursziel mit Aliassen + YF-Fallback fürs Ziel
+    pcol = resolve_col(row, "Preis") or resolve_col(row, "Vortagesschlusskurs")
+    tcol = resolve_col(row, "Analysten_Kursziel")  # alias enthält targetMeanPrice
+    p = _to_float(row.get(pcol)) if pcol else None
+    t = _to_float(row.get(tcol)) if tcol else None
+    if t is None:
+        # CSV hat kein Kursziel → yfinance Fallback
+        tkr = _row_ticker_for_yf(row)
+        yi = _yf_fetch_analyst_info(tkr)
+        t = _to_float(yi.get("targetMeanPrice"))
     cur = str(row.get("Währung") or "").upper()
     if p is None or t is None or p <= 0:
         return None
@@ -573,8 +611,18 @@ def draw_stat_pills(img, draw, center_x, y, row, f_lbl, f_val, card_w=None):
 
 
 def draw_analyst_bar(img, draw, center_x, y, width, row, f_lbl, f_val):
-    mean = _to_float(row.get("Empfehlungsdurchschnitt"))
-    if mean is None or not (0.5 <= mean <= 5.5):
+    # Aliasse für Rating + Fallback via yfinance
+    mean = None
+    for key in ("Empfehlungsdurchschnitt","recommendationMean","Analystenrating","Analysten_Rating","Recommendation Mean"):
+        if key in row.index:
+            mean = _to_float(row.get(key))
+            if mean is not None:
+                break
+    if mean is None:
+        tkr = _row_ticker_for_yf(row)
+        yi = _yf_fetch_analyst_info(tkr)
+        mean = _to_float(yi.get("recommendationMean"))
+    if mean is None or not (0.5 <= float(mean) <= 5.5):
         return y
 
     buy_frac = max(0.0, min(1.0, (5.0 - float(mean)) / 4.0))
@@ -598,7 +646,19 @@ def draw_analyst_bar(img, draw, center_x, y, width, row, f_lbl, f_val):
     draw.text((x2 - tw_h - 8, y + (bar_h - f_val.size)//2), hp, fill=(30,30,30), font=f_val)
 
     # Zweizeilige Unterzeile: Zeile 1 = Ø-Rating, Zeile 2 = Erklärung
-    sub1 = f"Ø-Rating {fmt_number(mean,2)} (1–5)"
+    # optional: Anzahl Analystenmeinungen
+    opinions = None
+    for key in ("Anzahl Analystenmeinungen","numberOfAnalystOpinions","Analysten_Anzahl"):
+        if key in row.index:
+            opinions = _to_float(row.get(key))
+            if opinions is not None:
+                break
+    if opinions is None:
+        tkr = _row_ticker_for_yf(row)
+        yi = _yf_fetch_analyst_info(tkr)
+        opinions = _to_float(yi.get("numberOfAnalystOpinions"))
+
+    sub1 = f"Ø-Rating {fmt_number(mean,2)} (1–5)" + (f" • N={int(opinions)}" if opinions else "")
     sub1 = ellipsize_to_fit(draw, sub1, f_lbl, width)
     w1 = int(draw.textlength(sub1, font=f_lbl))
     y_sub1 = y + bar_h + 4
@@ -627,9 +687,10 @@ def select_metrics(rows: List[pd.Series], req_metrics: List[str], sec_key: Optio
                 "Eigenkapitalrendite","Free Cashflow Yield","Marktkapitalisierung",
                 "Umsatzwachstum 3J (erwartet)","Umsatzwachstum 10J","Dividendenrendite"]
 
+    # Build an ordered list without filtering by availability
     order: List[str] = []
     for key in base + [k for k in fallback if k not in base]:
-        if key not in order and (resolve_col(rows[0], key) or resolve_col(rows[1], key)):
+        if key not in order:
             order.append(key)
 
     both, either = [], []
@@ -641,10 +702,25 @@ def select_metrics(rows: List[pd.Series], req_metrics: List[str], sec_key: Optio
         elif a or b:
             either.append(key)
 
-    sel = (both + either)[:6]
-    if len(sel) < 3:
-        sel = [k for k in order if k not in sel][:6]
-    return sel
+    sel: List[str] = (both + either)[:6]
+
+    # Pad up to 6 with the remaining 'order' keys (even if currently unavailable)
+    if len(sel) < 6:
+        for k in order:
+            if k not in sel:
+                sel.append(k)
+            if len(sel) == 6:
+                break
+
+    # Final guard: ensure we always return 6 keys (prefer common defaults)
+    if len(sel) < 6:
+        for k in fallback:
+            if k not in sel:
+                sel.append(k)
+            if len(sel) == 6:
+                break
+
+    return sel[:6]
 
 # ───────────────────────── Datum aus CSV im deutschen Format ─────────────────────────
 
@@ -861,8 +937,11 @@ def api_default_metrics():
     sec_raw = str(r.get("GICS Sector") or r.get("Sektor") or "").strip().lower()
     sec_key = next((k for k in SECTOR_METRICS if k in sec_raw), None)
     defaults = SECTOR_METRICS.get(sec_key, ["KGV","Forward PE","KUV","Nettomarge","Eigenkapitalrendite","Umsatzwachstum 3J (erwartet)"])[:6]
-    available = [m for m in defaults if resolve_col(r, m)]
-    return jsonify(available)
+    # Always return 6 defaults to fill UI chips; server-side will render '–' if a metric is missing
+    if len(defaults) < 6:
+        pad = [k for k in ["KGV","Forward PE","KUV","Nettomarge","Operative Marge","Bruttomarge","Eigenkapitalrendite","Free Cashflow Yield","Marktkapitalisierung","Umsatzwachstum 3J (erwartet)","Umsatzwachstum 10J","Dividendenrendite"] if k not in defaults]
+        defaults = (defaults + pad)[:6]
+    return jsonify(defaults)
 
 @app.route('/generate')
 def generate_compare():
@@ -915,87 +994,119 @@ COMPOSE_HTML = r"""
 <html lang="de">
 <head>
 <meta charset="utf-8" />
-<title>Aktien-Vergleich</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
-<script>
-  window.googletag = window.googletag || {cmd: []};
-  console.log('[GAM] GPT init');
-  const AD_UNIT_PATH = '/23319221469/rewarded_compare'; // Dein GAM-Pfad
+<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js">
+// ==== Gate & Rewarded (GAM) ==================================================
+(function(){
+  const RUNS_KEY = 'sc_compare_runs_v1';
+  const FREE_RUNS = 3;
+  function getRuns(){ const v = parseInt(localStorage.getItem(RUNS_KEY)||'0',10); return Number.isFinite(v)&&v>=0?v:0; }
+  function setRuns(n){ localStorage.setItem(RUNS_KEY, String(Math.max(0, n|0))); }
+  function incRuns(){ setRuns(getRuns()+1); }
+  if (localStorage.getItem(RUNS_KEY) === null) setRuns(0);
+
+  // GPT setup
+  window.googletag = window.googletag || {cmd:[]};
+  const AD_UNIT_PATH = '/23319221469/rewarded_compare';
   let rewardedSlot = null;
-  let __resolveReward = null;
-  let __rewardTimeout = null;
-
-  googletag.cmd.push(function () {
-    googletag.pubads().setRequestNonPersonalizedAds(1);
-    console.log("[GAM] NPA=1 (forced)");
-    try {
+  googletag.cmd.push(function(){
+    try{
       if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-        console.log('[GAM] Localhost detected -> request NPA and set page_url');
         googletag.pubads().setRequestNonPersonalizedAds(1);
-        googletag.pubads().set('page_url', 'https://compare.schatzsuche40.de/');
+        googletag.pubads().set('page_url','https://compare.schatzsuche40.de/');
       }
-    } catch(e) { console.warn('[GAM] NPA/page_url setup failed', e); }
-
-    rewardedSlot = googletag.defineOutOfPageSlot(
-      AD_UNIT_PATH,
-      googletag.enums.OutOfPageFormat.REWARDED
-    );
-
-    if (!rewardedSlot) {
-      console.warn('Rewarded nicht verfügbar (Seite muss mobil-optimiert sein).');
-      return;
-    }
-
-    rewardedSlot.addService(googletag.pubads());
-
-    // Ad ist bereit -> Google-Overlay sichtbar machen
-    googletag.pubads().addEventListener('rewardedSlotReady', function (evt) {
-      console.log('[GAM] rewardedSlotReady');
-      try { evt.makeRewardedVisible(); } catch(e){}
-    });
-
-    // Belohnung erteilt -> Promise auflösen (true)
-    googletag.pubads().addEventListener('rewardedSlotGranted', function () {
-      console.log('[GAM] rewardedSlotGranted');
-      if (__resolveReward) { clearTimeout(__rewardTimeout); __resolveReward(true); __resolveReward = null; }
-    });
-
-    // Overlay geschlossen / keine Ausspielung -> Promise (false) oder gnädig weiterlassen
-    googletag.pubads().addEventListener('rewardedSlotClosed', function () {
-      console.log('[GAM] rewardedSlotClosed');
-      if (__resolveReward) { clearTimeout(__rewardTimeout); __resolveReward(false); __resolveReward = null; }
-    });
-
-    googletag.enableServices();
+      rewardedSlot = googletag.defineOutOfPageSlot(AD_UNIT_PATH, googletag.enums.OutOfPageFormat.REWARDED);
+      if (rewardedSlot) rewardedSlot.addService(googletag.pubads());
+      googletag.enableServices();
+    }catch(e){ console.warn('[GAM] setup failed', e); }
   });
 
-  // Aufrufen, wenn dein Gate triggern soll; resolved mit true/false
-  function showRewardedAd() {
-    return new Promise(function(resolve){
-      __resolveReward = resolve;
-      googletag.cmd.push(function () {
-    try {
+  async function showRewardedOrFallback(){
+    return new Promise((resolve)=>{
+      // Localhost: show a test 'ad' overlay to simulate rewarded flow
       if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-        console.log('[GAM] Localhost detected -> request NPA and set page_url');
-        googletag.pubads().setRequestNonPersonalizedAds(1);
-        googletag.pubads().set('page_url', 'https://compare.schatzsuche40.de/');
+        let done=false; const finish=()=>{ if(done) return; done=true; resolve(true); };
+        let wrap = document.getElementById('rewarded-fallback');
+        if(!wrap){
+          wrap = document.createElement('div');
+          wrap.id='rewarded-fallback';
+          wrap.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:99999;';
+          wrap.innerHTML = `
+            <div style="background:#fff;max-width:520px;width:90%;padding:20px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);text-align:center">
+              <h3 style="margin:0 0 8px">Testwerbung (lokal)</h3>
+              <p style="margin:0 0 12px">Simuliertes Rewarded-Video. In <b><span id="cd_s">5</span>s</b> kannst du fortfahren.</p>
+              <button id="cd_btn" disabled style="padding:10px 16px;border-radius:8px;border:0;background:#111;color:#fff;cursor:not-allowed">Weiter</button>
+            </div>`;
+          document.body.appendChild(wrap);
+        } else { wrap.style.display='flex'; }
+        const cd = document.getElementById('cd_s'); const btn = document.getElementById('cd_btn');
+        let t=5; cd.textContent=String(t); btn.disabled=true; btn.style.cursor='not-allowed';
+        const it = setInterval(()=>{ t-=1; cd.textContent=String(t); if(t<=0){ clearInterval(it); btn.disabled=false; btn.style.cursor='pointer'; btn.onclick=()=>{ wrap.style.display='none'; finish(); }; } },1000);
+        setTimeout(()=>{ if(!done){ wrap.style.display='none'; finish(); } }, 12000);
+        return; // do not call GAM on localhost
       }
-    } catch(e) { console.warn('[GAM] NPA/page_url setup failed', e); }
-
-        if (rewardedSlot) {
-          googletag.display(rewardedSlot);
-          // Failsafe: nach 15s nicht hängen bleiben
-          __rewardTimeout = setTimeout(function(){
-            if (__resolveReward) { __resolveReward(false); __resolveReward = null; }
-          }, 15000);
-        } else {
-          resolve(false);
-        }
+let done=false; const finish=()=>{ if(done) return; done=true; try{ googletag.destroySlots([rewardedSlot]); }catch(e){} resolve(true); };
+      let opened=false;
+      googletag.cmd.push(function(){
+        try{
+          googletag.pubads().addEventListener('rewardedSlotClosed', finish);
+          googletag.display(rewardedSlot); googletag.pubads().refresh([rewardedSlot]);
+          opened=true;
+        }catch(e){ console.warn('[GAM] display failed', e); }
       });
+      setTimeout(()=>{ if(!opened) openFallback(); }, 2500);
+      setTimeout(()=>{ if(!done) openFallback(); }, 12000);
+
+      function openFallback(){
+        if(done) return;
+        let wrap = document.getElementById('rewarded-fallback');
+        if(!wrap){
+          wrap = document.createElement('div');
+          wrap.id='rewarded-fallback';
+          wrap.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:99999;';
+          wrap.innerHTML = `
+            <div style="background:#fff;max-width:520px;width:90%;padding:20px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);text-align:center">
+              <h3 style="margin:0 0 8px">Keine Werbung verfügbar</h3>
+              <p style="margin:0 0 12px">Du kannst in <b><span id="cd_s">5</span>s</b> ohne Werbung fortfahren.</p>
+              <button id="cd_btn" disabled style="padding:10px 16px;border-radius:8px;border:0;background:#111;color:#fff;cursor:not-allowed">Weiter ohne Werbung</button>
+            </div>`;
+          document.body.appendChild(wrap);
+        } else {
+          wrap.style.display='flex';
+        }
+        const cd = document.getElementById('cd_s'); const btn = document.getElementById('cd_btn');
+        let t=5; cd.textContent=String(t); btn.disabled=true; btn.style.cursor='not-allowed';
+        const it = setInterval(()=>{ t-=1; cd.textContent=String(t); if(t<=0){ clearInterval(it); btn.disabled=false; btn.style.cursor='pointer'; btn.onclick=()=>{ wrap.style.display='none'; finish(); }; } },1000);
+        setTimeout(()=>{ if(!done){ wrap.style.display='none'; finish(); } }, 12000);
+      }
     });
   }
+
+  // Result page counter (increment ONCE)
+  (function(){
+    const key = 'counted:'+location.pathname+location.search;
+    const params = new URLSearchParams(location.search);
+    if(!sessionStorage.getItem(key) && params.has('ticker_a') && params.has('ticker_b') && location.pathname === '/generate'){
+      incRuns();
+      sessionStorage.setItem(key,'1');
+    }
+  })();
+
+  // Intercept form submit → gate BEFORE running
+  const frm = document.getElementById('frm');
+  if (frm) {
+    frm.addEventListener('submit', async (e)=>{
+      if (getRuns() >= FREE_RUNS) {
+        e.preventDefault();
+        await showRewardedOrFallback();
+        setRuns(0); // reset after gate → again 3 free
+        frm.submit();
+      }
+    }, {capture:true});
+  }
+})();
 </script>
+<title>Aktien-Vergleich</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
 :root{ --bg:#0f1b2b; --panel:#0c1624; --f:#e9eef6; --muted:#9fb0c7; --acc:#10b981; }
 *{box-sizing:border-box}
@@ -1124,125 +1235,6 @@ a.addEventListener('change', async ()=>{
 });
 
 b.addEventListener('change', updateCount);
-
-// === Fallback-Gate (wenn kein Rewarded geliefert wird) ===
-function scShowFallbackGate(seconds = 10) {
-  return new Promise((resolve) => {
-    const host = document.createElement('div');
-    host.id = 'sc-fallback-gate';
-    host.innerHTML = `
-      <div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998"></div>
-      <div style="position:fixed;left:50%;top:12%;transform:translateX(-50%);max-width:720px;background:#fff;padding:1.1rem;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);z-index:9999">
-        <h3 style="margin:.25rem 0 0.5rem 0;">Weiter vergleichen?</h3>
-        <p style="margin:0 0 .5rem 0;">Aktuell ist keine Werbung verfügbar. Bitte warte kurz – danach geht's weiter.</p>
-        <p id="sc-fallback-timer" style="font-weight:600;margin:0 0 .75rem 0;"></p>
-        <div style="display:flex;gap:.5rem;justify-content:flex-end">
-          <button id="sc-fallback-btn" style="padding:.6rem .9rem;border-radius:10px;border:1px solid #ddd;background:#f7f7f7;cursor:not-allowed" disabled>Weiter</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(host);
-    const btn = document.getElementById('sc-fallback-btn');
-    const timer = document.getElementById('sc-fallback-timer');
-    let remain = seconds;
-    const tick = () => {
-      timer.textContent = `Weiter in ${remain}s …`;
-      if (remain <= 0) {
-        btn.disabled = false;
-        btn.style.cursor = 'pointer';
-        btn.textContent = 'Weiter';
-      } else {
-        remain -= 1;
-        setTimeout(tick, 1000);
-      }
-    };
-    tick();
-    btn.addEventListener('click', () => {
-      host.remove();
-      resolve(true);
-    }, {once:true});
-  });
-}
-// ── Freemium-Gate: 3 freie Vergleiche, danach Rewarded ──
-const SC_MAX_FREE = 3;
-const SC_RUNS_KEY = 'sc_compare_runs_v1';
-const hasNewsletter = () => document.cookie.includes('sc_newsletter=1');
-const getRuns = () => parseInt(localStorage.getItem(SC_RUNS_KEY) || '0', 10);
-const incRuns  = () => localStorage.setItem(SC_RUNS_KEY, String(getRuns()+1));
-const shouldGate = () => !hasNewsletter() && getRuns() >= SC_MAX_FREE;
-
-const frm = document.getElementById('frm');
-if (frm) {
-  frm.addEventListener('submit', async (e) => {
-    if (shouldGate()) {
-      e.preventDefault();
-      const granted = await showRewardedAd(); // kommt aus dem <head>-Block
-      if (granted === true) {
-        frm.submit();   // nach Prämie fortfahren
-        incRuns();      // Run zählen
-      } else {
-        console.warn('[GAM] Kein Rewarded gewährt/verfügbar -> Fallback-Gate');
-        const ok = await scShowFallbackGate(8);
-        if (ok) { frm.submit(); incRuns(); }
-      }
-    } else {
-      // Kein Gate -> normal fortfahren
-      incRuns();
-    }
-  });
-}
-
-// === Auto-Detect Compare Navigations (Form + Links) ===
-(function(){
-  function isCompareURL(url) {
-    try {
-      const u = new URL(url, location.href);
-      return (u.origin === location.origin &&
-              u.pathname === location.pathname &&
-              (u.searchParams.has('a') && u.searchParams.has('b')));
-    } catch(e){ return false; }
-  }
-  async function handleCompareNavigation(targetHref, inc = true){
-    if (shouldGate()) {
-      console.log('[GAM] Gate before navigation');
-      const granted = await showRewardedAd();
-      if (!granted) {
-        console.warn('[GAM] Rewarded declined/unavailable -> fallback');
-        const ok = await scShowFallbackGate(8);
-        if (!ok) return;
-      }
-    }
-    if (inc) incRuns();
-    location.href = targetHref;
-  }
-
-  // 1) Intercept clicks on anchors that look like compare actions (?a= & ?b=)
-  document.addEventListener('click', function(e){
-    const a = e.target.closest && e.target.closest('a');
-    if (!a) return;
-    if (isCompareURL(a.href)) {
-      e.preventDefault();
-      handleCompareNavigation(a.href);
-    }
-  }, true);
-
-  // 2) Count a run on result pages loaded via navigation (GET ?a=&b=)
-  function markCountedOnce() {
-    const key = 'counted:' + location.pathname + location.search;
-    if (!sessionStorage.getItem(key) && (new URLSearchParams(location.search).has('a') && new URLSearchParams(location.search).has('b'))) {
-      console.log('[Gate] Counting run for result page');
-      incRuns();
-      sessionStorage.setItem(key, '1');
-    }
-  }
-  window.addEventListener('pageshow', function(){ 
-    // Re-bind after BFCache restore and count if needed
-    markCountedOnce();
-  });
-  // Initial call
-  markCountedOnce();
-})();
-
 </script>
 </body>
 </html>
