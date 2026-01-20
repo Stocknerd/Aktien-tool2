@@ -106,7 +106,8 @@ PERCENT_KEYS = {
     "Free Cashflow Yield",
     "Umsatzwachstum", "Gewinnwachstum",
     "Umsatzwachstum 3J (erwartet)", "Umsatzwachstum 10J", "Umsatzwachstum 5J",
-    "52Wochen Change", "Insider_Anteil", "Institutioneller_Anteil", "Short Interest"
+    "52Wochen Change", "Insider_Anteil", "Institutioneller_Anteil", "Short Interest",
+    "Gewinnwachstum", "5Y Dividendenrendite", "Verschuldungsgrad",
 }
 
 # Bewertung: Was ist "besser"?
@@ -114,9 +115,9 @@ BETTER_HIGH = {
     "Dividendenrendite","Bruttomarge","Operative Marge","Nettomarge",
     "Eigenkapitalrendite","Return on Assets","ROIC","Free Cashflow Yield",
     "Umsatzwachstum","Umsatzwachstum 3J (erwartet)","Umsatzwachstum 5J","Umsatzwachstum 10J",
-    "52Wochen Change"
+    "52Wochen Change", "Gewinnwachstum", "5Y Dividendenrendite", "Current Ratio"
 }
-BETTER_LOW  = {"KGV","Forward PE","KUV","Ausschüttungsquote"}
+BETTER_LOW  = {"KGV","Forward PE","KUV","Ausschüttungsquote", "Verschuldungsgrad", "Gesamtschulden"}
 
 def _metric_value_for_compare(row: pd.Series, key: str) -> Optional[float]:
     v = numeric_value(key, row)
@@ -139,17 +140,17 @@ def compare_metrics(row_left: pd.Series, row_right: pd.Series, metrics: list[str
     return out
 
 SECTOR_METRICS: Dict[str, List[str]] = {
-    "communication":            ["KGV","KUV","Nettomarge","Operative Marge","Bruttomarge","Umsatzwachstum 10J"],
-    "information technology":   ["KGV","Forward PE","KUV","Eigenkapitalrendite","Free Cashflow Yield","Umsatzwachstum 3J (erwartet)"],
-    "consumer discretionary":   ["KGV","Forward PE","KUV","Operative Marge","Eigenkapitalrendite","Umsatzwachstum 3J (erwartet)"],
-    "consumer staples":         ["Dividendenrendite","Ausschüttungsquote","KGV","Nettomarge","Eigenkapitalrendite","Umsatzwachstum 3J (erwartet)"],
-    "health care":              ["KGV","KUV","Nettomarge","Bruttomarge","Eigenkapitalrendite","Umsatzwachstum 10J"],
-    "financials":               ["KGV","KUV","Eigenkapitalrendite","Nettomarge","Dividendenrendite","Umsatzwachstum 10J"],
-    "industrials":              ["KGV","KUV","Operative Marge","Eigenkapitalrendite","Free Cashflow Yield","Umsatzwachstum 10J"],
-    "materials":                ["KGV","KUV","Operative Marge","Nettomarge","Eigenkapitalrendite","Umsatzwachstum 10J"],
-    "energy":                   ["KGV","KUV","Nettomarge","Free Cashflow Yield","Dividendenrendite","Umsatzwachstum 10J"],
-    "utilities":                ["Dividendenrendite","Ausschüttungsquote","KGV","Nettomarge","Free Cashflow Yield","Umsatzwachstum 10J"],
-    "real estate":              ["Dividendenrendite","Ausschüttungsquote","KGV","KUV","Nettomarge","Umsatzwachstum 10J"],
+    "communication":            ["KGV","Umsatzwachstum 3J (erwartet)","Nettomarge","Verschuldungsgrad","Free Cashflow Yield","Gewinnwachstum"],
+    "information technology":   ["KGV","Gewinnwachstum","Umsatzwachstum 3J (erwartet)","Eigenkapitalrendite","Verschuldungsgrad","Beta"],
+    "consumer discretionary":   ["KGV","Gewinnwachstum","Operative Marge","Eigenkapitalrendite","Verschuldungsgrad","Umsatzwachstum 3J (erwartet)"],
+    "consumer staples":         ["Dividendenrendite","5Y Dividendenrendite","Verschuldungsgrad","Nettomarge","Beta","KGV"],
+    "health care":              ["KGV","Gewinnwachstum","Bruttomarge","Verschuldungsgrad","Umsatzwachstum 3J (erwartet)","Beta"],
+    "financials":               ["KGV","KBV","Eigenkapitalrendite","Dividendenrendite","Verschuldungsgrad","Gewinnwachstum"],
+    "industrials":              ["KGV","ROIC","Operative Marge","Verschuldungsgrad","Free Cashflow Yield","Gewinnwachstum"],
+    "materials":                ["KGV","EBIT","Nettomarge","Verschuldungsgrad","Current Ratio","Dividendenrendite"],
+    "energy":                   ["KGV","Free Cashflow Yield","Verschuldungsgrad","Dividendenrendite","5Y Dividendenrendite","Operativer Cashflow"],
+    "utilities":                ["Dividendenrendite","5Y Dividendenrendite","Verschuldungsgrad","Operativer Cashflow","KGV","Beta"],
+    "real estate":              ["Dividendenrendite","KGV","KBV","Verschuldungsgrad","Gewinnwachstum","Umsatzwachstum 3J (erwartet)"],
 }
 
 LABELS = {
@@ -160,6 +161,13 @@ LABELS = {
     "Operativer Cashflow": "Oper. CF",
     "Umsatzwachstum 3J (erwartet)": "Umsatzw. 3J",
     "Umsatzwachstum 10J": "Umsatzw. 10J",
+    "Verschuldungsgrad": "Debt/Equity",
+    "Current Ratio": "Liquidität 3.",
+    "Gesamtschulden": "Schulden",
+    "52W Hoch": "52W Hoch",
+    "52W Tief": "52W Tief",
+    "Gewinnwachstum": "Gewinn-Wachst.",
+    "5Y Dividendenrendite": "Ø Div. 5J",
 }
 
 COLUMN_ALIASES: Dict[str, List[str]] = {
@@ -177,6 +185,15 @@ COLUMN_ALIASES: Dict[str, List[str]] = {
     "Preis": ["Preis","Close","Last","Vortagesschlusskurs"],
     "Umsatzwachstum 10J": ["Umsatzwachstum 10J","Revenue Growth 10Y","revenueGrowth10Y"],
     "Umsatzwachstum 3J (erwartet)": ["Umsatzwachstum 3J (erwartet)","Revenue Growth 3Y (fwd)","revenueGrowth3YForward"],
+    
+    "Verschuldungsgrad": ["Verschuldungsgrad", "debtToEquity"],
+    "Current Ratio": ["Current Ratio", "currentRatio"],
+    "Gesamtschulden": ["Gesamtschulden", "totalDebt"],
+    "Beta": ["Beta", "beta"],
+    "52W Hoch": ["52W Hoch", "fiftyTwoWeekHigh"],
+    "52W Tief": ["52W Tief", "fiftyTwoWeekLow"],
+    "Gewinnwachstum": ["Gewinnwachstum", "earningsGrowth"],
+    "5Y Dividendenrendite": ["5Y Dividendenrendite", "fiveYearAvgDividendYield"],
 }
 
 # ───────────────────────── CSV laden ─────────────────────────
@@ -225,7 +242,10 @@ def fmt_percent_for(key: str, val: Any, dec: int = 1):  # 1 Nachkommastelle reic
         x = float(s_raw.replace(",", "."))
     except ValueError:
         return str(val)
-    if abs(x) <= 1.5:
+    # Heuristik: "Kleine" Werte <= 1.5 sind wahrscheinlich Dezimalbrüche (0.05 -> 5%).
+    # AUSNAHME: Dividendenrendite kommt von Yahoo oft schon als Prozentwert (z.B. 0.34 für 0.34%).
+    # Würden wir 0.34 * 100 rechnen, kämen 34% raus -> Falsch.
+    if "Dividenden" not in key and abs(x) <= 1.5:
         x *= 100.0
     return _fmt_locale(x, dec) + "%"
 
@@ -284,7 +304,7 @@ def display_value(key: str, row: pd.Series) -> str:
     val = _get_val(row, key)
     if key in PERCENT_KEYS:
         return fmt_percent_for(key, val)
-    if key == "Marktkapitalisierung":
+    if key in ["Marktkapitalisierung", "Gesamtschulden"]:
         v = _to_float(val)
         if v is None:
             return "–"
@@ -513,9 +533,23 @@ def draw_company_card(img, draw, rect, row, symbol, metrics, chip_widths, f_lbl,
         if has_val:
             nx = numeric_value(key, row)
             is_pct = key in PERCENT_KEYS
-            color = (COLOR_BETTER if (is_pct and nx is not None and nx >= 0)
-                     else COLOR_WORSE if (is_pct and nx is not None and nx < 0)
-                     else COLOR_TEXT)
+            
+            # Farbe bestimmen
+            color = COLOR_TEXT
+            if nx is not None:
+                if key in BETTER_LOW:
+                    # Niedrig = Gut (Grün), Hoch = Schlecht (Rot)
+                    # Grenzwerte sind subjektiv -> hier vereinfacht:
+                    # Negativ bei KGV/Schulden ist oft Sonderfall, aber tendenziell eher Warnung oder Neutral
+                    # Wir färben hier nicht starr, sondern nutzen die simple Logik für Vergleich:
+                    # Da wir hier nur den Absolutwert anzeigen, färben wir standardmäßig NICHT ein,
+                    # außer bei offensichtlichen Signalen wie Gewinnwachstum < 0.
+                    pass
+                else:
+                    # Hoch = Gut
+                    if is_pct:
+                         if nx < 0: color = COLOR_WORSE
+                         elif nx > 0: color = COLOR_BETTER
             vx = x2 - pad - chip_w
             vy = y - int((chip_h - f_val.size)/2)
             _rounded_rect(img, (vx, vy, vx + chip_w, vy + chip_h), radius=10, fill=PALETTE["chip_bg"])
@@ -683,9 +717,9 @@ def select_metrics(rows: List[pd.Series], req_metrics: List[str], sec_key: Optio
         base = [m for m in req_metrics if isinstance(m, str) and m.strip()]
     else:
         base = SECTOR_METRICS.get(sec_key, ["KGV","Forward PE","KUV","Nettomarge","Eigenkapitalrendite","Umsatzwachstum 3J (erwartet)"])
-    fallback = ["KGV","Forward PE","KUV","Nettomarge","Operative Marge","Bruttomarge",
+    fallback = ["KGV","Verschuldungsgrad","Gewinnwachstum","Nettomarge","Operative Marge","Bruttomarge",
                 "Eigenkapitalrendite","Free Cashflow Yield","Marktkapitalisierung",
-                "Umsatzwachstum 3J (erwartet)","Umsatzwachstum 10J","Dividendenrendite"]
+                "Umsatzwachstum 3J (erwartet)","Beta","Dividendenrendite"]
 
     # Build an ordered list without filtering by availability
     order: List[str] = []
@@ -1168,7 +1202,9 @@ const available = [
   "KGV","Forward PE","KUV","Nettomarge","Operative Marge","Bruttomarge",
   "Eigenkapitalrendite","Free Cashflow Yield","Umsatzwachstum 3J (erwartet)",
   "Dividendenrendite","Ausschüttungsquote","Marktkapitalisierung",
-  "Umsatzwachstum 10J","52Wochen Change"
+  "Umsatzwachstum 10J","52Wochen Change",
+  "Verschuldungsgrad", "Current Ratio", "Gesamtschulden", "Beta",
+  "52W Hoch", "52W Tief", "Gewinnwachstum", "5Y Dividendenrendite"
 ].map(k => ({key:k,label:k}));
 
 document.getElementById('allMetrics').innerHTML =
@@ -1177,13 +1213,15 @@ document.getElementById('allMetrics').innerHTML =
 function updateCount(){
   const checked = [...metricsBox.querySelectorAll('input[type=checkbox]:checked')];
   count.textContent = checked.length;
+  count.style.color = checked.length > 6 ? '#ff5555' : '';
   submitBtn.disabled = !a.value || !b.value;
 }
 metricsBox.addEventListener('change', updateCount);
 
 function addMetricChip(key,label){
   if([...metricsBox.querySelectorAll('input')].some(i => i.value===key)) return;
-  if(metricsBox.querySelectorAll('input').length>=6) return;
+  // Limit increased to allow swapping metrics
+  if(metricsBox.querySelectorAll('input').length>=24) return;
   const el = document.createElement('label');
   el.className='metric';
   el.innerHTML = `<input type="checkbox" name="metrics" value="${key}" checked /> ${label}`;
