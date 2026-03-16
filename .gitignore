@@ -1,3 +1,17 @@
-
-# Output-Ordner ignorieren
+# Data & Generated Files
+data/raw/
+static/generated/
 /output/
+logs/*.txt
+*.tar.gz
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# MCP
+.gemini/
+mcp_config.json

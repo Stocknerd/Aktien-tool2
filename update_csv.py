@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import hashlib
+import json # Added json import
 import math
 import os
 import random
@@ -39,6 +40,8 @@ FILE_INPUT = BASE_DIR / "data" / "ticker_resolved.csv"
 FILE_OUTPUT = BASE_DIR / "stock_data.csv"
 LOG_FOLDER = BASE_DIR / "logs"
 LOG_FOLDER.mkdir(parents=True, exist_ok=True)
+RAW_DATA_DIR = BASE_DIR / "data" / "raw" # Added RAW_DATA_DIR definition
+RAW_DATA_DIR.mkdir(parents=True, exist_ok=True) # Ensure RAW_DATA_DIR exists
 
 # Konservative Server-Defaults (via ENV überschreibbar)
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", 20))        # kleine Gruppen
@@ -93,8 +96,16 @@ SPALTEN_KENNZAHLEN = [
     "Eigenkapitalrendite", "Return on Assets", "ROIC", "Umsatzwachstum 3J (erwartet)",
     # Analysten
     "Empfehlungsdurchschnitt", "Anzahl Analystenmeinungen", "Analysten_Kursziel", "Kursziel_Hoch", "Kursziel_Tief",
+    # Metadaten
+    "Land", "Langname",
+    # Risiko & Bilanz
+    "Verschuldungsgrad", "Current Ratio", "Gesamtschulden", "Beta",
+    # Kurs-Historie & Wachstum
+    "52W Hoch", "52W Tief", "Gewinnwachstum",
+    # Dividenden-Historie
+    "5Y Dividendenrendite",
 ]
-META_SPALTEN = ["Abfragedatum", "Datenquelle"]
+META_SPALTEN = ["Abfragedatum", "Datenquelle", "Datenqualität", "Fehlende_Kennzahlen"]
 
 # --------------------------------------------------
 # Utils
@@ -144,6 +155,19 @@ def map_info(info: Dict) -> Dict:
         "Analysten_Kursziel": info.get("targetMeanPrice"),
         "Kursziel_Hoch": info.get("targetHighPrice"),
         "Kursziel_Tief": info.get("targetLowPrice"),
+        
+        "Land": info.get("country"),
+        "Langname": info.get("longName"),
+        
+        "Verschuldungsgrad": info.get("debtToEquity"),
+        "Current Ratio": info.get("currentRatio"),
+        "Gesamtschulden": info.get("totalDebt"),
+        "Beta": info.get("beta"),
+        
+        "52W Hoch": info.get("fiftyTwoWeekHigh"),
+        "52W Tief": info.get("fiftyTwoWeekLow"),
+        "Gewinnwachstum": info.get("earningsGrowth"),
+        "5Y Dividendenrendite": info.get("fiveYearAvgDividendYield"),
 }
 
 
@@ -152,10 +176,22 @@ def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: flo
     for attempt in range(1, max_tries + 1):
         try:
             time.sleep(random.uniform(*jitter))
-            return yf.Ticker(ticker).info
+            info = yf.Ticker(ticker).info
+            
+            # G1: Speichern als rohes JSON für Data-Lake / RAG
+            try:
+                raw_path = RAW_DATA_DIR / f"{ticker}.json"
+                with open(raw_path, 'w', encoding='utf-8') as f:
+                    json.dump(info, f, ensure_ascii=False, indent=2)
+            except Exception as io_err:
+                print(f"⚠️ [WARN] Konnte JSON Data-Lake Dump für {ticker} nicht schreiben: {io_err}")
+
+            return info
         except Exception as e:
             last_err = e
+            print(f"⚠️ [WARN] Ticker {ticker} Fetch-Fehler (Versuch {attempt}/{max_tries}): {e}")
             time.sleep(base_sleep * (2 ** (attempt - 1)))
+    print(f"❌ [ERROR] Ticker {ticker} fatal fehlgeschlagen nach {max_tries} Versuchen.")
     raise last_err  # type: ignore[return-value]
 
 
@@ -169,10 +205,10 @@ def write_failed_list(failed: List[str]) -> None:
             for t in failed:
                 f.write(str(t))
                 f.write("\n")
-        print(f"⚠️ Fehlgeschlagene Ticker: {len(failed)} – Beispiel: {failed[:10]}")
-        print(f"   → Liste gespeichert unter: {path}")
+        print(f"[WARN] Failed tickers: {len(failed)} - Sample: {failed[:10]}")
+        print(f"   -> List saved to: {path}")
     except Exception as e:
-        print(f"⚠️ Konnte Fehlerticker nicht schreiben: {e}")
+        print(f"[WARN] Could not write failed list: {e}")
 
 
 def md5_bucket(s: str) -> int:
@@ -190,7 +226,7 @@ def main() -> None:
     # Staggering
     if STAGGER_ENABLED:
         delay = random.randint(STAGGER_MIN, STAGGER_MAX)
-        print(f"⏳ Staggering Start um {delay}s, um parallele Jobs zu entkoppeln…")
+        print(f"Waiting {delay}s (staggering)...")
         time.sleep(delay)
 
     # Eingabe
@@ -205,7 +241,7 @@ def main() -> None:
     raw_unique = df["valid_yahoo_ticker"].nunique(dropna=True)
     df = df[df["valid_yahoo_ticker"].notna()].copy()
     df = df.drop_duplicates("valid_yahoo_ticker", keep="first").reset_index(drop=True)
-    print(f"ℹ️ Eingabe: {raw_rows} Zeilen, {raw_unique} eindeutige Ticker → nach Deduplizierung: {len(df)} Zeilen.")
+    print(f"[INFO] Input: {raw_rows} rows, {raw_unique} unique tickers -> after dedup: {len(df)} rows.")
 
     # Ziel-/Meta-Spalten anlegen
     df = ensure_columns(df, SPALTEN_KENNZAHLEN + META_SPALTEN)
@@ -230,7 +266,7 @@ def main() -> None:
                         merged.drop(columns=[col_old], inplace=True)
                 df = merged
         except Exception as e:
-            print(f"ℹ️ Konnte bestehende '{FILE_OUTPUT.name}' nicht mergen: {e}")
+            print(f"[INFO] Could not merge existing '{FILE_OUTPUT.name}': {e}")
 
     # Stale/Missing-Filter
     need_cols = SPALTEN_KENNZAHLEN
@@ -239,7 +275,7 @@ def main() -> None:
     df_run = df[stale_mask | missing_mask].copy()
 
     if df_run.empty:
-        print("✅ Alles frisch – nichts zu tun.")
+        print("[OK] Everything fresh - nothing to do.")
         return
 
     # Sharding anwenden (deterministisch via md5)
@@ -247,12 +283,12 @@ def main() -> None:
         before = len(df_run)
         subset_mask = df_run["valid_yahoo_ticker"].astype(str).apply(lambda t: md5_bucket(t) % SHARD_TOTAL == SHARD_INDEX)
         df_run = df_run[subset_mask].copy()
-        print(f"🧩 Shard {SHARD_INDEX+1}/{SHARD_TOTAL}: {len(df_run)} von {before} Ticker in diesem Lauf.")
+        print(f"[SHARD] Shard {SHARD_INDEX+1}/{SHARD_TOTAL}: {len(df_run)} of {before} tickers this run.")
 
     # Tickerliste eindeutig machen
     tickers: List[str] = list(dict.fromkeys(df_run["valid_yahoo_ticker"].astype(str)))
     ticker_total = len(tickers)
-    print(f"🟡 Starte Server-Update für {ticker_total} Ticker…")
+    print(f"Starting update for {ticker_total} tickers...")
 
     failed: List[str] = []
     updated_rows_count = 0
@@ -285,7 +321,10 @@ def main() -> None:
             if err is not None or info is None:
                 failed.append(ticker)
                 group_fail += 1
+                print(f"❌ {ticker}: failed to fetch.")
                 continue
+            else:
+                print(f"✅ {ticker}: fetched successfully.")
 
             mapped = map_info(info)
             changed_any_row = False
@@ -322,9 +361,9 @@ def main() -> None:
                 tmp = FILE_OUTPUT.with_suffix(".partial.csv")
                 try:
                     df.to_csv(tmp, index=False, encoding="utf-8-sig")
-                    print(f"💾 Teilspeicher: {tmp.name} (aktualisiert: {updated_rows_count}/{ticker_total})")
+                    print(f"Saved partial: {tmp.name} (updated: {updated_rows_count}/{ticker_total})")
                 except Exception as e:
-                    print(f"⚠️ Teilspeicher fehlgeschlagen: {e}")
+                    print(f"[WARN] Partial save failed: {e}")
                 processed_since_partial = 0
 
         # Dynamische Anpassung nach Gruppenfehlerquote
@@ -336,34 +375,39 @@ def main() -> None:
             jitter[1] = min(JITTER_MAX_CAP, jitter[1] * 1.2)
             if threads_current > THREADS_MIN:
                 threads_current = max(THREADS_MIN, threads_current - 1)
-            print(f"🛡️ Hohe Fehlerquote ({fail_rate:.0%}). Anpassung: sleep={sleep_group:.1f}s, jitter≈({jitter[0]:.2f}-{jitter[1]:.2f})s, threads={threads_current}")
+            print(f"[ADJUST] High failure rate ({fail_rate:.0%}). Adjusting: sleep={sleep_group:.1f}s, threads={threads_current}")
         elif fail_rate == 0 and threads_current < THREADS_BASE:
             # leichtes Hochfahren bis Threads_BASE
             threads_current = min(THREADS_BASE, threads_current + 1)
 
-        print(f"✅ Gruppe {gi}/{total_batches} verarbeitet – Schläft {sleep_group:.1f}s… (Fehler {group_fail}/{len(group)})")
+        print(f"Group {gi}/{total_batches} processed - Sleeping {sleep_group:.1f}s... (Failures {group_fail}/{len(group)})")
         time.sleep(sleep_group)
 
     # failed-Log schreiben
     write_failed_list(failed)
 
+    # --- Quality Flags am Ende berechnen ---
+    total_kennzahlen = len(SPALTEN_KENNZAHLEN)
+    df["Fehlende_Kennzahlen"] = df[SPALTEN_KENNZAHLEN].isna().sum(axis=1)
+    df["Datenqualität"] = (1.0 - (df["Fehlende_Kennzahlen"] / total_kennzahlen)).round(2)
+
     # Speichern je nach Erfolgsquote
     updated_ratio = (updated_rows_count / max(1, ticker_total))
     if updated_ratio < MIN_UPDATED_QUOTE and not QUICK:
         print(
-            f"❌ Nur {updated_rows_count}/{ticker_total} Ticker mit Änderungen "
-            f"({updated_ratio:.0%}) – CSV bleibt unverändert (Schwellwert {MIN_UPDATED_QUOTE:.0%})."
+            f"[SKIP] Only {updated_rows_count}/{ticker_total} tickers updated "
+            f"({updated_ratio:.0%}) - CSV remains unchanged (Threshold {MIN_UPDATED_QUOTE:.0%})."
         )
         return
 
     if QUICK and updated_ratio < MIN_UPDATED_QUOTE:
-        print("ℹ️ QUICK=1 aktiv → MIN_UPDATED_QUOTE wird ignoriert, CSV wird trotzdem gespeichert.")
+        print("[INFO] QUICK=1 active -> ignoring threshold, saving CSV.")
 
     try:
         df.to_csv(FILE_OUTPUT, index=False, encoding="utf-8-sig")
-        print(f"✅ Fertig – Daten in '{FILE_OUTPUT.name}' gespeichert ({updated_rows_count}/{ticker_total} Ticker mit Änderungen).")
+        print(f"[OK] Done - Data saved to '{FILE_OUTPUT.name}' ({updated_rows_count}/{ticker_total} tickers changed).")
     except Exception as e:
-        print(f"❌ Konnte '{FILE_OUTPUT}' nicht schreiben: {e}")
+        print(f"[ERROR] Could not write '{FILE_OUTPUT}': {e}")
 
 
 if __name__ == "__main__":

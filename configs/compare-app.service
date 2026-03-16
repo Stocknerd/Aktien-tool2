@@ -1,0 +1,13 @@
+[Unit]
+Description=Gunicorn instance to serve Aktien-Tool Compare App
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/aktien-tool2
+Environment="PATH=/home/ubuntu/aktien-tool2/venv/bin"
+ExecStart=/home/ubuntu/aktien-tool2/venv/bin/gunicorn --workers 3 --bind unix:compare-app.sock -m 007 compare_app:app
+
+[Install]
+WantedBy=multi-user.target

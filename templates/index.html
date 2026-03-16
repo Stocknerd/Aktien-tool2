@@ -1,29 +1,210 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Aktien-Bild Generator</title>
+  <title>{% if ticker %}{{ company_name }} ({{ ticker }}) - Aktienanalyse | Schatzsuche 4.0{% else %}Aktien-Bild Generator | Schatzsuche 4.0{% endif %}</title>
+  <meta name="description" content="{% if ticker %}Aktuelle Kennzahlen, Analysten-Ratings und Kursziele für {{ company_name }} ({{ ticker }}). Erstelle jetzt deine eigene Infografik.{% else %}Professionelle Aktien-Infografiken erstellen und vergleichen. Kostenlose Analyse-Tools für Dividenden-Investoren.{% endif %}">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="{% if ticker %}{{ company_name }} Analyse{% else %}Aktien-Bild Generator{% endif %}">
+  <meta property="og:site_name" content="Schatzsuche 4.0">
+  <meta property="og:type" content="website">
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    #suggestions{display:none;max-height:220px;overflow-y:auto;z-index:1050}
-    #suggestions li:hover{background:#f0f0f0;cursor:pointer}
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --accent: #10b981;
+      --accent-hover: #059669;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+      color: white;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+    }
+
+    #suggestions {
+      display: none;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 1050;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #suggestions li {
+      background: transparent;
+      color: white;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    #suggestions li:hover {
+      background: rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      border: none;
+      font-weight: 700;
+      padding: 14px;
+      border-radius: 10px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+    }
+
+    .form-control, .form-select {
+      background-color: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .form-control:focus, .form-select:focus {
+      background-color: rgba(15, 23, 42, 0.8);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+    }
+
+    .form-label {
+      font-weight: 600;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    /* Loader */
+    #loader-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .spinner-premium {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(16, 185, 129, 0.1);
+      border-left-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-weight: 700;
+      font-size: 1.5rem;
+      background: linear-gradient(to right, #10b981, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    {% if is_embedded %}
+    body { background: transparent !important; }
+    .container { padding: 0 !important; }
+    .glass-card { box-shadow: none !important; }
+    {% endif %}
   </style>
 </head>
-<body class="bg-light">
-  <div class="container py-5">
-    <h1 class="text-center mb-4">Aktien-Bild erstellen</h1>
 
-    <form class="card shadow-sm p-4 mx-auto" style="max-width:640px" method="post" action="{{ url_for('generate_image') }}">
+<body>
+  <div id="loader-overlay">
+    <div class="spinner-premium"></div>
+    <div class="loading-text">Analyse wird erstellt...</div>
+    <div class="text-muted mt-3">Schatzsuche 4.0 Pro Tool</div>
+  </div>
+
+  <div class="container {% if not is_embedded %}py-5{% else %}py-2{% endif %}">
+    {% if not is_embedded %}
+    <h1 class="text-center mb-4 fw-bold">Aktien-Bild Pro</h1>
+    {% endif %}
+
+    <div class="text-center mb-4">
+      {% if is_stale %}
+      <span class="badge rounded-pill bg-danger px-3 py-2">Datenstand: {{ last_update_str }} (Veraltet!)</span>
+      {% else %}
+      <span class="badge rounded-pill bg-success px-3 py-2" style="background-color:rgba(16, 185, 129, 0.2) !important; color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">Datenstand: {{ last_update_str }}</span>
+      {% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="mx-auto" style="max-width:640px;">
+      {% for category, message in messages %}
+      <div class="alert alert-{{ category }} glass-card text-white border-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <form class="glass-card p-4 mx-auto shadow" style="max-width:640px" method="post"
+      action="{{ url_for('generate_image') }}" id="mainForm" data-is-embedded="{{ '1' if is_embedded else '0' }}"
+      data-defaults='{{ default_metrics | tojson }}' data-descriptions='{{ metric_descriptions | tojson }}'>
+      
+      <input type="hidden" name="is_embedded" value="{{ '1' if is_embedded else '0' }}">
+
       <!-- Suche / Ticker -->
-      <div class="mb-3 position-relative">
-        <label for="stock-search" class="form-label">Aktie suchen</label>
-        <input id="stock-search" type="text" class="form-control" placeholder="Apple, BASF…" autocomplete="off">
-        <ul id="suggestions" class="list-group position-absolute top-100 start-0 w-100 shadow"></ul>
+      <div class="mb-4 position-relative">
+        <label for="stock-search" class="form-label text-uppercase tracking-wider">Aktie suchen</label>
+        <input id="stock-search" type="text" class="form-control" placeholder="z.B. Apple, Microsoft, NVIDIA..." autocomplete="off">
+        <ul id="suggestions" class="list-group position-absolute top-100 start-0 w-100 shadow-lg mt-1"></ul>
       </div>
-      <div class="mb-3">
-        <label for="ticker" class="form-label">Ticker (Pflichtfeld)</label>
-        <input id="ticker" name="ticker" class="form-control" required>
+
+      <div class="mb-4">
+        <label for="ticker" class="form-label text-uppercase tracking-wider">Ticker Symbol</label>
+        <input id="ticker" name="ticker" class="form-control fw-bold" value="{{ ticker if ticker else '' }}" required placeholder="Ticker eingeben">
+      </div>
+
+      <div class="row">
+        <!-- Layout Template -->
+        <div class="col-md-6 mb-4">
+          <label for="layout" class="form-label text-uppercase tracking-wider">Design Layout</label>
+          <select id="layout" name="layout" class="form-select">
+            <option value="default" selected>Standard (Hell)</option>
+            <option value="dark">Dark Mode (Dunkel)</option>
+          </select>
+        </div>
+
+        <div class="col-md-6 mb-4">
+          <label for="bg_upload" class="form-label text-uppercase tracking-wider">Hintergrundbild</label>
+          <input type="file" id="bg_upload" accept="image/png, image/jpeg, image/webp" class="form-control">
+          <input type="hidden" name="bg_path" id="bg_path" value="">
+          <div id="bg-preview" class="mt-2 text-success small fw-bold" style="display:none;">Bereit! ✅</div>
+        </div>
       </div>
 
       <!-- Kennzahlen -->
@@ -36,7 +217,8 @@
       <div class="row row-cols-2 g-2 mb-2">
         {% for m in available_metrics if m.key in default_metrics %}
         <div class="col form-check">
-          <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}" id="chk_{{ m.key|replace(' ','_') }}" checked>
+          <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}"
+            id="chk_{{ m.key|replace(' ','_') }}" checked>
           <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">
             {{ m.label }}
             <span class="ms-1 text-info" tabindex="0" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
@@ -47,7 +229,8 @@
 
       <!-- Aufklapp-Button -->
       <p>
-        <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#moreMetrics" role="button" aria-expanded="false" aria-controls="moreMetrics">
+        <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#moreMetrics" role="button"
+          aria-expanded="false" aria-controls="moreMetrics">
           Weitere Kennzahlen anzeigen ▼
         </a>
       </p>
@@ -57,7 +240,8 @@
         <div class="row row-cols-2 g-2 mb-3">
           {% for m in available_metrics if m.key not in default_metrics %}
           <div class="col form-check">
-            <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}" id="chk_{{ m.key|replace(' ','_') }}">
+            <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}"
+              id="chk_{{ m.key|replace(' ','_') }}">
             <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">
               {{ m.label }}
               <span class="ms-1 text-info" tabindex="0" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
@@ -68,75 +252,165 @@
       </div>
 
       <button class="btn btn-primary w-100">Bild erzeugen</button>
+      <p class="text-muted small mt-2">Hinweis: Logos werden automatisch durch Initialen ersetzt, falls nicht vorhanden.
+      </p>
+
+      {% if show_cta and not is_embedded %}
+      <div class="alert alert-info mt-3" style="border-left: 4px solid #0d6efd;">
+        <strong>Premium Version sichern!</strong>
+        Unterstütze die Entwicklung und erstelle Bilder ohne Werbung.
+        <a href="#" class="alert-link">Mehr erfahren &rarr;</a>
+      </div>
+      {% endif %}
     </form>
   </div>
 
   <!-- Bootstrap Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Beschreibungen (JSON) -->
-  <script id="metric-desc-json" type="application/json">
-    {{ metric_descriptions | tojson }}
-  </script>
+  <!-- Beschreibungen für Tooltips (JSON) -->
+  <div id="metric-data" data-defaults='{{ default_metrics | tojson }}'
+    data-descriptions='{{ metric_descriptions | tojson }}' style="display:none;"></div>
 
   <script>
+    const jsData = document.getElementById('metric-data').dataset;
+    const defaultMetrics = JSON.parse(jsData.defaults || '[]');
+    const metricDescriptions = JSON.parse(jsData.descriptions || '{}');
+    const isEmbedded = (document.getElementById('mainForm').dataset.isEmbedded === '1');
+
+    function showLoader() {
+      document.getElementById('loader-overlay').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    // ─── Token Persistence ──────────────────────────────────────
+    const urlToken = new URLSearchParams(window.location.search).get('token');
+    const finalToken = urlToken || localStorage.getItem('aktien_tool_token');
+    if (finalToken) {
+      let h = document.getElementById('hidden_token');
+      if (!h) {
+        h = document.createElement('input');
+        h.type = 'hidden'; h.name = 'token'; h.id = 'hidden_token';
+        document.getElementById('mainForm').appendChild(h);
+      }
+      h.value = finalToken;
+    }
+
+    // ─── Auto-Load for Embeds / Landing Pages ────────────────────
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlTicker = urlParams.get('ticker') || "{{ ticker if ticker else '' }}";
+    
+    if (urlTicker) {
+      document.getElementById('ticker').value = urlTicker;
+      if (urlParams.get('layout')) document.getElementById('layout').value = urlParams.get('layout');
+      
+      window.addEventListener('DOMContentLoaded', () => {
+        showLoader();
+        setTimeout(() => document.getElementById('mainForm').submit(), 500);
+      });
+    }
+
+    // Loader on manual submit
+    document.getElementById('mainForm').addEventListener('submit', showLoader);
+
+    // ─── Custom Background Upload ───────────────────────────────
+    const bgInput = document.getElementById('bg_upload');
+    const bgHidden = document.getElementById('bg_path');
+    const bgPreview = document.getElementById('bg-preview');
+    if(bgInput) {
+      bgInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const fd = new FormData();
+        fd.append('bg_file', file);
+        bgPreview.textContent = 'Lädt hoch... ⏳';
+        bgPreview.style.display = 'block';
+        bgPreview.classList.replace('text-success', 'text-warning');
+        try {
+          const res = await fetch('/upload-background', { method: 'POST', body: fd });
+          if(res.ok) {
+            const data = await res.json();
+            bgHidden.value = data.bg_path;
+            bgPreview.textContent = 'Eigenes Hintergrundbild aktiv! ✅';
+            bgPreview.classList.replace('text-warning', 'text-success');
+          } else {
+            bgPreview.textContent = 'Fehler beim Upload.';
+            bgPreview.classList.replace('text-success', 'text-danger');
+          }
+        } catch(err) {
+          bgPreview.textContent = 'Netzwerkfehler.';
+          bgPreview.classList.replace('text-success', 'text-danger');
+        }
+      });
+    }
+
     // ─── Autocomplete ────────────────────────────────────────────
     const search = document.getElementById('stock-search');
     const ticker = document.getElementById('ticker');
-    const sugg   = document.getElementById('suggestions');
-    async function fetchMatches(q){
-      if(!q) return [];
+    const sugg = document.getElementById('suggestions');
+    async function fetchMatches(q) {
+      if (!q) return [];
       const r = await fetch(`/search?q=${encodeURIComponent(q)}`);
       return r.ok ? await r.json() : [];
     }
-    search.addEventListener('input', async e=>{
+    search.addEventListener('input', async e => {
       const q = e.target.value.trim();
-      if(!q){sugg.style.display='none';return;}
+      if (!q) { sugg.style.display = 'none'; return; }
       const d = await fetchMatches(q);
-      if(!d.length){sugg.style.display='none';return;}
-      sugg.innerHTML = d.map(o=>`<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name}</li>`).join('');
-      sugg.style.display='block';
+      if (!d.length) { sugg.style.display = 'none'; return; }
+      sugg.innerHTML = d.map(o => `<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name}</li>`).join('');
+      sugg.style.display = 'block';
     });
-    sugg.addEventListener('click', e=>{
+    sugg.addEventListener('click', e => {
       const li = e.target.closest('li[data-sym]');
-      if(!li) return;
+      if (!li) return;
       search.value = ticker.value = li.dataset.sym;
-      sugg.style.display='none';
+      sugg.style.display = 'none';
     });
-    document.addEventListener('click', e=>{
-      if(!search.contains(e.target) && !sugg.contains(e.target)) sugg.style.display='none';
+    document.addEventListener('click', e => {
+      if (!search.contains(e.target) && !sugg.contains(e.target)) sugg.style.display = 'none';
     });
 
     // ─── Checkbox-Limit ─────────────────────────────────────────
     const MAX = 8;
     const chks = Array.from(document.querySelectorAll('.metric-chk'));
     const counter = document.getElementById('metric-counter');
-    function enforce(){
-      const sel = chks.filter(c=>c.checked);
+    function enforce() {
+      const sel = chks.filter(c => c.checked);
       counter.textContent = `${sel.length} / ${MAX}`;
-      if(sel.length >= MAX){
-        chks.forEach(c=>{ if(!c.checked) c.disabled = true; });
-      }else{
-        chks.forEach(c=>c.disabled = false);
+      if (sel.length >= MAX) {
+        chks.forEach(c => { if (!c.checked) c.disabled = true; });
+      } else {
+        chks.forEach(c => c.disabled = false);
       }
     }
-    chks.forEach(c=>c.addEventListener('change', enforce));
+    chks.forEach(c => c.addEventListener('change', enforce));
     enforce();
 
     // ─── Info-Popovers (hover) ──────────────────────────────────
-    const desc = JSON.parse(document.getElementById('metric-desc-json').textContent);
-    document.querySelectorAll('[data-key]').forEach(el=>{
-      const key  = el.dataset.key;
-      const text = desc[key] || 'Keine Beschreibung verfügbar.';
-      const pop  = new bootstrap.Popover(el,{
+    document.querySelectorAll('[data-key]').forEach(el => {
+      const key = el.dataset.key;
+      const text = metricDescriptions[key] || 'Keine Beschreibung verfügbar.';
+      const pop = new bootstrap.Popover(el, {
         trigger: 'hover focus',
-        html:    true,
+        html: true,
         content: `<div class="small">${text}</div>`,
         container: 'body'
       });
-      // Klicks auf das Icon nicht zum Label durchreichen
-      el.addEventListener('click', e=>e.stopPropagation());
+      el.addEventListener('click', e => e.stopPropagation());
     });
+    // ─── iFrame Resizing (Phase 5) ─────────────────────────────
+    if (isEmbedded) {
+      function sendHeight() {
+        const height = document.body.scrollHeight;
+        window.parent.postMessage({ type: 'setHeight', height: height }, '*');
+      }
+      window.addEventListener('load', sendHeight);
+      window.addEventListener('resize', sendHeight);
+      const observer = new MutationObserver(sendHeight);
+      observer.observe(document.body, { attributes: true, childList: true, subtree: true });
+    }
   </script>
 </body>
+
 </html>
