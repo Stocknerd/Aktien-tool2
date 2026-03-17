@@ -1,6 +1,6 @@
 from flask import (
     Flask, render_template, request, jsonify,
-    redirect, url_for, send_from_directory, flash
+    redirect, url_for, send_from_directory, flash, render_template_string
 )
 import os, pandas as pd, io, time
 import saas_logic
@@ -211,6 +211,70 @@ def api_render():
 @app.route('/output/<path:filename>')
 def generated_file(filename):
     return send_from_directory(core.OUT_DIR, filename)
+
+# ─── Comparison Tool Routes ───────────────────────────────
+
+@app.route('/compare')
+def compare_home():
+    is_embedded = request.args.get('embed') == '1'
+    t1 = request.args.get('t1', '').upper()
+    t2 = request.args.get('t2', '').upper()
+    m_param = request.args.get('metrics', '')
+    
+    # We use a dedicated template for comparison (from compare_app.py)
+    # For now, we'll keep the COMPOSE_HTML logic inside comparison_templates.py or similar 
+    # but to be quick, we'll inline the simplified version or use a new template.
+    return render_template('compare.html', is_embedded=is_embedded, vt1=t1, vt2=t2, vmetrics=m_param)
+
+@app.route('/compare/generate')
+def generate_compare():
+    token = get_effective_token()
+    ok, msg = saas_logic.check_quota(token)
+    if not ok:
+        flash(msg, "danger")
+        return redirect(url_for('compare_home'))
+
+    t1 = request.args.get('t1', '').upper().strip()
+    t2 = request.args.get('t2', '').upper().strip()
+    if not t1 or not t2:
+        flash("Bitte beide Ticker angeben.", "warning")
+        return redirect(url_for('compare_home'))
+
+    df = core.load_df()
+    row1 = df[df['Symbol'] == t1]
+    row2 = df[df['Symbol'] == t2]
+
+    if row1.empty or row2.empty:
+        missing = t1 if row1.empty else t2
+        flash(f"Ticker '{missing}' nicht gefunden.", "danger")
+        return redirect(url_for('compare_home'))
+
+    m_param = request.args.get('metrics_preset', '')
+    if m_param == 'custom':
+        m_param = request.args.get('metrics_custom', '')
+    elif not m_param:
+        m_param = request.args.get('metrics', '')
+
+    if m_param:
+        selected_metrics = [m.strip() for m in m_param.split(',') if m.strip()]
+    else:
+        selected_metrics = core.DEFAULT_METRICS
+
+    bg_path = None
+    if request.args.get('bg_path') and os.path.exists(request.args.get('bg_path')):
+        bg_path = request.args.get('bg_path')
+
+    img = core.render_compare([row1.iloc[0], row2.iloc[0]], selected_metrics, fetch_analyst=True, bg_path=bg_path)
+
+    m_hash = "C" if m_param else "S"
+    fname = f"COMPARE_{t1}_{t2}_{m_hash}_{int(time.time())}.png"
+    path = os.path.join(core.OUT_DIR, fname)
+    img.convert('RGB').save(path, format="PNG")
+
+    saas_logic.log_usage(token, "compare")
+
+    is_embedded = request.args.get('embed') == '1'
+    return render_template('compare_result.html', fname=fname, t1=t1, t2=t2, m_param=m_param, is_embedded=is_embedded)
 
 # ─── Health Endpoints (Phase 1D) ───────────────────────────
 @app.route('/health/data')

@@ -153,7 +153,10 @@
     <h1 class="text-center mb-4 fw-bold">Aktien-Bild Pro</h1>
     {% endif %}
 
-    <div class="text-center mb-4">
+    <div class="text-center mb-4 d-flex justify-content-center align-items-center gap-3">
+      {% if ticker %}
+      <a href="/" class="btn btn-outline-light btn-sm px-3 rounded-pill" style="border: 1px solid rgba(255,255,255,0.2);">← Neue Suche</a>
+      {% endif %}
       {% if is_stale %}
       <span class="badge rounded-pill bg-danger px-3 py-2">Datenstand: {{ last_update_str }} (Veraltet!)</span>
       {% else %}
@@ -299,15 +302,19 @@
     // ─── Auto-Load for Embeds / Landing Pages ────────────────────
     const urlParams = new URLSearchParams(window.location.search);
     const urlTicker = urlParams.get('ticker') || "{{ ticker if ticker else '' }}";
+    const isEditMode = urlParams.get('edit') === '1';
     
     if (urlTicker) {
       document.getElementById('ticker').value = urlTicker;
       if (urlParams.get('layout')) document.getElementById('layout').value = urlParams.get('layout');
       
-      window.addEventListener('DOMContentLoaded', () => {
-        showLoader();
-        setTimeout(() => document.getElementById('mainForm').submit(), 500);
-      });
+      // Auto-submit only if NOT in edit mode and NOT coming from a result page
+      if (!isEditMode && urlParams.get('auto') === '1') {
+        window.addEventListener('DOMContentLoaded', () => {
+          showLoader();
+          setTimeout(() => document.getElementById('mainForm').submit(), 500);
+        });
+      }
     }
 
     // Loader on manual submit

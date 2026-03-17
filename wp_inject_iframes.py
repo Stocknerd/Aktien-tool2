@@ -140,8 +140,24 @@ def process_posts(known_tickers: set, dry_run: bool = False):
                 continue
 
             print(f"  ✅ #{post_id} '{title}' – Ticker: {found_tickers}")
-            iframes = "".join(make_iframe_block(t) for t in found_tickers)
-            new_content = content + iframes
+            
+            if len(found_tickers) == 2:
+                # Comparison mode
+                t1, t2 = found_tickers
+                url = f"{TOOL_BASE_URL}/compare?t1={t1}&t2={t2}&auto=1&embed=1"
+                iframe_block = (
+                    f'\n\n<!-- wp:html -->\n'
+                    f'<div style="margin:32px 0;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12);">'
+                    f'<iframe src="{url}" width="100%" height="640" frameborder="0" '
+                    f'style="border-radius:14px;display:block;" loading="lazy" '
+                    f'title="Aktienvergleich {t1} vs {t2}"></iframe>'
+                    f'</div>\n<!-- /wp:html -->'
+                )
+                new_content = content + iframe_block
+            else:
+                # Single stock mode
+                iframes = "".join(make_iframe_block(t) for t in found_tickers)
+                new_content = content + iframes
 
             if not dry_run:
                 patch = requests.post(
