@@ -3,6 +3,13 @@ from app import app
 
 @pytest.fixture
 def client():
+    # Ensure a dummy CSV exists for testing if none is present
+    if not os.path.exists("stock_data.csv"):
+        with open("stock_data.csv", "w", encoding="utf-8") as f:
+            f.write("Symbol,Security,KGV,Dividendenrendite,Abfragedatum\n")
+            f.write("AAPL,Apple Inc.,30.5,0.005,2026-03-17\n")
+            f.write("MSFT,Microsoft Corp.,35.2,0.007,2026-03-17\n")
+            
     app.config['TESTING'] = True
     with app.test_client() as client:
         yield client
