@@ -31,6 +31,7 @@ import yfinance as yf
 # Pfade & Parameter
 # --------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent
+
 DATA_FOLDER = BASE_DIR / "data"
 LOG_FOLDER = BASE_DIR / "logs"
 RAW_DATA_DIR = DATA_FOLDER / "raw"
