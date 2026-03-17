@@ -1,53 +1,169 @@
 <!doctype html>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ergebnis</title>
-<style>
-  html, body { height: 100%; margin: 0; }
-  body { font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; color:#111; }
-  .wrap { min-height: 100%; display: flex; flex-direction: column; }
-  .header, .footer { text-align: center; padding: 8px 12px; }
-  .main {
-    flex: 1;
-    display: flex;
-    align-items: center;     /* vertikal zentriert */
-    justify-content: center; /* horizontal zentriert */
-    padding: 12px;
-    box-sizing: border-box;
-    overflow: hidden;        /* verhindert internen Scroll */
-  }
-  img {
-    max-width: 100%;
-    height: auto;
-    /* Wichtig: Bild nie höher als iFrame-Viewport → kein Scrollen im iFrame */
-    max-height: calc(100vh - 110px); /* 110px Reserve für Header/Buttons */
-    border-radius: 8px;
-    box-shadow: 0 6px 24px rgba(0,0,0,.12);
-  }
-  @media (max-width: 640px) {
-    img { max-height: calc(100vh - 96px); }
-  }
-</style>
+<html lang="de">
 
-<div class="wrap">
-  <div class="header">
-    <a href="/">Neues Bild erstellen</a>
-    ·
-    <a download href="{{ url_for('generated_file', filename=filename) }}">PNG herunterladen</a>
-  </div>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% if ticker %}{{ company_name }} ({{ ticker }}) - Aktienanalyse | Schatzsuche 4.0{% else %}Ergebnis - Aktien Analyse | Schatzsuche 4.0{% endif %}</title>
+  <meta name="description" content="{% if ticker %}Deine Aktienanalyse für {{ company_name }} ({{ ticker }}) ist bereit.{% else %}Deine professionelle Aktien-Infografik wurde erstellt.{% endif %}">
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --accent: #10b981;
+      --accent-hover: #059669;
+    }
 
-  <div class="main">
-    <img src="{{ url_for('generated_file', filename=filename) }}" alt="Ergebnisbild">
-  </div>
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+      color: white;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
 
-  <div class="footer"></div>
-</div>
+    .navbar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 1rem 0;
+    }
 
-<!-- Optional: Falls du später doch Auto-Resize im Parent willst, lässt das parent.postMessage zu -->
-<script>
-  function postHeight(){
-    const h = document.documentElement.scrollHeight;
-    try { parent.postMessage({ type: 'aktienTool:height', height: h }, '*'); } catch(e){}
-  }
-  window.addEventListener('load', postHeight);
-  new ResizeObserver(postHeight).observe(document.body);
-</script>
+    .preview-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .image-wrapper {
+      position: relative;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border-radius: 16px;
+      overflow: hidden;
+      max-width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      max-height: 85vh;
+      /* border-radius: 12px; */ /* Removed as per new design */
+    }
+
+    .btn-download {
+      background: var(--accent);
+      border: none;
+      color: white;
+      font-weight: 700;
+      padding: 12px 24px;
+      border-radius: 10px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-download:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      color: white;
+      box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-back {
+      color: #94a3b8;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-back:hover {
+      color: white;
+      transform: translateX(-4px);
+    }
+
+    {% if is_embedded %}
+    .navbar {
+      display: none;
+    }
+    body { background: transparent !important; }
+    .preview-container {
+      padding: 0;
+    }
+    .image-wrapper {
+      box-shadow: none;
+      border-radius: 14px;
+    }
+    img {
+      max-height: none;
+      width: 100%;
+    }
+    {% endif %}
+  </style>
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="container d-flex justify-content-between align-items-center">
+      <a href="/{{ ticker }}?edit=1{% if is_embedded %}&embed=1{% endif %}" class="btn-back">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+        </svg>
+        Editieren
+      </a>
+      <a href="/{% if is_embedded %}?embed=1{% endif %}" class="btn-back" style="color:rgba(148, 163, 184, 0.7); font-size: 0.9rem;">
+        Neuer Ticker
+      </a>
+      <a href="{{ url_for('download_image', filename=filename) }}" class="btn-download">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+          <path
+            d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+          <path
+            d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
+        </svg>
+        Download PNG
+      </a>
+    </div>
+  </nav>
+
+  <main class="preview-container">
+    <div class="image-wrapper">
+      <img src="{{ url_for('generated_file', filename=filename) }}" alt="{% if ticker %}{{ company_name }}{% else %}Aktien{% endif %} Analyse">
+    </div>
+  </main>
+
+  <script>
+    function postHeight() {
+      const h = document.documentElement.scrollHeight;
+      try { window.parent.postMessage({ type: 'setHeight', height: h }, '*'); } catch (e) { }
+    }
+    window.addEventListener('load', postHeight);
+    new ResizeObserver(postHeight).observe(document.body);
+  </script>
+</body>
+
+</html>

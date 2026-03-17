@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import hashlib
+import json # Added json import
 import math
 import os
 import random
@@ -39,6 +40,8 @@ FILE_INPUT = BASE_DIR / "data" / "ticker_resolved.csv"
 FILE_OUTPUT = BASE_DIR / "stock_data.csv"
 LOG_FOLDER = BASE_DIR / "logs"
 LOG_FOLDER.mkdir(parents=True, exist_ok=True)
+RAW_DATA_DIR = BASE_DIR / "data" / "raw" # Added RAW_DATA_DIR definition
+RAW_DATA_DIR.mkdir(parents=True, exist_ok=True) # Ensure RAW_DATA_DIR exists
 
 # Konservative Server-Defaults (via ENV überschreibbar)
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", 20))        # kleine Gruppen
@@ -102,7 +105,7 @@ SPALTEN_KENNZAHLEN = [
     # Dividenden-Historie
     "5Y Dividendenrendite",
 ]
-META_SPALTEN = ["Abfragedatum", "Datenquelle"]
+META_SPALTEN = ["Abfragedatum", "Datenquelle", "Datenqualität", "Fehlende_Kennzahlen"]
 
 # --------------------------------------------------
 # Utils
@@ -173,10 +176,22 @@ def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: flo
     for attempt in range(1, max_tries + 1):
         try:
             time.sleep(random.uniform(*jitter))
-            return yf.Ticker(ticker).info
+            info = yf.Ticker(ticker).info
+            
+            # G1: Speichern als rohes JSON für Data-Lake / RAG
+            try:
+                raw_path = RAW_DATA_DIR / f"{ticker}.json"
+                with open(raw_path, 'w', encoding='utf-8') as f:
+                    json.dump(info, f, ensure_ascii=False, indent=2)
+            except Exception as io_err:
+                print(f"⚠️ [WARN] Konnte JSON Data-Lake Dump für {ticker} nicht schreiben: {io_err}")
+
+            return info
         except Exception as e:
             last_err = e
+            print(f"⚠️ [WARN] Ticker {ticker} Fetch-Fehler (Versuch {attempt}/{max_tries}): {e}")
             time.sleep(base_sleep * (2 ** (attempt - 1)))
+    print(f"❌ [ERROR] Ticker {ticker} fatal fehlgeschlagen nach {max_tries} Versuchen.")
     raise last_err  # type: ignore[return-value]
 
 
@@ -306,7 +321,10 @@ def main() -> None:
             if err is not None or info is None:
                 failed.append(ticker)
                 group_fail += 1
+                print(f"❌ {ticker}: failed to fetch.")
                 continue
+            else:
+                print(f"✅ {ticker}: fetched successfully.")
 
             mapped = map_info(info)
             changed_any_row = False
@@ -367,6 +385,11 @@ def main() -> None:
 
     # failed-Log schreiben
     write_failed_list(failed)
+
+    # --- Quality Flags am Ende berechnen ---
+    total_kennzahlen = len(SPALTEN_KENNZAHLEN)
+    df["Fehlende_Kennzahlen"] = df[SPALTEN_KENNZAHLEN].isna().sum(axis=1)
+    df["Datenqualität"] = (1.0 - (df["Fehlende_Kennzahlen"] / total_kennzahlen)).round(2)
 
     # Speichern je nach Erfolgsquote
     updated_ratio = (updated_rows_count / max(1, ticker_total))

@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import random
@@ -30,10 +31,16 @@ import yfinance as yf
 # Pfade & Parameter
 # --------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent
-FILE_INPUT = BASE_DIR / "data" / "ticker_resolved.csv"
-FILE_OUTPUT = BASE_DIR / "stock_data.csv"
+DATA_FOLDER = BASE_DIR / "data"
 LOG_FOLDER = BASE_DIR / "logs"
+RAW_DATA_DIR = DATA_FOLDER / "raw"
+
+FILE_INPUT = Path(os.getenv("FILE_INPUT", DATA_FOLDER / "ticker_resolved.csv"))
+FILE_OUTPUT = Path(os.getenv("FILE_OUTPUT", BASE_DIR / "stock_data.csv"))
+
+# Ordner anlegen
 LOG_FOLDER.mkdir(parents=True, exist_ok=True)
+RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # Rate-Limit / Stabilität (via ENV überschreibbar)
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", 40))       # Größe der Gruppen (nur fürs Throttling zwischen Gruppen)
@@ -49,7 +56,7 @@ PARTIAL_SAVE_EVERY = int(os.getenv("PARTIAL_SAVE_EVERY", 300))  # alle N verarbe
 
 # Quick-Mode (aggressiver speichern, weniger Retries)
 QUICK = os.getenv("QUICK") == "1"
-MIN_UPDATED_QUOTE = 0.0 if QUICK else float(os.getenv("MIN_UPDATED_QUOTE", 0.80))
+MIN_UPDATED_QUOTE = 0.0 if QUICK else float(os.getenv("MIN_UPDATED_QUOTE", 0.70))
 if QUICK:
     MAX_TRIES = min(MAX_TRIES, 2)
 
@@ -67,8 +74,11 @@ SPALTEN_KENNZAHLEN = [
     "Marktkapitalisierung", "Free Cashflow", "Free Cashflow Yield", "Operativer Cashflow",
     # Renditen & Wachstum
     "Eigenkapitalrendite", "Return on Assets", "ROIC", "Umsatzwachstum 3J (erwartet)",
+    # Analysten & Kursziele
+    "Analyst Mean Target", "Analyst High Target", "Analyst Low Target", 
+    "Current Price", "Recommendation Key", "Number of Analysts",
 ]
-META_SPALTEN = ["Abfragedatum", "Datenquelle"]
+META_SPALTEN = ["Abfragedatum", "Datenquelle", "Datenqualität", "Fehlende_Kennzahlen"]
 
 # --------------------------------------------------
 # Utils
@@ -113,6 +123,12 @@ def map_info(info: Dict) -> Dict:
         "Return on Assets": info.get("returnOnAssets"),
         "ROIC": info.get("returnOnCapital"),
         "Umsatzwachstum 3J (erwartet)": info.get("revenueGrowth"),
+        "Analyst Mean Target": info.get("targetMeanPrice"),
+        "Analyst High Target": info.get("targetHighPrice"),
+        "Analyst Low Target": info.get("targetLowPrice"),
+        "Current Price": info.get("currentPrice") or info.get("regularMarketPrice"),
+        "Recommendation Key": info.get("recommendationKey"),
+        "Number of Analysts": info.get("numberOfAnalystOpinions"),
     }
 
 
@@ -122,10 +138,22 @@ def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: flo
         try:
             # pro Ticker etwas Jitter
             time.sleep(random.uniform(*PER_TICKER_JITTER))
-            return yf.Ticker(ticker).info  # schnelle Lösung über .info
+            info = yf.Ticker(ticker).info  # schnelle Lösung über .info
+            
+            # G1: Speichern als rohes JSON für Data-Lake / RAG
+            try:
+                raw_path = RAW_DATA_DIR / f"{ticker}.json"
+                with open(raw_path, 'w', encoding='utf-8') as f:
+                    json.dump(info, f, ensure_ascii=False, indent=2)
+            except Exception as io_err:
+                print(f"⚠️ [WARN] Konnte JSON Data-Lake Dump für {ticker} nicht schreiben: {io_err}")
+
+            return info
         except Exception as e:
             last_err = e
+            print(f"⚠️ [WARN] Ticker {ticker} Fetch-Fehler (Versuch {attempt}/{max_tries}): {e}")
             time.sleep(base_sleep * (2 ** (attempt - 1)))
+    print(f"❌ [ERROR] Ticker {ticker} fatal fehlgeschlagen nach {max_tries} Versuchen.")
     raise last_err  # type: ignore[return-value]
 
 
@@ -142,7 +170,7 @@ def write_failed_list(failed: List[str]) -> None:
                 f.write("\n")
         try:
             print(f"⚠️ Fehlgeschlagene Ticker: {len(failed)} – Beispiel: {failed[:10]}")
-            print(f"   → Liste gespeichert unter: {path}")
+            print(f"   -> Liste gespeichert unter: {path}")
         except Exception:
             print(f"Fehlgeschlagene Ticker: {len(failed)} – Beispiel: {failed[:10]}")
             print(f"   -> Liste gespeichert unter: {path}")
@@ -170,7 +198,7 @@ def main() -> None:
     raw_unique = df["valid_yahoo_ticker"].nunique(dropna=True)
     df = df[df["valid_yahoo_ticker"].notna()].copy()
     df = df.drop_duplicates("valid_yahoo_ticker", keep="first").reset_index(drop=True)
-    print(f"ℹ️ Eingabe: {raw_rows} Zeilen, {raw_unique} eindeutige Ticker → nach Deduplizierung: {len(df)} Zeilen.")
+    print(f"Info: Eingabe: {raw_rows} Zeilen, {raw_unique} eindeutige Ticker -> nach Deduplizierung: {len(df)} Zeilen.")
 
     # Ziel-/Meta-Spalten anlegen
     df = ensure_columns(df, SPALTEN_KENNZAHLEN + META_SPALTEN)
@@ -199,7 +227,7 @@ def main() -> None:
                     old = old.sort_values("Abfragedatum")
                 old = old.dropna(subset=["valid_yahoo_ticker"]).drop_duplicates("valid_yahoo_ticker", keep="last")
                 if old_rows != len(old):
-                    print(f"ℹ️ Bestand: {old_rows} Zeilen, {old_unique} eindeutige Ticker → nach Deduplizierung: {len(old)} Zeilen.")
+                    print(f"ℹ️ Bestand: {old_rows} Zeilen, {old_unique} eindeutige Ticker -> nach Deduplizierung: {len(old)} Zeilen.")
 
                 # Merge strikt als 1:1 absichern
                 try:
@@ -273,7 +301,10 @@ def main() -> None:
             mask = df["valid_yahoo_ticker"] == ticker
             if err is not None or info is None:
                 failed.append(ticker)
+                print(f"❌ {ticker}: failed to fetch.")
                 continue
+            else:
+                print(f"✅ {ticker}: fetched successfully.")
 
             mapped = map_info(info)
             changed_any_row = False
@@ -320,6 +351,11 @@ def main() -> None:
 
     # failed-Log schreiben
     write_failed_list(failed)
+
+    # --- Quality Flags am Ende berechnen ---
+    total_kennzahlen = len(SPALTEN_KENNZAHLEN)
+    df["Fehlende_Kennzahlen"] = df[SPALTEN_KENNZAHLEN].isna().sum(axis=1)
+    df["Datenqualität"] = (1.0 - (df["Fehlende_Kennzahlen"] / total_kennzahlen)).round(2)
 
     # Speichern je nach Erfolgsquote
     updated_ratio = (updated_rows_count / max(1, ticker_total))
