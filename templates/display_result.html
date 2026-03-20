@@ -132,16 +132,18 @@
 <body>
   <nav class="navbar">
     <div class="container d-flex justify-content-between align-items-center">
-      <a href="/{{ ticker }}?edit=1{% if is_embedded %}&embed=1{% endif %}" class="btn-back">
+      <a href="/?edit=1&ticker={{ ticker }}{% if is_embedded %}&embed=1{% endif %}" class="btn-back">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
         </svg>
         Editieren
       </a>
-      <a href="/{% if is_embedded %}?embed=1{% endif %}" class="btn-back" style="color:rgba(148, 163, 184, 0.7); font-size: 0.9rem;">
-        Neuer Ticker
+      
+      <a href="/{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-info btn-sm rounded-pill mx-2" style="font-weight:600; font-size: 0.85rem; border: 1px solid rgba(13, 202, 240, 0.3);">
+        ➕ Neue Suche
       </a>
-      <a href="{{ url_for('download_image', filename=filename) }}" class="btn-download">
+
+      <a href="{{ url_for('download_image', filename=filename) }}" class="btn-download ms-auto">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
           <path
             d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />

@@ -46,6 +46,13 @@ for SVC in $SERVICES; do
   sudo systemctl status  "$SVC" --no-pager --lines 3 || true
 done
 
+echo "🌐 Nginx Konfiguration aktualisieren"
+if [[ -f "$PROJECT_DIR/configs/aktien-tool.nginx" ]]; then
+  sudo cp "$PROJECT_DIR/configs/aktien-tool.nginx" /etc/nginx/sites-available/aktien-tool
+  sudo ln -sf /etc/nginx/sites-available/aktien-tool /etc/nginx/sites-enabled/
+  sudo nginx -t && sudo systemctl reload nginx
+fi
+
 echo "🛑 Redundante Services stoppen falls aktiv"
 sudo systemctl stop compare-app.service || true
 sudo systemctl disable compare-app.service || true

@@ -316,8 +316,10 @@
       document.getElementById('ticker').value = urlTicker;
       if (urlParams.get('layout')) document.getElementById('layout').value = urlParams.get('layout');
       
-      // Auto-submit only if NOT in edit mode and NOT coming from a result page
-      if (!isEditMode && urlParams.get('auto') === '1') {
+      // Auto-submit NUR wenn explizit 'auto=1' UND NICHT 'edit=1'
+      const shouldAuto = urlParams.get('auto') === '1' && !isEditMode;
+      
+      if (shouldAuto) {
         window.addEventListener('DOMContentLoaded', () => {
           showLoader();
           setTimeout(() => document.getElementById('mainForm').submit(), 500);
