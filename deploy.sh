@@ -4,7 +4,7 @@ set -euo pipefail
 # ===== Config (override via env or CLI VAR=...) =====
 PROJECT_DIR="${PROJECT_DIR:-$(pwd)}"
 BRANCH="${BRANCH:-$(git branch --show-current)}"
-SERVICES="${SERVICES:-aktien-tool.service compare-app.service}"
+SERVICES="${SERVICES:-aktien-tool.service}"
 REQUIREMENTS="${REQUIREMENTS:-$PROJECT_DIR/requirements.txt}"
 BACKUP_ROOT="${BACKUP_ROOT:-$HOME/backups}"
 VENV="$PROJECT_DIR/venv"
@@ -45,6 +45,10 @@ for SVC in $SERVICES; do
   sudo systemctl restart "$SVC"
   sudo systemctl status  "$SVC" --no-pager --lines 3 || true
 done
+
+echo "🛑 Redundante Services stoppen falls aktiv"
+sudo systemctl stop compare-app.service || true
+sudo systemctl disable compare-app.service || true
 
 echo "🧹 Alte Backups (>30 Tage) entfernen"
 find "$BACKUP_ROOT" -maxdepth 1 -type d -name 'monorepo-*' -mtime +30 -exec rm -rf {} \;

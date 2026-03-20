@@ -221,9 +221,7 @@ def compare_home():
     t2 = request.args.get('t2', '').upper()
     m_param = request.args.get('metrics', '')
     
-    # We use a dedicated template for comparison (from compare_app.py)
-    # For now, we'll keep the COMPOSE_HTML logic inside comparison_templates.py or similar 
-    # but to be quick, we'll inline the simplified version or use a new template.
+    # Explicitly render the comparison tool template
     return render_template('compare.html', is_embedded=is_embedded, vt1=t1, vt2=t2, vmetrics=m_param)
 
 @app.route('/compare/generate')

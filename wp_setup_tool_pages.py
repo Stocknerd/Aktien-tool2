@@ -18,7 +18,7 @@ HEADERS = {
 PAGES = [
     {
         "title": "Aktien-Analyse Tool",
-        "slug": "aktien-analyse-tool",
+        "slug": "aktien-tool",  # Nutze den existierenden Slug
         "content": (
             '<!-- wp:paragraph --><p>Nutze unser professionelles Aktien-Analyse Tool, um Kennzahlen, '
             'Analysten-Ratings und Kursziele in einer übersichtlichen Infografik zu visualisieren.</p><!-- /wp:paragraph -->'
@@ -45,6 +45,13 @@ PAGES = [
 ]
 
 def setup_pages():
+    # Redundante Seite löschen falls vorhanden
+    resp = requests.get(f"{WP_BASE_URL}/pages", headers=HEADERS, params={"slug": "aktien-analyse-tool"})
+    if resp.status_code == 200 and resp.json():
+        pid = resp.json()[0]["id"]
+        print(f"[DELETE] Lösche redundante Seite: aktien-analyse-tool (ID: {pid})")
+        requests.delete(f"{WP_BASE_URL}/pages/{pid}", headers=HEADERS, params={"force": "true"})
+
     for p_data in PAGES:
         # Prüfen ob Seite schon existiert
         resp = requests.get(f"{WP_BASE_URL}/pages", headers=HEADERS, params={"slug": p_data["slug"]})
