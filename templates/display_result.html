@@ -108,8 +108,11 @@
 
     {% if is_embedded %}
     .navbar {
-      display: none;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 0.5rem 0;
     }
+    .navbar .btn-back { font-size: 0.85rem; gap: 4px; }
+    .navbar svg { width: 16px; height: 16px; }
     body { background: transparent !important; }
     .preview-container {
       padding: 0;

@@ -16,7 +16,9 @@
         {% if is_embedded %}
         body { background: transparent !important; padding: 0 !important; }
         .result-img { box-shadow: none !important; border-radius: 14px; width: 100%; }
-        .actions { display: none; }
+        /* Show actions for landing pages, even if embedded */
+        .actions { margin-top: 15px; }
+        .actions .btn { padding: 8px 15px; font-size: 0.9rem; }
         {% endif %}
     </style>
 </head>
@@ -24,9 +26,10 @@
     <img src="{{ url_for('generated_file', filename=fname) }}" class="result-img" alt="Vergleich {{ t1 }} vs {{ t2 }}">
     
     <div class="actions">
-        <a href="{{ url_for('download_image', filename=fname) }}" class="btn btn-success">⬇ PNG Herunterladen</a>
-        <a href="/compare?t1={{ t1 }}&t2={{ t2 }}&metrics={{ m_param }}" class="btn btn-outline-light">Editieren</a>
-        <a href="/compare" class="btn btn-outline-light" style="opacity: 0.7;">Neuer Vergleich</a>
+        <a href="/" class="btn btn-outline-light" style="opacity: 0.8; border: 1px solid rgba(255,255,255,0.2);">🏠 Home</a>
+        <a href="/compare?t1={{ t1 }}&t2={{ t2 }}&metrics={{ m_param }}" class="btn btn-outline-light">✎ Editieren</a>
+        <a href="/compare" class="btn btn-outline-light">🔍 Neuer Vergleich</a>
+        <a href="{{ url_for('download_image', filename=fname) }}" class="btn btn-success">⬇ PNG Download</a>
     </div>
 
     <script>

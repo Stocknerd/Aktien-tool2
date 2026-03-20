@@ -54,6 +54,11 @@ def make_iframe_block(ticker: str) -> str:
     )
 
 def process_posts(known_tickers: set, dry_run: bool = False):
+    """
+    Scannt WP-Artikel. HINWEIS: Auf Wunsch des Nutzers werden keine neuen iFrames mehr 
+    unter Blogartikel injiziert (Landingpages werden stattdessen genutzt).
+    Dieses Skript dient nun primär der Migration/Reinigung bestehender Inhalte.
+    """
     page, updated = 1, 0
     total_checked = 0
     while True:
@@ -133,13 +138,15 @@ def process_posts(known_tickers: set, dry_run: bool = False):
                 if ticker and name in text_to_search and ticker not in found_tickers and ticker in known_tickers and ticker not in TICKER_BLACKLIST:
                     found_tickers.append(ticker)
 
-            found_tickers = found_tickers[:2]
-
+            # found_tickers = found_tickers[:2]
             if not found_tickers:
-                # print(f"  ➖ #{post_id} '{title}' – keine Ticker gefunden")
+                # print(f"  - #{post_id} '{title}' - keine Ticker gefunden")
                 continue
 
-            print(f"  ✅ #{post_id} '{title}' – Ticker: {found_tickers}")
+            # ABBRUCH: Nutzer möchte keine Tools mehr unter Blogartikeln.
+            # Landingpages (siehe wp_setup_tool_pages.py) werden stattdessen genutzt.
+            print(f"  - #{post_id} '{title}' - Ticker gefunden ({found_tickers}), aber Injection deaktiviert.")
+            continue
             
             if len(found_tickers) == 2:
                 # Comparison mode

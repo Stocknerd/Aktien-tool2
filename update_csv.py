@@ -184,14 +184,14 @@ def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: flo
                 with open(raw_path, 'w', encoding='utf-8') as f:
                     json.dump(info, f, ensure_ascii=False, indent=2)
             except Exception as io_err:
-                print(f"⚠️ [WARN] Konnte JSON Data-Lake Dump für {ticker} nicht schreiben: {io_err}")
+                print(f"[WARN] Konnte JSON Data-Lake Dump für {ticker} nicht schreiben: {io_err}")
 
             return info
         except Exception as e:
             last_err = e
-            print(f"⚠️ [WARN] Ticker {ticker} Fetch-Fehler (Versuch {attempt}/{max_tries}): {e}")
+            print(f"[WARN] Ticker {ticker} Fetch-Fehler (Versuch {attempt}/{max_tries}): {e}")
             time.sleep(base_sleep * (2 ** (attempt - 1)))
-    print(f"❌ [ERROR] Ticker {ticker} fatal fehlgeschlagen nach {max_tries} Versuchen.")
+    print(f"[ERROR] Ticker {ticker} fatal fehlgeschlagen nach {max_tries} Versuchen.")
     raise last_err  # type: ignore[return-value]
 
 
@@ -321,10 +321,10 @@ def main() -> None:
             if err is not None or info is None:
                 failed.append(ticker)
                 group_fail += 1
-                print(f"❌ {ticker}: failed to fetch.")
+                print(f"[FAIL] {ticker}: failed to fetch.")
                 continue
             else:
-                print(f"✅ {ticker}: fetched successfully.")
+                print(f"[OK] {ticker}: fetched successfully.")
 
             mapped = map_info(info)
             changed_any_row = False
