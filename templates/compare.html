@@ -10,8 +10,8 @@
         :root { --bg: #0f172a; --card-bg: rgba(30, 41, 59, 0.7); --accent: #10b981; --accent-hover: #059669; }
         body { background-color: var(--bg); color: white; font-family: 'Inter', sans-serif; min-height: 100vh; padding: 40px 16px; }
         .glass-card { background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 30px; max-width: 800px; margin: 0 auto; }
-        .form-control { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px; border-radius: 10px; }
-        .form-control:focus { background: rgba(15, 23, 42, 0.8); border-color: var(--accent); color: white; box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25); }
+        .form-control, .form-select { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 12px; border-radius: 10px; }
+        .form-control:focus, .form-select:focus { background: rgba(15, 23, 42, 0.8); border-color: var(--accent); color: white; box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25); }
         .btn-primary { background: var(--accent); border: none; font-weight: 700; padding: 14px; border-radius: 10px; transition: 0.3s; }
         .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); }
         .suggestions { position: absolute; z-index: 1000; background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.1); width: 100%; max-height: 200px; overflow-y: auto; display: none; margin-top: 5px; border-radius: 10px; }
@@ -33,7 +33,7 @@
         </div>
         
         <div class="glass-card shadow">
-            <form action="{{ url_for('generate_compare') }}" method="get" id="compareForm">
+            <form action="{{ url_for('generate_compare') }}" method="post" id="compareForm">
                 <input type="hidden" name="embed" value="{{ '1' if is_embedded else '0' }}">
                 
                 <div class="row g-4 align-items-center mb-4">
@@ -58,7 +58,7 @@
 
                 <div class="mb-4">
                     <label class="form-label text-muted small text-uppercase">Metriken</label>
-                    <select name="metrics_preset" class="form-select bg-dark text-white border-secondary" id="presetSelect">
+                    <select name="metrics_preset" class="form-select" id="presetSelect">
                         <option value="">Standard (KGV, Margen, Wachstum)</option>
                         <option value="Dividendenrendite,Ausschüttungsquote,KGV,Forward PE,KBV,Operative Marge,Eigenkapitalrendite" {% if vmetrics == 'Dividendenrendite,Ausschüttungsquote,KGV,Forward PE,KBV,Operative Marge,Eigenkapitalrendite' %}selected{% endif %}>Dividenden & Value</option>
                         <option value="Umsatzwachstum 3J (erwartet),PEG-Ratio,Forward PE,Bruttomarge,Operative Marge,ROIC" {% if vmetrics == 'Umsatzwachstum 3J (erwartet),PEG-Ratio,Forward PE,Bruttomarge,Operative Marge,ROIC' %}selected{% endif %}>Wachstum & Tech</option>

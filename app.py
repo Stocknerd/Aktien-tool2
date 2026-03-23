@@ -126,11 +126,13 @@ def generate_image():
         flash(f"Ticker '{ticker}' nicht gefunden.", "danger")
         return redirect(url_for('home'))
 
-    # Background override
+    # Background override validation
     bg_path = None
     session_bg = request.form.get('bg_path') or ''
     if session_bg and os.path.exists(session_bg):
-        bg_path = session_bg
+        safe_bg_dir = os.path.abspath(os.path.join(core.STATIC_DIR, 'user_backgrounds'))
+        if os.path.abspath(session_bg).startswith(safe_bg_dir):
+            bg_path = session_bg
 
     img = core.render_stock_card(row.iloc[0], selected, layout_mode, watermark, bg_path=bg_path)
     
@@ -224,7 +226,7 @@ def compare_home():
     # Explicitly render the comparison tool template
     return render_template('compare.html', is_embedded=is_embedded, vt1=t1, vt2=t2, vmetrics=m_param)
 
-@app.route('/compare/generate')
+@app.route('/compare/generate', methods=['POST'])
 def generate_compare():
     token = get_effective_token()
     ok, msg = saas_logic.check_quota(token)
@@ -232,8 +234,8 @@ def generate_compare():
         flash(msg, "danger")
         return redirect(url_for('compare_home'))
 
-    t1 = request.args.get('t1', '').upper().strip()
-    t2 = request.args.get('t2', '').upper().strip()
+    t1 = request.form.get('t1', '').upper().strip()
+    t2 = request.form.get('t2', '').upper().strip()
     if not t1 or not t2:
         flash("Bitte beide Ticker angeben.", "warning")
         return redirect(url_for('compare_home'))
@@ -247,11 +249,11 @@ def generate_compare():
         flash(f"Ticker '{missing}' nicht gefunden.", "danger")
         return redirect(url_for('compare_home'))
 
-    m_param = request.args.get('metrics_preset', '')
+    m_param = request.form.get('metrics_preset', '')
     if m_param == 'custom':
-        m_param = request.args.get('metrics_custom', '')
+        m_param = request.form.get('metrics_custom', '')
     elif not m_param:
-        m_param = request.args.get('metrics', '')
+        m_param = request.form.get('metrics', '')
 
     if m_param:
         selected_metrics = [m.strip() for m in m_param.split(',') if m.strip()]
@@ -259,8 +261,11 @@ def generate_compare():
         selected_metrics = core.DEFAULT_METRICS
 
     bg_path = None
-    if request.args.get('bg_path') and os.path.exists(request.args.get('bg_path')):
-        bg_path = request.args.get('bg_path')
+    session_bg = request.form.get('bg_path') or ''
+    if session_bg and os.path.exists(session_bg):
+        safe_bg_dir = os.path.abspath(os.path.join(core.STATIC_DIR, 'user_backgrounds'))
+        if os.path.abspath(session_bg).startswith(safe_bg_dir):
+            bg_path = session_bg
 
     img = core.render_compare([row1.iloc[0], row2.iloc[0]], selected_metrics, fetch_analyst=True, bg_path=bg_path)
 
@@ -271,8 +276,17 @@ def generate_compare():
 
     saas_logic.log_usage(token, "compare")
 
+    is_embedded = request.form.get('embed') == '1'
+    embed_param = "&embed=1" if is_embedded or request.args.get('embed') == '1' else ""
+    return redirect(url_for('compare_result', filename=fname, t1=t1, t2=t2, m_param=m_param) + embed_param)
+
+@app.route('/compare/result/<path:filename>')
+def compare_result(filename):
     is_embedded = request.args.get('embed') == '1'
-    return render_template('compare_result.html', fname=fname, t1=t1, t2=t2, m_param=m_param, is_embedded=is_embedded)
+    t1 = request.args.get('t1', '')
+    t2 = request.args.get('t2', '')
+    m_param = request.args.get('m_param', '')
+    return render_template('compare_result.html', fname=filename, t1=t1, t2=t2, m_param=m_param, is_embedded=is_embedded)
 
 # ─── Health Endpoints (Phase 1D) ───────────────────────────
 @app.route('/health/data')
