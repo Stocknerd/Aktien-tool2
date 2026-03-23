@@ -95,7 +95,7 @@ SPALTEN_KENNZAHLEN = [
     # Renditen & Wachstum
     "Eigenkapitalrendite", "Return on Assets", "ROIC", "Umsatzwachstum 3J (erwartet)",
     # Analysten
-    "Empfehlungsdurchschnitt", "Anzahl Analystenmeinungen", "Analysten_Kursziel", "Kursziel_Hoch", "Kursziel_Tief",
+    "Empfehlungsdurchschnitt", "Anzahl Analystenmeinungen", "Analysten_Kursziel", "Kursziel_Hoch", "Kursziel_Tief", "Analysten_Empfehlung",
     # Metadaten
     "Land", "Langname",
     # Risiko & Bilanz
@@ -155,6 +155,7 @@ def map_info(info: Dict) -> Dict:
         "Analysten_Kursziel": info.get("targetMeanPrice"),
         "Kursziel_Hoch": info.get("targetHighPrice"),
         "Kursziel_Tief": info.get("targetLowPrice"),
+        "Analysten_Empfehlung": info.get("recommendationKey"),
         
         "Land": info.get("country"),
         "Langname": info.get("longName"),

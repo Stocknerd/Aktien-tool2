@@ -329,12 +329,12 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
     # ── 6. Analyst Section ────────────────────────────────────────
     if fetch_analyst:
         cur = _safe_float(row.get("Current Price")) or _safe_float(row.get("Vortagesschlusskurs"))
-        mean_t = _safe_float(row.get("Analyst Mean Target"))
-        high_t = _safe_float(row.get("Analyst High Target"))
-        low_t  = _safe_float(row.get("Analyst Low Target"))
-        rec_key = str(row.get("Recommendation Key", ""))
+        mean_t = _safe_float(row.get("Analysten_Kursziel"))
+        high_t = _safe_float(row.get("Kursziel_Hoch"))
+        low_t  = _safe_float(row.get("Kursziel_Tief"))
+        rec_key = str(row.get("Analysten_Empfehlung") or row.get("Recommendation Key", ""))
         if rec_key == "nan": rec_key = ""
-        n_analysts = _safe_float(row.get("Number of Analysts"))
+        n_analysts = _safe_float(row.get("Anzahl Analystenmeinungen"))
     else:
         cur, mean_t, high_t, low_t, rec_key, n_analysts = 0, 0, 0, 0, "", 0
 
@@ -660,12 +660,12 @@ def render_compare(rows: List[pd.Series], metrics: List[str], watermark: str = "
     an_y = ROW_START + len(metrics_clean) * (ROW_H + ROW_GAP) + 12
     if fetch_analyst:
         def _get_an(r):
-            rk = str(r.get("Recommendation Key", ""))
+            rk = str(r.get("Analysten_Empfehlung") or r.get("Recommendation Key", ""))
             return {
                 "recommendationKey": rk if rk != "nan" else "",
-                "targetMeanPrice": _safe_float(r.get("Analyst Mean Target")),
+                "targetMeanPrice": _safe_float(r.get("Analysten_Kursziel")),
                 "currentPrice": _safe_float(r.get("Current Price")) or _safe_float(r.get("Vortagesschlusskurs")),
-                "numberOfAnalysts": _safe_float(r.get("Number of Analysts"))
+                "numberOfAnalysts": _safe_float(r.get("Anzahl Analystenmeinungen"))
             }
         
         a1 = _get_an(rows[0])
