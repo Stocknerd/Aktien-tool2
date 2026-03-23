@@ -41,6 +41,9 @@ mkdir -p "$PROJECT_DIR/logs"
 echo "🚀 Services neu starten:"
 for SVC in $SERVICES; do
   echo "   → $SVC"
+  if [[ -f "$PROJECT_DIR/configs/$SVC" ]]; then
+    sudo cp "$PROJECT_DIR/configs/$SVC" "/etc/systemd/system/$SVC"
+  fi
   sudo systemctl daemon-reload
   sudo systemctl restart "$SVC"
   sudo systemctl status  "$SVC" --no-pager --lines 3 || true
