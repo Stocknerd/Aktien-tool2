@@ -14,4 +14,4 @@ venv/
 
 # MCP
 .gemini/
-mcp_config.json
+mcp_config.jsonstock_data.csv
