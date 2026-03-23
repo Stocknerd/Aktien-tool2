@@ -8,7 +8,7 @@ Group=www-data
 WorkingDirectory=/home/ubuntu/aktien-tool2
 Environment="PATH=/home/ubuntu/aktien-tool2/venv/bin"
 Environment="FLASK_SECRET_KEY=replace-with-secure-key"
-ExecStart=/home/ubuntu/aktien-tool2/venv/bin/gunicorn --workers 3 --bind unix:aktien-tool.sock -m 007 app:app
+ExecStart=/home/ubuntu/aktien-tool2/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 app:app
 
 [Install]
 WantedBy=multi-user.target
