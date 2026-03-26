@@ -1,0 +1,222 @@
+[DAX (Germany)] Missing Completely: Adidas (ADS-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Airbus (AIR-PA.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Allianz (ALV-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: BASF (BAS-DE.DE) is not in DB.
+[DAX (Germany)] Ticker Mismatch: Bayer is in DB as 'IVN', but official Yahoo Ticker is 'BAYN-DE.DE'
+[DAX (Germany)] Missing Completely: Beiersdorf (BEI-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: BMW (BMW-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Brenntag (BNR-DE.DE) is not in DB.
+[DAX (Germany)] Ticker Mismatch: Commerzbank is in DB as 'HPQ', but official Yahoo Ticker is 'CBK-DE.DE'
+[DAX (Germany)] Ticker Mismatch: Continental is in DB as 'AMT', but official Yahoo Ticker is 'CON-DE.DE'
+[DAX (Germany)] Missing Completely: Daimler Truck (DTG-DE.DE) is not in DB.
+[DAX (Germany)] Ticker Mismatch: Deutsche Bank is in DB as '4502', but official Yahoo Ticker is 'DBK-DE.DE'
+[DAX (Germany)] Missing Completely: Deutsche Börse (DB1-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Deutsche Post (DHL-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Deutsche Telekom (DTE-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: E.ON (EOAN-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Fresenius (FRE-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Fresenius Medical Care (FME-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: GEA Group (G1A-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Hannover Re (HNR1-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Heidelberg Materials (HEI-DE.DE) is not in DB.
+[DAX (Germany)] Ticker Mismatch: Henkel is in DB as 'TER', but official Yahoo Ticker is 'HEN3-DE.DE'
+[DAX (Germany)] Ticker Mismatch: Infineon Technologies is in DB as 'SGO', but official Yahoo Ticker is 'IFX-DE.DE'
+[DAX (Germany)] Ticker Mismatch: Mercedes-Benz Group is in DB as 'BN', but official Yahoo Ticker is 'MBG-DE.DE'
+[DAX (Germany)] Ticker Mismatch: Merck is in DB as '105560', but official Yahoo Ticker is 'MRK-DE.DE'
+[DAX (Germany)] Missing Completely: MTU Aero Engines (MTX-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Munich Re (MUV2-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Porsche SE (PAH3-DE.DE) is not in DB.
+[DAX (Germany)] Ticker Mismatch: Qiagen is in DB as '9021', but official Yahoo Ticker is 'QIA-DE.DE'
+[DAX (Germany)] Ticker Mismatch: Rheinmetall is in DB as 'DASH', but official Yahoo Ticker is 'RHM-DE.DE'
+[DAX (Germany)] Missing Completely: RWE (RWE-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: SAP (SAP-DE.DE) is not in DB.
+[DAX (Germany)] Ticker Mismatch: Scout24 is in DB as 'HEIO', but official Yahoo Ticker is 'G24-DE.DE'
+[DAX (Germany)] Ticker Mismatch: Siemens is in DB as 'BRITANNIA', but official Yahoo Ticker is 'SIE-DE.DE'
+[DAX (Germany)] Missing Completely: Siemens Energy (ENR-DE.DE) is not in DB.
+[DAX (Germany)] Missing Completely: Siemens Healthineers (SHL-DE.DE) is not in DB.
+[DAX (Germany)] Ticker Mismatch: Symrise is in DB as 'ROL', but official Yahoo Ticker is 'SY1-DE.DE'
+[DAX (Germany)] Missing Completely: Volkswagen Group (VOW3-DE.DE) is not in DB.
+[DAX (Germany)] Ticker Mismatch: Vonovia is in DB as 'PHIA', but official Yahoo Ticker is 'VNA-DE.DE'
+[DAX (Germany)] Ticker Mismatch: Zalando is in DB as 'HTHT', but official Yahoo Ticker is 'ZAL-DE.DE'
+[CAC 40 (France)] Missing Completely: Accor (AC-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Air Liquide (AI-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Airbus (AIR-PA.PA) is not in DB.
+[CAC 40 (France)] Ticker Mismatch: ArcelorMittal is in DB as 'BLDR', but official Yahoo Ticker is 'MT-AS.PA'
+[CAC 40 (France)] Missing Completely: Axa (CS-PA.PA) is not in DB.
+[CAC 40 (France)] Ticker Mismatch: BNP Paribas is in DB as 'ABBN', but official Yahoo Ticker is 'BNP-PA.PA'
+[CAC 40 (France)] Missing Completely: Bouygues (EN-PA.PA) is not in DB.
+[CAC 40 (France)] Ticker Mismatch: Bureau Veritas is in DB as 'BBDC4', but official Yahoo Ticker is 'BVI-PA.PA'
+[CAC 40 (France)] Missing Completely: Capgemini (CAP-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Carrefour (CA-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Crédit Agricole (ACA-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Danone (BN-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Dassault Systèmes (DSY-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Edenred (EDEN-PA.PA) is not in DB.
+[CAC 40 (France)] Ticker Mismatch: Engie is in DB as 'IQV', but official Yahoo Ticker is 'ENGI-PA.PA'
+[CAC 40 (France)] Missing Completely: EssilorLuxottica (EL-PA.PA) is not in DB.
+[CAC 40 (France)] Ticker Mismatch: Eurofins Scientific is in DB as '2890', but official Yahoo Ticker is 'ERF-PA.PA'
+[CAC 40 (France)] Missing Completely: Hermès (RMS-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Kering (KER-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: L'Oréal (OR-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Legrand (LR-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: LVMH (MC-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Michelin (ML-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Orange (ORA-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Pernod Ricard (RI-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Publicis (PUB-PA.PA) is not in DB.
+[CAC 40 (France)] Ticker Mismatch: Renault is in DB as '8015', but official Yahoo Ticker is 'RNO-PA.PA'
+[CAC 40 (France)] Missing Completely: Safran (SAF-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Saint-Gobain (SGO-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Sanofi (SAN-PA.PA) is not in DB.
+[CAC 40 (France)] Ticker Mismatch: Schneider Electric is in DB as 'CIMB', but official Yahoo Ticker is 'SU-PA.PA'
+[CAC 40 (France)] Missing Completely: Société Générale (GLE-PA.PA) is not in DB.
+[CAC 40 (France)] Ticker Mismatch: Stellantis is in DB as '6301', but official Yahoo Ticker is 'STLAP-PA.PA'
+[CAC 40 (France)] Ticker Mismatch: STMicroelectronics is in DB as 'RVTY', but official Yahoo Ticker is 'STMPA-PA.PA'
+[CAC 40 (France)] Missing Completely: Teleperformance (TEP-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Thales (HO-PA.PA) is not in DB.
+[CAC 40 (France)] Ticker Mismatch: TotalEnergies is in DB as 'TTE', but official Yahoo Ticker is 'TTE-PA.PA'
+[CAC 40 (France)] Ticker Mismatch: Unibail-Rodamco-Westfield is in DB as 'BEL', but official Yahoo Ticker is 'URW-PA.PA'
+[CAC 40 (France)] Missing Completely: Veolia (VIE-PA.PA) is not in DB.
+[CAC 40 (France)] Missing Completely: Vinci (DG-PA.PA) is not in DB.
+[FTSE 100 (UK)] Missing Completely: 3i (III.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Admiral Group (ADM.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Airtel Africa (AAF.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Alliance Witan (ALW.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Anglo American plc (AAL.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Antofagasta plc is in DB as 'SPSN', but official Yahoo Ticker is 'ANTO.L'
+[FTSE 100 (UK)] Missing Completely: Associated British Foods (ABF.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: AstraZeneca is in DB as 'AZN', but official Yahoo Ticker is 'AZN.L'
+[FTSE 100 (UK)] Missing Completely: Autotrader Group (AUTO.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Aviva (AV.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Babcock International is in DB as 'FNF', but official Yahoo Ticker is 'BAB.L'
+[FTSE 100 (UK)] Missing Completely: BAE Systems (BA.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Barclays is in DB as 'GD', but official Yahoo Ticker is 'BARC.L'
+[FTSE 100 (UK)] Ticker Mismatch: Barratt Redrow is in DB as 'ETE', but official Yahoo Ticker is 'BTRW.L'
+[FTSE 100 (UK)] Missing Completely: Beazley (BEZ.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Berkeley Group Holdings (BKG.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: BP (BP.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: British American Tobacco is in DB as 'NKE', but official Yahoo Ticker is 'BATS.L'
+[FTSE 100 (UK)] Missing Completely: British Land (BLND.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: BT Group (BT-A.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Bunzl is in DB as '7270', but official Yahoo Ticker is 'BNZL.L'
+[FTSE 100 (UK)] Missing Completely: Burberry Group (BRBY.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Centrica (CNA.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Coca-Cola Europacific Partners is in DB as 'PTC', but official Yahoo Ticker is 'CCEP.L'
+[FTSE 100 (UK)] Ticker Mismatch: Coca-Cola HBC is in DB as 'SUN', but official Yahoo Ticker is 'CCH.L'
+[FTSE 100 (UK)] Ticker Mismatch: Compass Group is in DB as '9983', but official Yahoo Ticker is 'CPG.L'
+[FTSE 100 (UK)] Missing Completely: Convatec (CTEC.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Croda International is in DB as 'LEG', but official Yahoo Ticker is 'CRDA.L'
+[FTSE 100 (UK)] Missing Completely: DCC plc (DCC.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Diageo is in DB as 'LLOY', but official Yahoo Ticker is 'DGE.L'
+[FTSE 100 (UK)] Missing Completely: Diploma (DPLM.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Endeavour Mining (EDV.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Entain (ENT.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Experian is in DB as '6857', but official Yahoo Ticker is 'EXPN.L'
+[FTSE 100 (UK)] Missing Completely: F & C Investment Trust (FCIT.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Fresnillo plc (FRES.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Games Workshop (GAW.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Glencore (GLEN.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: GSK plc is in DB as 'ISP', but official Yahoo Ticker is 'GSK.L'
+[FTSE 100 (UK)] Ticker Mismatch: Haleon is in DB as '3988', but official Yahoo Ticker is 'HLN.L'
+[FTSE 100 (UK)] Ticker Mismatch: Halma plc is in DB as 'SWK', but official Yahoo Ticker is 'HLMA.L'
+[FTSE 100 (UK)] Missing Completely: Hiscox (HSX.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Howdens Joinery (HWDN.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: HSBC (HSBA.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: ICG (ICG.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: IG Group (IGG.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: IHG Hotels & Resorts (IHG.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: IMI (IMI.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Imperial Brands is in DB as 'WPM', but official Yahoo Ticker is 'IMB.L'
+[FTSE 100 (UK)] Ticker Mismatch: Informa is in DB as 'CM', but official Yahoo Ticker is 'INF.L'
+[FTSE 100 (UK)] Missing Completely: International Airlines Group (IAG.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Intertek is in DB as 'CARL B', but official Yahoo Ticker is 'ITRK.L'
+[FTSE 100 (UK)] Missing Completely: JD Sports (JD.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Lion Finance Group (BGEO.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Kingfisher plc is in DB as 'TELIA', but official Yahoo Ticker is 'KGF.L'
+[FTSE 100 (UK)] Missing Completely: Land Securities (LAND.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Legal & General is in DB as 'LH', but official Yahoo Ticker is 'LGEN.L'
+[FTSE 100 (UK)] Ticker Mismatch: Lloyds Banking Group is in DB as 'HLT', but official Yahoo Ticker is 'LLOY.L'
+[FTSE 100 (UK)] Missing Completely: LondonMetric Property (LMP.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: London Stock Exchange Group is in DB as 'CP', but official Yahoo Ticker is 'LSEG.L'
+[FTSE 100 (UK)] Missing Completely: M&G (MNG.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Marks & Spencer (MKS.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Melrose Industries (MRO.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Metlen Energy & Metals (MTLN.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Mondi is in DB as 'GFINBURO', but official Yahoo Ticker is 'MNDI.L'
+[FTSE 100 (UK)] Missing Completely: National Grid plc (NG.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: NatWest Group is in DB as 'IFC', but official Yahoo Ticker is 'NWG.L'
+[FTSE 100 (UK)] Missing Completely: Next plc (NXT.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Pearson plc is in DB as 'EMIRATESNBD', but official Yahoo Ticker is 'PSON.L'
+[FTSE 100 (UK)] Missing Completely: Pershing Square Holdings (PSH.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Persimmon (PSN.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Polar Capital Technology Trust (PCT.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Prudential plc (PRU.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Reckitt (RKT.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: RELX (REL.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Rentokil Initial is in DB as 'EMA', but official Yahoo Ticker is 'RTO.L'
+[FTSE 100 (UK)] Missing Completely: Rightmove (RMV.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Rio Tinto is in DB as 'KEYS', but official Yahoo Ticker is 'RIO.L'
+[FTSE 100 (UK)] Ticker Mismatch: Rolls-Royce Holdings is in DB as 'PDD', but official Yahoo Ticker is 'RR.L'
+[FTSE 100 (UK)] Ticker Mismatch: Sage Group is in DB as 'ENTG', but official Yahoo Ticker is 'SGE.L'
+[FTSE 100 (UK)] Missing Completely: Sainsbury's (SBRY.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Schroders (SDR.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Scottish Mortgage Investment Trust (SMT.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Segro (SGRO.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Severn Trent is in DB as '9868', but official Yahoo Ticker is 'SVT.L'
+[FTSE 100 (UK)] Ticker Mismatch: Shell plc is in DB as 'SHEL', but official Yahoo Ticker is 'SHEL.L'
+[FTSE 100 (UK)] Missing Completely: Smiths Group (SMIN.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Smith & Nephew (SN.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Spirax Group (SPX.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: SSE plc (SSE.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Standard Chartered is in DB as '960', but official Yahoo Ticker is 'STAN.L'
+[FTSE 100 (UK)] Ticker Mismatch: Standard Life is in DB as 'TORNTPHARM', but official Yahoo Ticker is 'SDLF.L'
+[FTSE 100 (UK)] Missing Completely: St. James's Place (STJ.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Tesco (TSCO.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Tritax Big Box REIT (BBOX.L) is not in DB.
+[FTSE 100 (UK)] Ticker Mismatch: Unilever is in DB as 'ULVR', but official Yahoo Ticker is 'ULVR.L'
+[FTSE 100 (UK)] Ticker Mismatch: United Utilities is in DB as '7186', but official Yahoo Ticker is 'UU.L'
+[FTSE 100 (UK)] Ticker Mismatch: Vodafone Group is in DB as 'LOTB', but official Yahoo Ticker is 'VOD.L'
+[FTSE 100 (UK)] Missing Completely: Weir Group (WEIR.L) is not in DB.
+[FTSE 100 (UK)] Missing Completely: Whitbread (WTB.L) is not in DB.
+[S&P 500 (USA)] Ticker Mismatch: AbbVie is in DB as '2474', but official Yahoo Ticker is 'ABBV'
+[S&P 500 (USA)] Missing Completely: AES Corporation (AES) is not in DB.
+[S&P 500 (USA)] Ticker Mismatch: Airbnb is in DB as 'ANTO', but official Yahoo Ticker is 'ABNB'
+[S&P 500 (USA)] Ticker Mismatch: Alphabet Inc. (Class C) is in DB as 'HAL', but official Yahoo Ticker is 'GOOG'
+[S&P 500 (USA)] Ticker Mismatch: Autodesk is in DB as '2222', but official Yahoo Ticker is 'ADSK'
+[S&P 500 (USA)] Ticker Mismatch: Berkshire Hathaway is in DB as 'BRKB', but official Yahoo Ticker is 'BRK-B'
+[S&P 500 (USA)] Ticker Mismatch: Best Buy is in DB as 'KIO', but official Yahoo Ticker is 'BBY'
+[S&P 500 (USA)] Missing Completely: Broadridge Financial Solutions (BR) is not in DB.
+[S&P 500 (USA)] Missing Completely: Brown–Forman (BF-B) is not in DB.
+[S&P 500 (USA)] Missing Completely: Charles River Laboratories (CRL) is not in DB.
+[S&P 500 (USA)] Missing Completely: Ciena (CIEN) is not in DB.
+[S&P 500 (USA)] Missing Completely: Comfort Systems USA (FIX) is not in DB.
+[S&P 500 (USA)] Ticker Mismatch: Copart is in DB as 'LHA', but official Yahoo Ticker is 'CPRT'
+[S&P 500 (USA)] Ticker Mismatch: Fair Isaac is in DB as '6881', but official Yahoo Ticker is 'FICO'
+[S&P 500 (USA)] Missing Completely: Federal Realty Investment Trust (FRT) is not in DB.
+[S&P 500 (USA)] Missing Completely: Fiserv (FISV) is not in DB.
+[S&P 500 (USA)] Ticker Mismatch: Freeport-McMoRan is in DB as 'KNEBV', but official Yahoo Ticker is 'FCX'
+[S&P 500 (USA)] Missing Completely: Generac (GNRC) is not in DB.
+[S&P 500 (USA)] Missing Completely: Globe Life (GL) is not in DB.
+[S&P 500 (USA)] Missing Completely: Hasbro (HAS) is not in DB.
+[S&P 500 (USA)] Missing Completely: Henry Schein (HSIC) is not in DB.
+[S&P 500 (USA)] Ticker Mismatch: Huntington Ingalls Industries is in DB as 'PNC', but official Yahoo Ticker is 'HII'
+[S&P 500 (USA)] Ticker Mismatch: Invesco is in DB as 'LOGN', but official Yahoo Ticker is 'IVZ'
+[S&P 500 (USA)] Missing Completely: Lamb Weston (LW) is not in DB.
+[S&P 500 (USA)] Missing Completely: Marsh McLennan (MRSH) is not in DB.
+[S&P 500 (USA)] Missing Completely: Match Group (MTCH) is not in DB.
+[S&P 500 (USA)] Ticker Mismatch: Molson Coors Beverage Company is in DB as '329180', but official Yahoo Ticker is 'TAP'
+[S&P 500 (USA)] Missing Completely: Mosaic Company (The) (MOS) is not in DB.
+[S&P 500 (USA)] Missing Completely: News Corp (Class B) (NWS) is not in DB.
+[S&P 500 (USA)] Missing Completely: Norwegian Cruise Line Holdings (NCLH) is not in DB.
+[S&P 500 (USA)] Missing Completely: Paramount Skydance Corporation (PSKY) is not in DB.
+[S&P 500 (USA)] Ticker Mismatch: PG&E Corporation is in DB as 'EICHERMOT', but official Yahoo Ticker is 'PCG'
+[S&P 500 (USA)] Ticker Mismatch: Phillips 66 is in DB as '9CI', but official Yahoo Ticker is 'PSX'
+[S&P 500 (USA)] Missing Completely: Pinnacle West Capital (PNW) is not in DB.
+[S&P 500 (USA)] Ticker Mismatch: Public Service Enterprise Group is in DB as 'PETR3', but official Yahoo Ticker is 'PEG'
+[S&P 500 (USA)] Missing Completely: Qnity Electronics (Q) is not in DB.
+[S&P 500 (USA)] Missing Completely: Ralph Lauren Corporation (RL) is not in DB.
+[S&P 500 (USA)] Ticker Mismatch: Republic Services is in DB as 'GBP', but official Yahoo Ticker is 'RSG'
+[S&P 500 (USA)] Missing Completely: Sandisk (SNDK) is not in DB.
+[S&P 500 (USA)] Missing Completely: Tapestry, Inc. (TPR) is not in DB.
+[S&P 500 (USA)] Missing Completely: TKO Group Holdings (TKO) is not in DB.
+[S&P 500 (USA)] Ticker Mismatch: Verizon is in DB as 'TEP', but official Yahoo Ticker is 'VZ'

@@ -106,6 +106,15 @@
       transform: translateX(-4px);
     }
 
+    .stock-hover-card {
+      transition: all 0.3s ease;
+    }
+    .stock-hover-card:hover {
+      background: rgba(30, 41, 59, 0.8) !important;
+      border-color: var(--accent) !important;
+      transform: translateY(-3px);
+    }
+
     {% if is_embedded %}
     .navbar {
       background: rgba(15, 23, 42, 0.9);
@@ -155,10 +164,33 @@
     </div>
   </nav>
 
-  <main class="preview-container">
-    <div class="image-wrapper">
+  <main class="preview-container flex-column">
+    <div class="image-wrapper mb-5">
       <img src="{{ url_for('generated_file', filename=filename) }}" alt="{% if ticker %}{{ company_name }}{% else %}Aktien{% endif %} Analyse">
     </div>
+
+    {% if related_stocks %}
+    <div class="related-section w-100" style="max-width: 900px;">
+        <h5 class="text-uppercase tracking-wider mb-4 text-center" style="color: #64748b; font-size: 0.8rem; letter-spacing: 0.1em;">Andere Nutzer suchten auch</h5>
+        <div class="row row-cols-2 row-cols-md-3 g-3">
+            {% for s in related_stocks %}
+            <div class="col">
+                <a href="/analyse/{{ s.symbol }}" class="text-decoration-none">
+                    <div class="glass-card p-3 d-flex align-items-center gap-3 stock-hover-card" style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;">
+                        <div class="bg-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: bold; font-size: 0.7rem; color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">
+                            {{ s.symbol[:2] }}
+                        </div>
+                        <div class="overflow-hidden">
+                            <div class="fw-bold text-white small text-truncate">{{ s.symbol }}</div>
+                            <div class="text-muted text-truncate" style="font-size: 0.65rem;">{{ s.name }}</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
   </main>
 
   <script>

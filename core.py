@@ -31,8 +31,8 @@ LINE_SPACING_MULT = 1.85 # Tighter line spacing for more content
 METRICS_TOP_EXTRA_FRAC = 0.03
 
 # Colors
-COLOR_TEXT   = (233, 238, 246)
-COLOR_MUTED  = (159, 176, 199)
+COLOR_TEXT   = (255, 255, 255)
+COLOR_MUTED  = (210, 220, 240) # Brighter silver for better contrast
 COLOR_ACCENT = (16, 185, 129)
 COLOR_DARK_BG = (15, 23, 42, 255) # Modern slate/navy
 COLOR_CARD_BG = (255, 255, 255, 15) # Transparent glassmorphism
@@ -183,7 +183,8 @@ def _draw_watermark(draw, W, H, text="schatzsuche40.de"):
 # ─── Rendering Tools ──────────────────────────────────────────────────────────
 
 def render_stock_card(row, selected: list, layout_mode: str = 'default',
-                      watermark: str = "", bg_path: str = None, fetch_analyst: bool = True):
+                      watermark: str = "", bg_path: str = None, fetch_analyst: bool = True,
+                      ai_verdict: str = ""):
     """Render a premium single-stock Infographic card (1080×1350)."""
     W, H = OUTPUT_WIDTH, OUTPUT_HEIGHT
 
@@ -222,10 +223,10 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
     draw = ImageDraw.Draw(img)
 
     ACCENT   = (16, 185, 129)
-    MUTED    = (200, 212, 232)    # bright enough on dark card bg
-    WHITE    = (255, 255, 255)    # pure white for values
-    CARD_BG  = (8, 14, 35, 210)  # dark navy, very legible
-    CARD_BDR = (16, 185, 129, 140)   # vivid teal border
+    MUTED    = (210, 225, 245) # Improved visibility
+    WHITE    = (255, 255, 255)
+    CARD_BG  = (8, 14, 35, 210)
+    CARD_BDR = (16, 185, 129, 180) # Stronger border contrast
 
     # ── 2. Fonts ──────────────────────────────────────────────────
     f_title  = _font(FONT_BLD_PATH, 52, ImageFont.load_default())
@@ -250,7 +251,7 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
     logo_path = os.path.join(LOGO_DIR, f"{symb}.png")
     logo_h = 130
     logo_max_w = W - 2 * PAD
-    y = 60
+    y = 35   # Moved up from 60
     if os.path.exists(logo_path):
         try:
             logo = Image.open(logo_path).convert("RGBA")
@@ -264,7 +265,7 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
                 lh = logo_h
             logo = logo.resize((lw, lh), Image.Resampling.LANCZOS)
             img.alpha_composite(logo, ((W - lw) // 2, y))
-            y += lh + 20
+            y += lh + 2 # Tighter padding
         except Exception:
             pass
 
@@ -273,7 +274,7 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
     fn, _ = shrink_to_fit(draw, name.upper(), f_title, max_nw, 28, FONT_BLD_PATH)
     tw = int(draw.textlength(name.upper(), font=fn))
     draw.text(((W - tw) // 2, y), name.upper(), fill=WHITE, font=fn)
-    y += getattr(fn, 'size', 52) + 6
+    y += getattr(fn, 'size', 52) + 0 # Compressed
 
     # Symbol pill
     sym_text = f"  {symb}  "
@@ -296,8 +297,8 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
     margin_x = PAD
     col_gap  = 18
     col_w    = (W - 2 * margin_x - col_gap) // 2
-    card_h   = 120
-    card_gap = 14
+    card_h   = 98    # Ultra-compact
+    card_gap = 8    # Ultra-compact
     col_x    = [margin_x, margin_x + col_w + col_gap]
     num_rows = math.ceil(len(metrics) / 2)
 
@@ -324,7 +325,7 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
         draw.text((vx, vy), val_str, fill=WHITE, font=f_val)
 
     last_card_bottom = y + num_rows * (card_h + card_gap)
-    y = last_card_bottom + 30
+    y = last_card_bottom + 10 # Drastic reduction from 30
 
     # ── 6. Analyst Section ────────────────────────────────────────
     if fetch_analyst:
@@ -341,20 +342,20 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
     # Only draw if we have enough data
     panel_bottom = y   # will be updated if analyst section drawn
     if cur and mean_t and low_t and high_t:
-        PANEL_H = 225
+        PANEL_H = 195 # Squeezed from 225
         panel_x1, panel_x2 = PAD, W - PAD
         panel_w  = panel_x2 - panel_x1
         panel_bottom = y + PANEL_H   # track for footer placement
 
         # Panel container (drawn first, content on top)
         draw.rounded_rectangle([panel_x1, y, panel_x2, y + PANEL_H], radius=20, fill=(255, 255, 255, 15))
-        draw.rounded_rectangle([panel_x1, y, panel_x2, y + PANEL_H], radius=20, outline=(16, 185, 129, 50), width=2)
+        draw.rounded_rectangle([panel_x1, y, panel_x2, y + PANEL_H], radius=20, outline=(16, 185, 129, 160), width=2)
 
         if mean_t and cur:
             # Panel header
             header = "ANALYSTENRATING & KURSZIEL"
             hw = int(draw.textlength(header, font=f_sector))
-            draw.text(((W - hw) // 2, y + 12), header, fill=MUTED, font=f_sector)
+            draw.text(((W - hw) // 2, y + 12), header, fill=(100, 115, 140), font=f_sector)
             
             BAR_Y    = y + 50
             BAR_H    = 20
@@ -403,7 +404,7 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
             
             mean_lbl = f"Ø Ziel: {currency} {mean_t:.0f}"
             ml_w = int(draw.textlength(mean_lbl, font=f_small))
-            draw.text((MID - ml_w//2, lbl_y), mean_lbl, fill=(220, 220, 220), font=f_small)
+            draw.text((MID - ml_w//2, lbl_y), mean_lbl, fill=(140, 150, 170), font=f_small)
 
             # Current price and upside (below labels)
             upside = ((mean_t - cur) / cur) * 100 if cur else 0
@@ -432,7 +433,35 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
 
             y = bby + 44
 
-    # ── 7. Footer ─────────────────────────────────────────────────
+    # ── 6.5 AI Verdict Section (New) ──────────────────────────────
+    if ai_verdict and ai_verdict.strip():
+        av_pad = 40
+        av_w = W - 2*PAD
+        f_av = _font(FONT_REG_PATH, 22, ImageFont.load_default())
+        f_av_bld = _font(FONT_BLD_PATH, 24, ImageFont.load_default())
+        
+        # Calculate text wrapping
+        av_text = ai_verdict.strip()
+        av_lines = wrap_title(draw, av_text, f_av, av_w - 60)
+        # Dynamic box height: header + lines * line_height + bottom padding
+        av_box_h = 65 + len(av_lines) * 28
+        
+        av_y = y + 2 # Squeezed padding
+        # Draw AI Branding / Box
+        draw.rounded_rectangle([PAD, av_y, W - PAD, av_y + av_box_h], radius=15, fill=(16, 185, 129, 35))
+        draw.rounded_rectangle([PAD, av_y, W - PAD, av_y + av_box_h], radius=15, outline=(16, 185, 129, 120), width=2)
+        
+        # Icon/Label (Centered)
+        ai_label = "KI-BEWERTUNG"
+        al_w = int(draw.textlength(ai_label, font=f_av_bld))
+        draw.text(((W - al_w) // 2, av_y + 12), ai_label, fill=WHITE, font=f_av_bld)
+        
+        for li, line in enumerate(av_lines):
+            lw = int(draw.textlength(line, font=f_av))
+            draw.text(((W - lw) // 2, av_y + 50 + li * 28), line, fill=WHITE, font=f_av)
+            
+        y = av_y + av_box_h + 20
+        panel_bottom = y # Update anchor for footer
     # Place ABOVE the background logo strip (which starts ~280px from bottom)
     abfrage = str(row.get('Abfragedatum') or row.get('last_update') or '')
     try:

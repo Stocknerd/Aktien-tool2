@@ -6,6 +6,7 @@ import os, pandas as pd, io, time
 import saas_logic
 import core
 import tasks
+import ai_logic
 from datetime import datetime
 from PIL import Image
 
@@ -23,6 +24,48 @@ def get_effective_token():
 
 import ops_middleware
 ops_middleware.setup_ops(app, core.CSV_FILE)
+
+# ─── Navigation Helpers ──────────────────────────────────────
+TOP_TICKERS_LIST = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'SAP.DE', 'SIE.DE', 'ALV.DE']
+
+def get_ticker_meta(ticker):
+    df = core.load_df()
+    row = df[df['Symbol'] == ticker]
+    if not row.empty:
+        # Try different column names for sector
+        sector = (row.iloc[0].get('GICS Sector') or 
+                  row.iloc[0].get('Sektor') or 
+                  row.iloc[0].get('Sector') or 
+                  'Aktien')
+        return {
+            'symbol': ticker,
+            'name': str(row.iloc[0].get('Langname', row.iloc[0].get('Security', ticker))),
+            'sector': str(sector)
+        }
+    return None
+
+def get_related_stocks(ticker, limit=6):
+    df = core.load_df()
+    row = df[df['Symbol'] == ticker]
+    if row.empty: return []
+    
+    # Try multiple columns for categorization
+    sector = row.iloc[0].get('GICS Sector') or row.iloc[0].get('Sektor') or row.iloc[0].get('Branche')
+    if not sector: return []
+    
+    # Check both columns for matches
+    related = df[
+        ((df['GICS Sector'] == sector) | (df['Sektor'] == sector) | (df['Branche'] == sector)) & 
+        (df['Symbol'] != ticker)
+    ].head(limit)
+    
+    res = []
+    for _, r in related.iterrows():
+        res.append({
+            'symbol': r['Symbol'],
+            'name': str(r.get('Langname', r.get('Security', r['Symbol'])))
+        })
+    return res
 
 # ─── Regular Routes ──────────────────────────────────────────
 
@@ -42,6 +85,10 @@ def home():
     show_cta = os.environ.get("SHOW_CTA_BANNER", "false").lower() == "true"
     is_embedded = request.args.get('embed') == '1'
 
+    # Phase 8: Curated Top Stocks
+    top_stocks = [get_ticker_meta(t) for t in TOP_TICKERS_LIST]
+    top_stocks = [s for s in top_stocks if s]
+
     return render_template(
         'index.html',
         default_metrics=core.DEFAULT_METRICS,
@@ -50,21 +97,29 @@ def home():
         last_update_str=last_update_str,
         is_stale=(time.time() - mtime) / 86400.0 > 1.5,
         show_cta=show_cta,
-        is_embedded=is_embedded
+        is_embedded=is_embedded,
+        top_stocks=top_stocks
     )
 
+@app.route('/analyse/<ticker>')
 @app.route('/<ticker>')
 def stock_landing(ticker):
+    # Normalize ticker
     ticker = ticker.upper().strip()
     # Skip common static paths or API routes if they hit here accidentally
-    if ticker in ["SEARCH", "HEALTH", "API", "STATIC", "DOWNLOAD"]:
+    if ticker in ["SEARCH", "HEALTH", "API", "STATIC", "DOWNLOAD", "FAVICON.ICO"]:
         return redirect(url_for('home'))
         
     df = core.load_df()
     row = df[df['Symbol'] == ticker]
     if row.empty:
+        # Try to find by name if not found by exact symbol
+        match = df[df['Langname'].str.contains(ticker, case=False, na=False)]
+        if not match.empty:
+            return redirect(url_for('stock_landing', ticker=match.iloc[0]['Symbol']))
         return redirect(url_for('home'))
     
+    # Set a flag to trigger auto-analysis in index.html
     from flask import g
     g.is_landing_page = True
     
@@ -74,7 +129,7 @@ def stock_landing(ticker):
     last_update_str = datetime.fromtimestamp(mtime).strftime('%d.%m.%Y %H:%M')
     
     is_embedded = request.args.get('embed') == '1'
-    company_name = str(row.iloc[0].get('Security', ticker))
+    company_name = str(row.iloc[0].get('Langname', ticker)) # Use Langname for SEO title
 
     return render_template(
         'index.html',
@@ -134,7 +189,16 @@ def generate_image():
         if os.path.abspath(session_bg).startswith(safe_bg_dir):
             bg_path = session_bg
 
-    img = core.render_stock_card(row.iloc[0], selected, layout_mode, watermark, bg_path=bg_path)
+    # AI Verdict Generation
+    ai_verdict = ""
+    if request.form.get('ai_insight') == '1':
+        # Prepare data for AI
+        fin_data = {}
+        for m in selected:
+            fin_data[m] = core.display_value(m, row.iloc[0])
+        ai_verdict = ai_logic.get_ai_verdict(ticker, row.iloc[0].get('Langname', ticker), fin_data)
+
+    img = core.render_stock_card(row.iloc[0], selected, layout_mode, watermark, bg_path=bg_path, ai_verdict=ai_verdict)
     
     filename = f"{ticker}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
     path = os.path.join(core.OUT_DIR, filename)
@@ -169,18 +233,21 @@ def display_result(filename):
     is_embedded = request.args.get('embed') == '1'
     ticker = request.args.get('ticker', '').upper()
     company_name = ""
+    related_stocks = []
     if ticker:
         df = core.load_df()
         row = df[df['Symbol'] == ticker]
         if not row.empty:
-            company_name = str(row.iloc[0].get('Security', ticker))
+            company_name = str(row.iloc[0].get('Langname', row.iloc[0].get('Security', ticker)))
+            related_stocks = get_related_stocks(ticker)
             
     return render_template(
         'display_result.html', 
         filename=filename, 
         is_embedded=is_embedded,
         ticker=ticker,
-        company_name=company_name
+        company_name=company_name,
+        related_stocks=related_stocks
     )
 
 @app.route('/download/<path:filename>')

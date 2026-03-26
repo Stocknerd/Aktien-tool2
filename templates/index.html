@@ -9,8 +9,10 @@
   
   <!-- Open Graph -->
   <meta property="og:title" content="{% if ticker %}{{ company_name }} Analyse{% else %}Aktien-Bild Generator{% endif %}">
+  <meta property="og:description" content="{% if ticker %}Aktuelle Kennzahlen und Analysten-Ratings für {{ company_name }}.{% else %}Erstelle professionelle Aktien-Infografiken.{% endif %}">
   <meta property="og:site_name" content="Schatzsuche 4.0">
   <meta property="og:type" content="website">
+  <meta property="og:image" content="{{ url_for('static', filename='img/og_preview.png', _external=True) }}">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -140,6 +142,19 @@
     .nav-actions { display: flex !important; margin-bottom: 20px; }
     {% endif %}
     .nav-actions { display: none; gap: 10px; justify-content: center; }
+
+    .stock-hover-card {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .stock-hover-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--accent);
+      transform: translateY(-5px);
+    }
+    .stock-card-link:hover .stock-hover-card {
+      box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.2);
+    }
   </style>
 </head>
 
@@ -158,7 +173,33 @@
     </div>
 
     {% if not is_embedded %}
-    <h1 class="text-center mb-4 fw-bold">Aktien-Bild Pro</h1>
+    <div class="hero-section text-center py-5">
+      <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #fff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Professionelle Aktienanalysen</h1>
+      <p class="lead text-muted mx-auto" style="max-width: 700px;">Generiere hochauflösende Infografiken mit KI-gestützten Insights für deine Social Media Kanäle oder deinen Blog.</p>
+    </div>
+    {% endif %}
+
+    {% if not is_embedded and top_stocks and not ticker %}
+    <div class="top-stocks-section mb-5">
+      <h5 class="text-uppercase tracking-wider mb-4 text-center" style="color: #64748b; font-size: 0.8rem; letter-spacing: 0.1em;">Beliebte Analysen</h5>
+      <div class="row row-cols-2 row-cols-md-4 g-3 justify-content-center">
+        {% for stock in top_stocks %}
+        <div class="col">
+          <a href="/analyse/{{ stock.symbol }}" class="stock-card-link text-decoration-none">
+            <div class="glass-card p-3 text-center h-100 stock-hover-card">
+              <div class="mb-2">
+                <img src="https://logo.clearbit.com/{{ stock.name.split(' ')[0] | lower }}.com" 
+                     onerror="this.src='https://ui-avatars.com/api/?name={{ stock.symbol }}&background=1e293b&color=10b981'" 
+                     class="rounded-circle" style="width: 32px; height: 32px; object-fit: contain; filter: grayscale(0.2);">
+              </div>
+              <div class="fw-bold small text-white mb-1">{{ stock.symbol }}</div>
+              <div class="text-muted" style="font-size: 0.7rem;">{{ stock.name | truncate(15) }}</div>
+            </div>
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
     {% endif %}
 
     <div class="text-center mb-4 d-flex justify-content-center align-items-center gap-3">
@@ -215,6 +256,22 @@
           <input type="file" id="bg_upload" accept="image/png, image/jpeg, image/webp" class="form-control">
           <input type="hidden" name="bg_path" id="bg_path" value="">
           <div id="bg-preview" class="mt-2 text-success small fw-bold" style="display:none;">Bereit! ✅</div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label text-uppercase tracking-wider">Optionen</label>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-check form-switch p-0 d-flex align-items-center mb-2">
+              <input class="form-check-input ms-0 me-2" type="checkbox" name="ai_insight" value="1" id="ai_insight_chk" checked>
+              <label class="form-check-label fw-bold" for="ai_insight_chk" style="color: #10b981;">✦ KI-Insights (Gemini)</label>
+            </div>
+            <small class="text-muted d-block" style="font-size: 0.75rem; margin-top: -5px; margin-left: 36px;">Automatische KI-Analyse & Fazit hinzufügen.</small>
+          </div>
+          <div class="col-md-6">
+            <input name="watermark" class="form-control form-control-sm" placeholder="Dein Wasserzeichen (optional)" style="height: 38px;">
+          </div>
         </div>
       </div>
 
@@ -427,6 +484,20 @@
       const observer = new MutationObserver(sendHeight);
       observer.observe(document.body, { attributes: true, childList: true, subtree: true });
     }
+    // ─── Auto-Analysis for Landing Pages ──────────────────────
+    {% if ticker %}
+    window.addEventListener('DOMContentLoaded', () => {
+        const form = document.querySelector('form[action="{{ url_for("generate_image") }}"]');
+        const tickerInput = document.getElementById('ticker');
+        if (tickerInput && tickerInput.value) {
+            // Show loader immediately
+            const loader = document.getElementById('loader-overlay');
+            if (loader) loader.style.display = 'flex';
+            // Short delay to allow UI to render
+            setTimeout(() => form.submit(), 600);
+        }
+    });
+    {% endif %}
   </script>
 </body>
 
