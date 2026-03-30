@@ -25,9 +25,9 @@ def get_ai_verdict(ticker, company_name, financial_data):
         Antworte NUR mit dem Fazit-Text, ohne Einleitung oder Anführungszeichen.
         """
         
-        # Model selection: using gpt-5.4-mini as requested
+        # Model selection: using gpt-4o-mini
         response = client.chat.completions.create(
-            model="gpt-5.4-mini",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": prompt}
             ],
