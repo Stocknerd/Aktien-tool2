@@ -126,18 +126,8 @@ def generate_blog_post():
         <!-- /wp:spacer -->
         """
 
-    # Add YouTube video at the end
+    # Add disclaimer at the end
     html_content += f"""
-    <!-- wp:heading {{"level":2}} -->
-    <h2 class="wp-block-heading">Passendes Video: Meine Strategie</h2>
-    <!-- /wp:heading -->
-
-    <!-- wp:embed {{"url":"https://youtu.be/XofAcibiofU","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"}} -->
-    <figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
-    https://youtu.be/XofAcibiofU
-    </div></figure>
-    <!-- /wp:embed -->
-
     <!-- wp:paragraph -->
     <p><em>Hinweis: Dies ist keine Anlageberatung. Führt immer eure eigene Recherche durch (Do Your Own Research - DYOR).</em></p>
     <!-- /wp:paragraph -->
