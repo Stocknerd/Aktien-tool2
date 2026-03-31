@@ -151,11 +151,24 @@ def search():
     df = core.load_df()
     if not q: return jsonify([])
     candidates = []
+    
+    # Fuzzy search: map dash/dot/space to uniform space
+    def normalize(s):
+        return str(s).lower().replace('-', ' ').replace('.', ' ').strip()
+        
+    q_norm = normalize(q)
+    
     for _, row in df.iterrows():
-        sym, sec = str(row.get('Symbol') or ''), str(row.get('Security') or '')
-        if q in sym.lower() or q in sec.lower():
-            candidates.append({'symbol': sym, 'name': sec})
-        if len(candidates) >= 12: break
+        sym = normalize(row.get('Symbol') or '')
+        sec = normalize(row.get('Security') or '')
+        lng = normalize(row.get('Langname') or '')
+        
+        if q_norm in sym or q_norm in sec or q_norm in lng:
+            candidates.append({
+                'symbol': str(row.get('Symbol', '')), 
+                'name': str(row.get('Security', ''))
+            })
+        if len(candidates) >= 15: break
     return jsonify(candidates)
 
 @app.route('/generate_image', methods=['POST'])
