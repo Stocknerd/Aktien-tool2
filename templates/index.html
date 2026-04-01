@@ -499,6 +499,79 @@
     });
     {% endif %}
   </script>
+
+  <!-- Bug-Reporting Widget (Phase 9.1) -->
+  <div id="bugReportWidget" style="position:fixed; bottom:20px; right:20px; z-index:9999; font-family:sans-serif;">
+    <button id="bugOpenBtn" style="background:#ef4444; color:white; border:none; border-radius:50px; padding:10px 18px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-weight:700; font-size:14px; transition:0.2s; display:flex; align-items:center; gap:8px;">
+      <span>🚨</span> Fehler melden
+    </button>
+    
+    <div id="bugModal" style="display:none; position:fixed; bottom:80px; right:20px; width:300px; background:#1a2b45; border:1px solid rgba(255,255,255,0.1); border-radius:15px; padding:20px; box-shadow:0 8px 32px rgba(0,0,0,0.5); color:white; transition: 0.3s ease;">
+      <h3 style="margin-top:0; font-size:16px;">Bug melden</h3>
+      <p style="font-size:12px; color:#94a3b8; margin-bottom:12px;">Hier kannst du Fehler oder falsche Daten melden.</p>
+      
+      <label style="display:block; font-size:12px; margin-bottom:4px;">Beschreibung</label>
+      <textarea id="bugError" style="width:100%; height:80px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:8px; margin-bottom:12px; font-size:13px; outline:none;"></textarea>
+      
+      <label style="display:block; font-size:12px; margin-bottom:4px;">E-Mail (optional)</label>
+      <input type="email" id="bugEmail" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:8px; margin-bottom:16px; font-size:13px; outline:none;">
+      
+      <div style="display:flex; gap:10px;">
+        <button id="bugSendBtn" style="flex:1; background:#10b981; color:white; border:none; border-radius:8px; padding:8px; cursor:pointer; font-weight:700; font-size:14px;">Senden</button>
+        <button id="bugCloseBtn" style="flex:1; background:rgba(255,255,255,0.1); color:white; border:none; border-radius:8px; padding:8px; cursor:pointer; font-size:14px;">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const openBtn = document.getElementById('bugOpenBtn');
+      const modal = document.getElementById('bugModal');
+      const closeBtn = document.getElementById('bugCloseBtn');
+      const sendBtn = document.getElementById('bugSendBtn');
+      
+      if (!openBtn || !modal) return;
+      
+      openBtn.onclick = () => {
+        const isHidden = modal.style.display === 'none' || modal.style.display === '';
+        modal.style.display = isHidden ? 'block' : 'none';
+      };
+      closeBtn.onclick = () => modal.style.display = 'none';
+      
+      sendBtn.onclick = async () => {
+        const errorInput = document.getElementById('bugError');
+        const emailInput = document.getElementById('bugEmail');
+        const error = errorInput.value;
+        const email = emailInput.value;
+        
+        if (!error.trim()) { alert('Bitte gib eine kurze Beschreibung an.'); return; }
+        
+        sendBtn.disabled = true;
+        sendBtn.innerText = 'Sende...';
+        
+        const params = new URLSearchParams(window.location.search);
+        const ticker = params.get('ticker') || params.get('t1') || 'Homepage';
+        
+        try {
+          const res = await fetch('/report-bug', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticker, error, email })
+          });
+          
+          if (res.ok) {
+            alert('Vielen Dank! Deine Meldung wurde gespeichert.');
+            errorInput.value = '';
+            emailInput.value = '';
+            modal.style.display = 'none';
+          } else { alert('Fehler beim Senden.'); }
+        } catch(e) { alert('Verbindungsfehler.'); }
+        
+        sendBtn.disabled = false;
+        sendBtn.innerText = 'Senden';
+      };
+    })();
+  </script>
 </body>
 
 </html>

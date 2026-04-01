@@ -85,6 +85,43 @@ def get_ai_long_analysis(ticker, company_name, financial_data):
         print(f"OpenAI Error for {ticker}: {e}")
         return f"<p>Detaillierte Analyse für {ticker} konnte momentan nicht vollständig generiert werden.</p>"
 
+def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b):
+    """
+    Generates a concise AI verdict comparing two stocks based on their financial data.
+    """
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        return "KI-Vergleich momentan nicht verfügbar (API Key fehlt)."
+
+    client = OpenAI(api_key=api_key)
+    
+    prompt = f"""
+    Du bist ein erfahrener Finanzanalyst. Vergleiche die beiden folgenden Aktien basierend auf ihren Kennzahlen:
+    
+    Aktie A: {name_a} ({symbol_a})
+    Kennzahlen A: {json.dumps(data_a, indent=2)}
+    
+    Aktie B: {name_b} ({symbol_b})
+    Kennzahlen B: {json.dumps(data_b, indent=2)}
+    
+    Ziehe ein prägnantes Fazit (max. 4-5 Sätze). Welche Aktie wirkt attraktiver? 
+    Antworte direkt mit dem Vergleichstext, ohne Einleitung. Nutze deutsche Sprache.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # Using gpt-4o-mini for efficient comparisons
+            messages=[{"role": "user", "content": prompt}],
+            max_completion_tokens=400
+        )
+        ans = response.choices[0].message.content.strip()
+        if not ans or len(ans) < 20:
+             return f"Basierend auf den Daten zeigen sowohl {symbol_a} als auch {symbol_b} solide Profile, wobei ihre individuellen Stärken in unterschiedlichen Kennzahlen liegen."
+        return ans
+    except Exception as e:
+        print(f"OpenAI Error Comparison {symbol_a} vs {symbol_b}: {e}")
+        return "Detaillierter KI-Vergleich konnte momentan nicht vollständig generiert werden."
+
 if __name__ == "__main__":
     # Test block
     test_data = {"KGV": "15.2", "Dividendenrendite": "3.5%", "Umsatzwachstum": "10%"}

@@ -390,6 +390,29 @@ def app_health_data():
     details["logos_cached"] = logo_count
     return jsonify({"status": status, **details}), 200 if status != "error" else 500
 
+@app.route('/report-bug', methods=['POST'])
+def report_bug():
+    try:
+        data = request.json
+        ticker = data.get('ticker', 'Unknown')
+        error = data.get('error', 'No description')
+        email = data.get('email', '-')
+        browser = request.headers.get('User-Agent', 'Unknown')
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bugs.csv")
+        file_exists = os.path.isfile(csv_path)
+        
+        with open(csv_path, mode='a', encoding='utf-8') as f:
+            if not file_exists:
+                f.write("Timestamp,Ticker,Error,Email,Browser\n")
+            f.write(f'"{timestamp}","{ticker}","{error}","{email}","{browser}"\n')
+            
+        return jsonify({"status": "success", "message": "Bug reported successfully."})
+    except Exception as e:
+        print(f"Error reporting bug: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 if __name__ == '__main__':
     saas_logic.init_db()
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -2,8 +2,10 @@ from flask import Flask, request, jsonify, render_template_string, send_from_dir
 import os, time, pandas as pd
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
-import pandas as pd
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
+import json, math
+import ai_logic
+import core
 
 # ───────────────────────── Analysten/YF-Fallback ─────────────────────────
 _YF_CACHE: Dict[str, Dict[str, Any]] = {}
@@ -96,6 +98,8 @@ CURRENCY_SYMBOL = {
     "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥", "CHF": "CHF",
     "CAD": "C$", "AUD": "A$", "HKD": "HK$", "INR": "₹"
 }
+PAD = 40
+WHITE = (255, 255, 255, 255)
 
 PERCENT_KEYS = {
     "Dividendenrendite", "Ausschüttungsquote",
@@ -768,7 +772,7 @@ def fmt_de_date_from_row(row: pd.Series) -> Optional[str]:
 
 # ───────────────────────── Render ─────────────────────────
 
-def render_compare(rows: List[pd.Series], metrics: List[str]) -> Image.Image:
+def render_compare(rows: List[pd.Series], metrics: List[str], ai_verdict: str = "") -> Image.Image:
     if os.path.exists(BACKGROUND):
         bg = Image.open(BACKGROUND).convert('RGBA')
     else:
@@ -897,6 +901,49 @@ def render_compare(rows: List[pd.Series], metrics: List[str]) -> Image.Image:
     y_bar_a = draw_analyst_bar(img, draw, center_a, y_bar, bar_w, rows[0], f_lbl_small, f_val_small)
     y_bar_b = draw_analyst_bar(img, draw, center_b, y_bar, bar_w, rows[1], f_lbl_small, f_val_small)
 
+    # AI Verdict Box (New)
+    if ai_verdict and ai_verdict.strip():
+        av_pad = 40
+        av_w = img.width - 2*PAD
+        f_av = _font(FONT_REG_PATH, 22, ImageFont.load_default())
+        f_av_bld = _font(FONT_BLD_PATH, 24, ImageFont.load_default())
+        
+        # Calculate text wrapping (using helper from core if needed, but we redefine here for autonomy)
+        def wrap_text(text, font, max_w):
+            words = text.split(' ')
+            lines, curr = [], []
+            for w in words:
+                test = ' '.join(curr + [w])
+                if draw.textlength(test, font=font) <= max_w: curr.append(w)
+                else:
+                    if curr: lines.append(' '.join(curr))
+                    curr = [w]
+            if curr: lines.append(' '.join(curr))
+            return lines
+
+        av_text = ai_verdict.strip()
+        av_lines = wrap_text(av_text, f_av, av_w - 80)
+        av_box_h = 75 + len(av_lines) * 28
+        
+        # Placing it between analyst bars and footer
+        av_y = max(y_bar_a, y_bar_b) + int(img.height * 0.015)
+        
+        # Container
+        _rounded_rect(img, (PAD, av_y, img.width - PAD, av_y + av_box_h), radius=15, fill=(10, 35, 25, 240))
+        _rounded_rect(img, (PAD, av_y, img.width - PAD, av_y + av_box_h), radius=15, outline=(17, 146, 74, 200), width=3)
+        
+        ai_label = "KI-DUELL-FAZIT"
+        al_w = int(draw.textlength(ai_label, font=f_av_bld))
+        draw.text(((img.width - al_w) // 2, av_y + 12), ai_label, fill=WHITE, font=f_av_bld)
+        
+        for li, line in enumerate(av_lines):
+            lw = int(draw.textlength(line, font=f_av_bld))
+            draw.text(((img.width - lw) // 2, av_y + 54 + li * 28), line, fill=WHITE, font=f_av_bld)
+            
+        y_final_anchor = av_y + av_box_h
+    else:
+        y_final_anchor = max(y_bar_a, y_bar_b)
+
     # Footer – mit CSV-Abfragedatum je Aktie
     date_a = fmt_de_date_from_row(rows[0])
     date_b = fmt_de_date_from_row(rows[1])
@@ -908,8 +955,8 @@ def render_compare(rows: List[pd.Series], metrics: List[str]) -> Image.Image:
         foot = f"Stand: {part_a}  •  {part_b}  •  Quelle: Yahoo Finance"
     fw = draw.textlength(foot, font=f_foot)
     fx = (img.width - int(fw)) // 2
-    fy = max(max(y_bar_a, y_bar_b) + int(img.height * 0.020), img.height - int(img.height * SAFE_BOTTOM_FRAC * 0.96))
-    draw.text((fx, fy), foot, fill=(30, 34, 38), font=f_foot)
+    fy = max(y_final_anchor + int(img.height * 0.020), img.height - int(img.height * SAFE_BOTTOM_FRAC * 0.96))
+    draw.text((fx, fy), foot, fill=(210, 225, 245), font=f_foot)
 
     return img
 
@@ -939,15 +986,44 @@ ops_middleware.setup_ops(app, core.CSV_FILE)
 def search():
     q = (request.args.get('q') or '').strip().lower()
     df = core.load_df()
+    if not q: return jsonify([])
     candidates = []
+    
+    # Fuzzy search: map dash/dot/space to uniform space
+    def normalize(s):
+        return str(s).lower().replace('-', ' ').replace('.', ' ').strip()
+        
+    q_norm = normalize(q)
+    
     for _, r in df.iterrows():
-        sym = str(r.get('Symbol', ''))
-        sec = str(r.get('Security', ''))
-        if q in sym.lower() or q in sec.lower():
-            candidates.append({'symbol': sym, 'name': sec})
-        if len(candidates) >= 12:
-            break
-    return jsonify(candidates)
+        sym = normalize(r.get('Symbol') or '')
+        sec = normalize(r.get('Security') or r.get('Langname') or '')
+        
+        if q_norm in sym or q_norm in sec:
+            candidates.append({
+                'symbol': str(r.get('Symbol', '')), 
+                'name': str(r.get('Security', r.get('Langname', '')))
+            })
+        if len(candidates) >= 15: break
+@app.route('/report-bug', methods=['POST'])
+def report_bug():
+    try:
+        data = request.json
+        t1, t2 = data.get('t1','-'), data.get('t2','-')
+        error = data.get('error', 'No description')
+        email = data.get('email', '-')
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        browser = request.headers.get('User-Agent', 'Unknown')
+        
+        csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bugs.csv")
+        file_exists = os.path.isfile(csv_path)
+        with open(csv_path, mode='a', encoding='utf-8') as f:
+            if not file_exists:
+                f.write("Timestamp,Ticker_A,Ticker_B,Error,Email,Browser\n")
+            f.write(f'"{timestamp}","{t1}","{t2}","{error}","{email}","{browser}"\n')
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 # ─── UI Template ───────────────────────────────────────────────
 COMPOSE_HTML = """
@@ -1118,6 +1194,79 @@ document.getElementById('cmpForm').addEventListener('submit', e => {
   window.onload = sendHeight; window.onresize = sendHeight;
 </script>
 {% endif %}
+
+<!-- Bug-Reporting Widget (Phase 9.1) -->
+<div id="bugReportWidget" style="position:fixed; bottom:20px; right:20px; z-index:9999; font-family:sans-serif;">
+  <button id="bugOpenBtn" style="background:#ef4444; color:white; border:none; border-radius:50px; padding:10px 18px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-weight:700; font-size:14px; transition:0.2s; display:flex; align-items:center; gap:8px;">
+    <span>🚨</span> Fehler melden
+  </button>
+  
+  <div id="bugModal" style="display:none; position:fixed; bottom:80px; right:20px; width:300px; background:#1a2b45; border:1px solid rgba(255,255,255,0.1); border-radius:15px; padding:20px; box-shadow:0 8px 32px rgba(0,0,0,0.5); color:white;">
+    <h3 style="margin-top:0; font-size:16px;">Bug melden</h3>
+    <p style="font-size:12px; color:#94a3b8; margin-bottom:12px;">Hier kannst du Fehler oder falsche Daten melden.</p>
+    
+    <label style="display:block; font-size:12px; margin-bottom:4px;">Beschreibung</label>
+    <textarea id="bugError" style="width:100%; height:80px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:8px; margin-bottom:12px; font-size:13px; outline:none;"></textarea>
+    
+    <label style="display:block; font-size:12px; margin-bottom:4px;">E-Mail (optional)</label>
+    <input type="email" id="bugEmail" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:8px; margin-bottom:16px; font-size:13px; outline:none;">
+    
+    <div style="display:flex; gap:10px;">
+      <button id="bugSendBtn" style="flex:1; background:#10b981; color:white; border:none; border-radius:8px; padding:8px; cursor:pointer; font-weight:700;">Senden</button>
+      <button id="bugCloseBtn" style="flex:1; background:rgba(255,255,255,0.1); color:white; border:none; border-radius:8px; padding:8px; cursor:pointer;">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const openBtn = document.getElementById('bugOpenBtn');
+  const modal = document.getElementById('bugModal');
+  const closeBtn = document.getElementById('bugCloseBtn');
+  const sendBtn = document.getElementById('bugSendBtn');
+  
+  if (!openBtn || !modal) return;
+  
+  openBtn.onclick = () => {
+    const isHidden = modal.style.display === 'none' || modal.style.display === '';
+    modal.style.display = isHidden ? 'block' : 'none';
+  };
+  closeBtn.onclick = () => modal.style.display = 'none';
+  
+  sendBtn.onclick = async () => {
+    const errorInput = document.getElementById('bugError');
+    const emailInput = document.getElementById('bugEmail');
+    const error = errorInput.value;
+    const email = emailInput.value;
+    
+    if (!error.trim()) { alert('Bitte gib eine kurze Beschreibung an.'); return; }
+    
+    sendBtn.disabled = true;
+    sendBtn.innerText = 'Sende...';
+    
+    const params = new URLSearchParams(window.location.search);
+    const ticker = params.get('ticker') || params.get('t1') || 'Compare';
+    
+    try {
+      const res = await fetch('/report-bug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker, error, email })
+      });
+      
+      if (res.ok) {
+        alert('Vielen Dank! Deine Meldung wurde gespeichert.');
+        errorInput.value = '';
+        emailInput.value = '';
+        modal.style.display = 'none';
+      } else { alert('Fehler beim Senden.'); }
+    } catch(e) { alert('Verbindungsfehler.'); }
+    
+    sendBtn.disabled = false;
+    sendBtn.innerText = 'Senden';
+  };
+})();
+</script>
 </body></html>
 """
 
@@ -1153,6 +1302,50 @@ function copyShare() {
     setTimeout(() => btn.innerText = '🔗 Link teilen', 2000);
   });
 }
+</script>
+
+<!-- Bug-Reporting Widget (Phase 9.1) -->
+<div id="bugReportWidget" style="position:fixed; bottom:20px; right:20px; z-index:9999; font-family:sans-serif;">
+  <button id="bugOpenBtn" style="background:#ef4444; color:white; border:none; border-radius:50px; padding:10px 18px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-weight:700; font-size:14px; transition:0.2s; display:flex; align-items:center; gap:8px;">
+    <span>🚨</span> Fehler melden
+  </button>
+  
+  <div id="bugModal" style="display:none; position:fixed; bottom:80px; right:20px; width:300px; background:#1a2b45; border:1px solid rgba(255,255,255,0.1); border-radius:15px; padding:20px; box-shadow:0 8px 32px rgba(0,0,0,0.5); color:white;">
+    <h3 style="margin-top:0; font-size:16px;">Bug melden</h3>
+    <textarea id="bugError" placeholder="Fehlerbeschreibung..." style="width:100%; height:80px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:8px; margin-bottom:12px; font-size:13px; outline:none;"></textarea>
+    <input type="email" id="bugEmail" placeholder="E-Mail (optional)" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; padding:8px; margin-bottom:16px; font-size:13px; outline:none;">
+    <div style="display:flex; gap:10px;">
+      <button id="bugSendBtn" style="flex:1; background:#10b981; color:white; border:none; border-radius:8px; padding:8px; cursor:pointer; font-weight:700;">Senden</button>
+      <button id="bugCloseBtn" style="flex:1; background:rgba(255,255,255,0.1); color:white; border:none; border-radius:8px; padding:8px; cursor:pointer;">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const openBtn = document.getElementById('bugOpenBtn');
+  const modal = document.getElementById('bugModal');
+  const closeBtn = document.getElementById('bugCloseBtn');
+  const sendBtn = document.getElementById('bugSendBtn');
+  if (!openBtn || !modal) return;
+  openBtn.onclick = () => modal.style.display = (modal.style.display === 'none' || modal.style.display === '') ? 'block' : 'none';
+  closeBtn.onclick = () => modal.style.display = 'none';
+  sendBtn.onclick = async () => {
+    const error = document.getElementById('bugError').value;
+    const email = document.getElementById('bugEmail').value;
+    if (!error.trim()) { alert('Beschreibung fehlt.'); return; }
+    sendBtn.disabled = true;
+    try {
+      const res = await fetch('/report-bug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ t1: '{{ t1 }}', t2: '{{ t2 }}', error, email })
+      });
+      if (res.ok) { alert('Gesendet!'); modal.style.display = 'none'; }
+    } catch(e) {}
+    sendBtn.disabled = false;
+  };
+})();
 </script>
 </body></html>
 """
@@ -1215,7 +1408,24 @@ def generate_compare():
     if request.args.get('bg_path') and os.path.exists(request.args.get('bg_path')):
         bg_path = request.args.get('bg_path')
 
-    img = core.render_compare([row1.iloc[0], row2.iloc[0]], selected_metrics, fetch_analyst=True, bg_path=bg_path)
+    # ─── KI-Urteil abrufen ───
+    try:
+        # Daten für die KI vorbereiten (nur die wichtigsten Felder)
+        def prep_ai_data(row, met):
+            return {m: display_value(m, row) for m in met[:8]}
+        
+        data_a = prep_ai_data(row1.iloc[0], selected_metrics)
+        data_b = prep_ai_data(row2.iloc[0], selected_metrics)
+        name_a = str(row1.iloc[0].get('Security', t1))
+        name_b = str(row2.iloc[0].get('Security', t2))
+        
+        ai_verdict = ai_logic.get_ai_comparison_verdict(t1, name_a, data_a, t2, name_b, data_b)
+    except Exception as e:
+        print(f"KI Comparison Error: {e}")
+        ai_verdict = ""
+
+    # Call LOCAL render_compare (fixes the core.render_compare error)
+    img = render_compare([row1.iloc[0], row2.iloc[0]], selected_metrics, ai_verdict=ai_verdict)
 
     m_hash = "C" if m_param else "S"
     fname = f"COMPARE_{t1}_{t2}_{m_hash}_{int(time.time())}.png"
