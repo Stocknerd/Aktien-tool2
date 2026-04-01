@@ -1005,25 +1005,41 @@ def search():
                 'name': str(r.get('Security', r.get('Langname', '')))
             })
         if len(candidates) >= 15: break
-@app.route('/report-bug', methods=['POST'])
-def report_bug():
-    try:
-        data = request.json
-        t1, t2 = data.get('t1','-'), data.get('t2','-')
-        error = data.get('error', 'No description')
-        email = data.get('email', '-')
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        browser = request.headers.get('User-Agent', 'Unknown')
+@app.route('/admin/bugs')
+def admin_bugs():
+    token = request.args.get('token')
+    if token != GUEST_TOKEN:
+        return "Access Denied: Invalid Token", 403
+    
+    csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bugs.csv")
+    if not os.path.exists(csv_path):
+        return "<h1>No Bug Reports found</h1><p>The file bugs.csv does not exist yet.</p>"
         
-        csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bugs.csv")
-        file_exists = os.path.isfile(csv_path)
-        with open(csv_path, mode='a', encoding='utf-8') as f:
-            if not file_exists:
-                f.write("Timestamp,Ticker_A,Ticker_B,Error,Email,Browser\n")
-            f.write(f'"{timestamp}","{t1}","{t2}","{error}","{email}","{browser}"\n')
-        return jsonify({"status": "success"})
+    try:
+        df = pd.read_csv(csv_path)
+        table_html = df.to_html(classes='table table-striped table-hover', index=False)
+        return f"""
+        <html>
+        <head>
+            <title>Compare Bug Dashboard</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+            <style>body{{padding:20px; background:#f0f4f8;}} .container{{background:white; padding:30px; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.05);}}</style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1>📊 Compare Bug Reports</h1>
+                    <span class="badge bg-danger">{len(df)} Einträge</span>
+                </div>
+                <div class="table-responsive">
+                    {table_html}
+                </div>
+            </div>
+        </body>
+        </html>
+        """
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return f"Error: {e}", 500
 
 # ─── UI Template ───────────────────────────────────────────────
 COMPOSE_HTML = """

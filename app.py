@@ -413,6 +413,43 @@ def report_bug():
         print(f"Error reporting bug: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/admin/bugs')
+def admin_bugs():
+    token = request.args.get('token')
+    if token != GUEST_TOKEN:
+        return "Access Denied: Invalid Token", 403
+    
+    csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bugs.csv")
+    if not os.path.exists(csv_path):
+        return "<h1>No Bug Reports found</h1><p>The file bugs.csv does not exist yet.</p>"
+        
+    try:
+        df = pd.read_csv(csv_path)
+        # Convert to HTML table with some basic styling
+        table_html = df.to_html(classes='table table-striped table-hover', index=False)
+        return f"""
+        <html>
+        <head>
+            <title>Bug Dashboard</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+            <style>body{{padding:20px; background:#f8fafc;}} .container{{background:white; padding:30px; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.05);}}</style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1>🐛 Bug Reports</h1>
+                    <span class="badge bg-primary">{len(df)} Einträge</span>
+                </div>
+                <div class="table-responsive">
+                    {table_html}
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"Error reading bugs: {e}", 500
+
 if __name__ == '__main__':
     saas_logic.init_db()
     app.run(debug=True, host='0.0.0.0', port=5000)
