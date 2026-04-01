@@ -4,9 +4,11 @@ import requests
 from requests.auth import HTTPBasicAuth
 import pandas as pd
 from core import load_df, render_stock_card
-from ai_logic import get_ai_verdict, get_ai_long_analysis
+from ai_logic import get_ai_verdict, get_ai_long_analysis, get_social_caption
+from social_publisher import run_social_sync
 from datetime import datetime
 import io
+import tempfile
 
 WP_URL = "https://schatzsuche40.de/wp-json/wp/v2/posts"
 WP_MEDIA_URL = "https://schatzsuche40.de/wp-json/wp/v2/media"
@@ -116,6 +118,20 @@ def generate_blog_post():
             <!-- /wp:table -->
             """
             
+        # Social Media Push
+        try:
+            print(f"Erstelle Social-Media-Post für {symbol}...")
+            social_caption = get_social_caption(symbol, name, financial_data)
+            
+            # Save img to temp file for upload
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                img.save(tmp.name)
+                run_social_sync(symbol, social_caption, tmp.name)
+            
+            os.unlink(tmp.name) # Clean up
+        except Exception as social_err:
+            print(f"Warnung: Social Media Push für {symbol} fehlgeschlagen: {social_err}")
+
         html_content += f"""
         <!-- wp:quote -->
         <blockquote class="wp-block-quote"><p><strong>Zusammenfassung:</strong> {short_verdict}</p></blockquote>

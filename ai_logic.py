@@ -122,6 +122,29 @@ def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b
         print(f"OpenAI Error Comparison {symbol_a} vs {symbol_b}: {e}")
         return "Detaillierter KI-Vergleich konnte momentan nicht vollständig generiert werden."
 
+def get_social_caption(symbol, name, data):
+    """Generiert einen kurzen Social-Media-Post (Instagram/X) für eine Aktie."""
+    prompt = f"""
+    Schreibe einen kurzen, packenden Social-Media-Post (max 280 Zeichen) für die Aktie {name} ({symbol}).
+    Nutze diese Kennzahlen: {data}.
+    
+    Vorgaben:
+    - Nutze Emojis.
+    - Füge 3-5 relevante Hashtags hinzu (z.B. #Aktien #Investing #Dividende).
+    - Sei analytisch aber motivierend.
+    - Der Text muss auf Deutsch sein.
+    - Keine Platzhalter.
+    """
+    try:
+        response = client.chat.completions.create(
+          model="gpt-4o-mini",
+          messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"Error generating social caption for {symbol}: {e}")
+        return f"🚨 Analyse-Update: {name} ({symbol}). Jetzt die neuesten Kennzahlen auf schatzsuche40.de checken! #Aktien #Investieren"
+
 if __name__ == "__main__":
     # Test block
     test_data = {"KGV": "15.2", "Dividendenrendite": "3.5%", "Umsatzwachstum": "10%"}
