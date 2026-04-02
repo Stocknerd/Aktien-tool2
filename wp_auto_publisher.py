@@ -23,6 +23,8 @@ def generate_blog_post():
         print("Fehler: stock_data.csv konnte nicht geladen werden.")
         return
 
+    social_data = [] # Stores data for post-WP social push
+    
     # Filter out invalid stuff
     clean_df = df.dropna(subset=['Symbol', 'Security', 'Marktkapitalisierung', 'Dividendenrendite']).copy()
     
@@ -118,19 +120,13 @@ def generate_blog_post():
             <!-- /wp:table -->
             """
             
-        # Social Media Push
-        try:
-            print(f"Erstelle Social-Media-Post für {symbol}...")
-            social_caption = get_social_caption(symbol, name, financial_data)
-            
-            # Save img to temp file for upload
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                img.save(tmp.name)
-                run_social_sync(symbol, social_caption, tmp.name)
-            
-            os.unlink(tmp.name) # Clean up
-        except Exception as social_err:
-            print(f"Warnung: Social Media Push für {symbol} fehlgeschlagen: {social_err}")
+        # Prepare Social Media Data
+        social_data.append({
+            "symbol": symbol,
+            "name": name,
+            "image": img,
+            "financial_data": financial_data
+        })
 
         html_content += f"""
         <!-- wp:quote -->
@@ -160,7 +156,22 @@ def generate_blog_post():
     response = requests.post(WP_URL, auth=HTTPBasicAuth(WP_USER, WP_PASS), json=post_data, headers={'Content-Type': 'application/json'})
 
     if response.status_code == 201:
-        print(f"Erfolg! Post erstellt: {response.json().get('link')}")
+        blog_url = response.json().get('link')
+        print(f"Erfolg! Post erstellt: {blog_url}")
+        
+        # Now trigger Social Media for all 3 stocks
+        for item in social_data:
+            try:
+                symbol, name = item["symbol"], item["name"]
+                print(f"Hole Social-Media-Caption für {name} ({symbol})...")
+                social_caption = get_social_caption(symbol, name, item["financial_data"])
+                
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                    item["image"].save(tmp.name)
+                    run_social_sync(symbol, social_caption, tmp.name, blog_url=blog_url)
+                os.unlink(tmp.name)
+            except Exception as e:
+                print(f"Fehler bei Social-Push {item['symbol']}: {e}")
     else:
         print(f"Warnung: Veröffentlichung fehlgeschlagen. Code: {response.status_code}")
         print(response.text)

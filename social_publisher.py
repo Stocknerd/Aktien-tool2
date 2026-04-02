@@ -1,6 +1,6 @@
 import os
+import requests
 import tweepy
-from instagrapi import Client as InstaClient
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,9 +11,11 @@ X_API_SECRET = os.getenv("X_API_SECRET")
 X_ACCESS_TOKEN = os.getenv("X_ACCESS_TOKEN")
 X_ACCESS_SECRET = os.getenv("X_ACCESS_SECRET")
 
-# Instagram Credentials
-INSTA_USER = os.getenv("INSTAGRAM_USER")
-INSTA_PASS = os.getenv("INSTAGRAM_PASS")
+# Meta (Facebook/Instagram) Credentials
+META_PAGE_ID = os.getenv("META_PAGE_ID")
+META_PAGE_ACCESS_TOKEN = os.getenv("META_PAGE_ACCESS_TOKEN")
+# Instagram Business Account ID (to be added)
+META_INSTA_ID = os.getenv("META_INSTA_ID")
 
 def post_to_x(caption, image_path):
     """Postet ein Bild mit Text auf X (Twitter)."""
@@ -44,35 +46,67 @@ def post_to_x(caption, image_path):
         print(f"[ERR] X-Posting fehlgeschlagen: {e}")
         return False
 
-def post_to_instagram(caption, image_path):
-    """Postet ein Bild als Feed-Beitrag auf Instagram."""
-    if not (INSTA_USER and INSTA_PASS):
-        print("[SKIP] Instagram-Credentials fehlen.")
+def post_to_facebook_page(caption, image_path, link=None):
+    """Postet ein Bild mit Text und optionalem Link auf die Facebook Page."""
+    if not (META_PAGE_ID and META_PAGE_ACCESS_TOKEN):
+        print("[SKIP] Facebook-Credentials fehlen.")
         return False
         
     try:
-        cl = InstaClient()
-        cl.login(INSTA_USER, INSTA_PASS)
+        # Step 1: Upload photo
+        url = f"https://graph.facebook.com/v20.0/{META_PAGE_ID}/photos"
         
-        # Post to Feed
-        media = cl.photo_upload(image_path, caption)
-        print(f"[OK] Instagram: Feed-Post erfolgreich (ID: {media.pk}).")
-        return True
+        # If link is provided, append it to caption
+        full_text = caption
+        if link:
+            full_text += f"\n\n👉 Mehr lesen: {link}"
+            
+        params = {
+            "caption": full_text,
+            "access_token": META_PAGE_ACCESS_TOKEN
+        }
+        
+        with open(image_path, "rb") as img_file:
+            files = {"source": img_file}
+            r = requests.post(url, params=params, files=files)
+            
+        data = r.json()
+        if "id" in data:
+            print(f"[OK] Facebook: Post erfolgreich (Photo ID: {data['id']}).")
+            return True
+        else:
+            print(f"[ERR] Facebook Fehlermeldung: {data}")
+            return False
+            
     except Exception as e:
-        print(f"[ERR] Instagram-Posting fehlgeschlagen: {e}")
+        print(f"[ERR] Facebook-Posting fehlgeschlagen: {e}")
         return False
 
-def run_social_sync(symbol, caption, image_path):
+def post_to_instagram_feed(caption, image_path):
+    """Postet ein Bild auf den Instagram Business Feed (benötigt Insta-ID)."""
+    if not (META_INSTA_ID and META_PAGE_ACCESS_TOKEN):
+        print("[SKIP] Instagram Business ID fehlt für offiziellen API-Post.")
+        return False
+        
+    # Instagram Graph API logic to be implemented once permissions are there
+    # Requires: UI -> Media Container -> Publish Media
+    print("[TODO] Instagram API Integration (Warte auf Berechtigung instagram_content_publish)")
+    return False
+
+def run_social_sync(symbol, caption, image_path, blog_url=None):
     """Hier erfolgt der koordinierte Social-Media-Push."""
     print(f"Bündele Social-Media-Push für {symbol}...")
     
     # 1. X (Twitter)
     post_to_x(caption, image_path)
     
-    # 2. Instagram
-    post_to_instagram(caption, image_path)
+    # 2. Facebook (Offizielle API)
+    post_to_facebook_page(caption, image_path, link=blog_url)
+    
+    # 3. Instagram (Placeholder)
+    post_to_instagram_feed(caption, image_path)
 
 if __name__ == "__main__":
     # Test-Run
-    # run_social_sync("TSLA", "Test-Post von Antigravity! 🚀 #Stocknerd", "path/to/test.png")
+    # run_social_sync("TSLA", "Test-Post!", "path/to/test.png", "https://schatzsuche40.de/test-post")
     pass
