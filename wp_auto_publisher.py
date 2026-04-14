@@ -166,10 +166,14 @@ def generate_blog_post():
                 print(f"Hole Social-Media-Caption für {name} ({symbol})...")
                 social_caption = get_social_caption(symbol, name, item["financial_data"])
                 
-                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                    item["image"].save(tmp.name)
-                    run_social_sync(symbol, social_caption, tmp.name, blog_url=blog_url)
-                os.unlink(tmp.name)
+                # Save to public static folder for Meta API fetch
+                public_dir = os.path.join("static", "temp_social")
+                os.makedirs(public_dir, exist_ok=True)
+                public_path = os.path.join(public_dir, f"{symbol}_post.png")
+                
+                item["image"].save(public_path)
+                run_social_sync(symbol, social_caption, public_path, blog_url=blog_url)
+                
             except Exception as e:
                 print(f"Fehler bei Social-Push {item['symbol']}: {e}")
     else:

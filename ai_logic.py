@@ -124,6 +124,10 @@ def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b
 
 def get_social_caption(symbol, name, data):
     """Generiert einen kurzen Social-Media-Post (Instagram/X) für eine Aktie."""
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        return f"🚨 Analyse-Update: {name} ({symbol}). Jetzt die neuesten Kennzahlen auf schatzsuche40.de checken! #Aktien"
+
     prompt = f"""
     Schreibe einen kurzen, packenden Social-Media-Post (max 280 Zeichen) für die Aktie {name} ({symbol}).
     Nutze diese Kennzahlen: {data}.
@@ -136,6 +140,7 @@ def get_social_caption(symbol, name, data):
     - Keine Platzhalter.
     """
     try:
+        client = OpenAI(api_key=api_key)
         response = client.chat.completions.create(
           model="gpt-4o-mini",
           messages=[{"role": "user", "content": prompt}]

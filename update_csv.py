@@ -44,18 +44,19 @@ RAW_DATA_DIR = BASE_DIR / "data" / "raw" # Added RAW_DATA_DIR definition
 RAW_DATA_DIR.mkdir(parents=True, exist_ok=True) # Ensure RAW_DATA_DIR exists
 
 # Konservative Server-Defaults (via ENV überschreibbar)
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", 20))        # kleine Gruppen
-SLEEP_GROUP = float(os.getenv("SLEEP_GROUP", 6))     # längere Pause zwischen Gruppen
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", 15))        # Reduzierte Batch-Größe für Stabilität
+SLEEP_GROUP = float(os.getenv("SLEEP_GROUP", 8))     # Längere Pause zwischen Gruppen
 PER_TICKER_JITTER = [
-    float(os.getenv("PER_TICKER_JITTER_MIN", 0.30)),
-    float(os.getenv("PER_TICKER_JITTER_MAX", 0.60)),
+    float(os.getenv("PER_TICKER_JITTER_MIN", 0.50)),
+    float(os.getenv("PER_TICKER_JITTER_MAX", 1.20)),
 ]
 MAX_TRIES = int(os.getenv("MAX_TRIES", 3))
-BACKOFF_START = float(os.getenv("BACKOFF_START", 0.8))
-THREADS_BASE = int(os.getenv("THREADS", 4))          # wird dynamisch angepasst
-THREADS_MIN = int(os.getenv("THREADS_MIN", 2))
-THREADS_MAX = int(os.getenv("THREADS_MAX", 6))
-PARTIAL_SAVE_EVERY = int(os.getenv("PARTIAL_SAVE_EVERY", 200))
+BACKOFF_START = float(os.getenv("BACKOFF_START", 2.0)) # Erhöhter Backoff-Start
+THREADS_BASE = int(os.getenv("THREADS", 2))          # Konservativerer Standard
+THREADS_MIN = int(os.getenv("THREADS_MIN", 1))
+THREADS_MAX = int(os.getenv("THREADS_MAX", 4))
+PARTIAL_SAVE_EVERY = int(os.getenv("PARTIAL_SAVE_EVERY", 100))
+GLOBAL_COOL_DOWN = int(os.getenv("GLOBAL_COOL_DOWN", 300)) # 5 Min Pause bei 429 Wellen
 
 # Quick-Mode (aggressiver speichern, weniger Retries)
 QUICK = os.getenv("QUICK") == "1"
@@ -190,8 +191,13 @@ def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: flo
             return info
         except Exception as e:
             last_err = e
+            err_msg = str(e).lower()
+            if "too many requests" in err_msg or "429" in err_msg:
+                print(f"[CRITICAL] Rate Limit (429) bei {ticker}. Intensiver Backoff...")
+                time.sleep(GLOBAL_COOL_DOWN / 2) # Sofortige Teil-Sperre abwarten
+            
             print(f"[WARN] Ticker {ticker} Fetch-Fehler (Versuch {attempt}/{max_tries}): {e}")
-            time.sleep(base_sleep * (2 ** (attempt - 1)))
+            time.sleep(base_sleep * (2.5 ** (attempt - 1))) # Aggressiverer Backoff
     print(f"[ERROR] Ticker {ticker} fatal fehlgeschlagen nach {max_tries} Versuchen.")
     raise last_err  # type: ignore[return-value]
 
@@ -371,11 +377,17 @@ def main() -> None:
         fail_rate = group_fail / max(1, len(group))
         if fail_rate >= 0.25:
             # Mehr Backoff: längere Sleeps, breiteres Jitter, weniger Threads (bis Minimum)
-            sleep_group = min(SLEEP_GROUP_MAX, sleep_group * 1.5)
-            jitter[0] = min(JITTER_MAX_CAP, jitter[0] * 1.2)
-            jitter[1] = min(JITTER_MAX_CAP, jitter[1] * 1.2)
+            sleep_group = min(SLEEP_GROUP_MAX, sleep_group * 1.8)
+            jitter[0] = min(JITTER_MAX_CAP, jitter[0] * 1.3)
+            jitter[1] = min(JITTER_MAX_CAP, jitter[1] * 1.3)
             if threads_current > THREADS_MIN:
                 threads_current = max(THREADS_MIN, threads_current - 1)
+            
+            # Harter Stop bei 100% Fehlern in der Gruppe
+            if fail_rate == 1.0:
+                print(f"[STOP] 100% Fehlerquote in Batch! Globaler Cool-Down für {GLOBAL_COOL_DOWN}s...")
+                time.sleep(GLOBAL_COOL_DOWN)
+                
             print(f"[ADJUST] High failure rate ({fail_rate:.0%}). Adjusting: sleep={sleep_group:.1f}s, threads={threads_current}")
         elif fail_rate == 0 and threads_current < THREADS_BASE:
             # leichtes Hochfahren bis Threads_BASE

@@ -1,0 +1,87 @@
+<!-- wp:paragraph -->
+<p>Willkommen zum Depotupdate für <strong>Februar 2026</strong> auf Schatzsuche40.de! Der vergangene Monat hat eine gemischte, aber extrem spannende Performance für meine Portfolios geliefert. Während einige Tech-Bereiche im Korrekturmodus waren, performte unser Hauptdepot exzellent und schlug den S&P 500! Im Folgenden werfen wir einen genauen Blick auf die Bestände, die Gewinner und Verlierer in den Depots sowie auf die exakten Benchmark-Ergebnisse.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">1. Das Gesamtdepot im Überblick</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Im Februar schloss das <strong>Gesamtdepot</strong> mit einem Gesamtbestand von gigantischen <strong>101.618,93 €</strong>. Die monatliche System-Performance lag bei <strong>-1,98%</strong>, womit wir eine leichte Korrektur gegenüber dem Vormonat sahen.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"align":"center"} -->
+<figure class="wp-block-image aligncenter"><img src="https://schatzsuche40.de/wp-content/uploads/2026/03/media__1774929749719.png" alt="Gesamtdepot Februar 2026"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>Unsere Top 3 Performer im Februar fangen starke Sektor-Trends ein: <strong>TSMC</strong> (Halbleiter aus Taiwan), <strong>Merck Co.</strong> (Pharma) sowie der monatliche Dividendenbringer <strong>Realty Income</strong> (Immobilien/REITs). Zu den Flops gehörten indes Novo Nordisk, IBM und Innodata.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">2. Das Hauptdepot: Der große Gewinner!</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Eine echte Überraschung und der große Gewinner des Monats ist unser <strong>Hauptdepot</strong>! Mit einem Bestand von <strong>28.267,82 €</strong> generierte es eine Performance von stolzen <strong>+2,51%</strong> und sammelte zudem 34,22 € an frischen Dividenden ein.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"align":"center"} -->
+<figure class="wp-block-image aligncenter"><img src="https://schatzsuche40.de/wp-content/uploads/2026/03/media__1774929749823.png" alt="Hauptdepot Februar 2026"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>Hier zeigt sich das extreme Potenzial von fokussierten Werten: <strong>TSMC</strong> treibt das Depot, flankiert von Immobilien mit <strong>Realty Income</strong> und dem deutschen Chip-Giganten <strong>Infineon</strong>, die sich im Halbleiterbereich stark behaupteten. Tech-Giganten wie Microsoft und Amazon wiesen im Februar leichte Korrekturen aus, was das Depot aber aufgrund der extremen Überrendite von Apple (mit einem beeindruckenden Portfolioanteil von +21%) und TSMC grandios abfederte.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">3. Das Dividendendepot: Starke Defensive</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Das Dividendendepot stand per Ende Februar bei <strong>17.127,46 €</strong>. Die Performance kratzte mit moderaten <strong>-0,23%</strong> hauchdünn an der Nulllinie. Es wurden 27,47 € Dividenden (ein starkes Plus für den Cashflow!) eingesammelt und insgesamt 125 € an frischem Kapital durch Zukäufe nachgeschossen.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"align":"center"} -->
+<figure class="wp-block-image aligncenter"><img src="https://schatzsuche40.de/wp-content/uploads/2026/03/media__1774929750141.png" alt="Dividendendepot Februar 2026"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>Die Pharma- und Konsumwerte erwiesen sich als der sprichwörtliche Fels in der Brandung: <strong>Merck</strong>, <strong>3M</strong> und <strong>Johnson &amp; Johnson</strong> lieferten massive Überrendite. Hingegen mussten Main Street Capital, Intel und IBM kurzfristige Einbußen hinnehmen.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">4. Das Zukunftsdepot</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Als unser großes Wachstums- und Tech-Segment fiel das <strong>Zukunftsdepot</strong> diesen Monat leider einer Marktkorrektur im Bereich Reise (Booking.com) und High-End Tech (Digital/Nvidia) zum Opfer. Es verzeichnete ein Minus von <strong>-3,26%</strong>, schließt aber noch immer souverän mit <strong>47.795,32 €</strong> Bestand ab. Beachtenswert: Hier flossen mächtige 400 € ins Buy-the-Dip Portfolio!</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"align":"center"} -->
+<figure class="wp-block-image aligncenter"><img src="https://schatzsuche40.de/wp-content/uploads/2026/03/media__1774929750123.png" alt="Zukunftsdepot Februar 2026"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">5. Die Benchmarks: So stehen wir im Marktvergleich!</h2>
+<!-- /wp:heading -->
+
+<!-- wp:image {"align":"center"} -->
+<figure class="wp-block-image aligncenter"><img src="https://schatzsuche40.de/wp-content/uploads/2026/03/media__1774929750208.png" alt="Benchmarks Februar 2026"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>Die monatliche Matrix ist und bleibt der härteste Test im Investmentbereich. Im Februar zeigte der DAX unerwartet Stärke mit +2,60%, während S&amp;P 500 (+0,09%) und MSCI ACWI (+1,67%) moderater stiegen.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list">
+  <li>Unser glorreiches <strong>Hauptdepot</strong> out-performte den S&amp;P 500 extrem stark mit einer satten <strong>+2,42% Überrendite</strong> und schlug auch den breiten MSCI ACWI (+0,84%).</li>
+  <li>Das Dividendendepot rutschte knapp hinter die hart laufenden Vergleichsindizes, bewies aber wie gewohnt starke Cash-Flow-Stabilität bei niedrigem Beta (Vola-Schutz).</li>
+  <li>Das große Zukunftsdepot geriet unter die Benchmark-Räder (-3,35% gg. S&amp;P), was unsere monatliche Durchschnittsrendite im Gesamtdepot dementsprechend drückte.</li>
+</ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p><strong>Fazit:</strong> Die Langzeitstrategie bleibt bestehen! Qualität und Fundamentaldaten regieren auf lange Sicht. Bis zum nächsten Update, bleibt geduldig und lasst den Zinseszins für euch arbeiten! 🚀</p>
+<!-- /wp:paragraph -->

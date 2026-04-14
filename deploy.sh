@@ -34,6 +34,7 @@ fi
 
 echo "📁 Verzeichnisse sicherstellen"
 mkdir -p "$PROJECT_DIR/static/generated"
+mkdir -p "$PROJECT_DIR/static/temp_social"
 mkdir -p "$PROJECT_DIR/data/raw"
 mkdir -p "$PROJECT_DIR/output"
 mkdir -p "$PROJECT_DIR/logs"

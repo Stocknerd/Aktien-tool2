@@ -228,7 +228,7 @@ def main() -> None:
                     old = old.sort_values("Abfragedatum")
                 old = old.dropna(subset=["valid_yahoo_ticker"]).drop_duplicates("valid_yahoo_ticker", keep="last")
                 if old_rows != len(old):
-                    print(f"ℹ️ Bestand: {old_rows} Zeilen, {old_unique} eindeutige Ticker -> nach Deduplizierung: {len(old)} Zeilen.")
+                    print(f"[INFO] Bestand: {old_rows} Zeilen, {old_unique} eindeutige Ticker -> nach Deduplizierung: {len(old)} Zeilen.")
 
                 # Merge strikt als 1:1 absichern
                 try:
@@ -241,7 +241,7 @@ def main() -> None:
                     )
                 except Exception as e:
                     print(
-                        "⚠️ Merge-Validierung fehlgeschlagen (kein 1:1). "
+                        "[WARN] Merge-Validierung fehlgeschlagen (kein 1:1). "
                         f"Versuche automatische Deduplizierung und erneuten Merge… {e}"
                     )
                     df = df.drop_duplicates("valid_yahoo_ticker", keep="first")
@@ -256,9 +256,9 @@ def main() -> None:
                         merged.drop(columns=[old_col], inplace=True)
                 df = merged
             else:
-                print("ℹ️ Bestand hat keine Spalte 'valid_yahoo_ticker' – überspringe Merge.")
+                print("[INFO] Bestand hat keine Spalte 'valid_yahoo_ticker' – überspringe Merge.")
         except Exception as e:
-            print(f"ℹ️ Konnte bestehende '{FILE_OUTPUT.name}' nicht mergen: {e}")
+            print(f"[INFO] Konnte bestehende '{FILE_OUTPUT.name}' nicht mergen: {e}")
 
     # --- Stale/Missing-Filter ---
     need_cols = SPALTEN_KENNZAHLEN
@@ -267,13 +267,13 @@ def main() -> None:
     df_run = df[stale_mask | missing_mask].copy()
 
     if df_run.empty:
-        print("✅ Alles frisch – nichts zu tun.")
+        print("[OK] Alles frisch – nichts zu tun.")
         return
 
     # Tickerliste eindeutig machen (keine Doppelarbeit)
     tickers: List[str] = list(dict.fromkeys(df_run["valid_yahoo_ticker"].astype(str)))
     ticker_total = len(tickers)
-    print(f"🟡 Starte Update für {ticker_total} Ticker (stale/missing gefiltert)…")
+    print(f"[INFO] Starte Update für {ticker_total} Ticker (stale/missing gefiltert)…")
 
     # Parallel fetch
     failed: List[str] = []
@@ -302,10 +302,10 @@ def main() -> None:
             mask = df["valid_yahoo_ticker"] == ticker
             if err is not None or info is None:
                 failed.append(ticker)
-                print(f"❌ {ticker}: failed to fetch.")
+                print(f"[ERR] {ticker}: failed to fetch.")
                 continue
             else:
-                print(f"✅ {ticker}: fetched successfully.")
+                print(f"[OK] {ticker}: fetched successfully.")
 
             mapped = map_info(info)
             changed_any_row = False
@@ -342,12 +342,12 @@ def main() -> None:
                 tmp = FILE_OUTPUT.with_suffix(".partial.csv")
                 try:
                     df.to_csv(tmp, index=False, encoding="utf-8-sig")
-                    print(f"💾 Teilspeicher: {tmp.name} (aktualisiert: {updated_rows_count}/{ticker_total})")
+                    print(f"[SAVE] Teilspeicher: {tmp.name} (aktualisiert: {updated_rows_count}/{ticker_total})")
                 except Exception as e:
-                    print(f"⚠️ Teilspeicher fehlgeschlagen: {e}")
+                    print(f"[WARN] Teilspeicher fehlgeschlagen: {e}")
                 processed_since_partial = 0
 
-        print(f"✅ Gruppe {gi}/{total_batches} verarbeitet – Schläft {SLEEP_GROUP:.1f}s…")
+        print(f"[OK] Gruppe {gi}/{total_batches} verarbeitet – Schläft {SLEEP_GROUP:.1f}s…")
         time.sleep(SLEEP_GROUP)
 
     # failed-Log schreiben
@@ -372,9 +372,9 @@ def main() -> None:
 
     try:
         df.to_csv(FILE_OUTPUT, index=False, encoding="utf-8-sig")
-        print(f"✅ Fertig – Daten in '{FILE_OUTPUT.name}' gespeichert ({updated_rows_count}/{ticker_total} Ticker mit Änderungen).")
+        print(f"[OK] Fertig – Daten in '{FILE_OUTPUT.name}' gespeichert ({updated_rows_count}/{ticker_total} Ticker mit Änderungen).")
     except Exception as e:
-        print(f"❌ Konnte '{FILE_OUTPUT}' nicht schreiben: {e}")
+        print(f"[ERR] Konnte '{FILE_OUTPUT}' nicht schreiben: {e}")
 
 
 if __name__ == "__main__":
