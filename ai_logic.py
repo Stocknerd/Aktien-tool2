@@ -69,16 +69,15 @@ def get_ai_long_analysis(ticker, company_name, financial_data, business_summary=
         Nutze folgende Kennzahlen als Basis: {metrics_str}.
         
         Schreibe 2-3 flüssig geschriebene Absätze auf Deutsch. 
-        WICHTIG: Klinge menschlich, kompetent und weniger wie eine Maschine. Vermeide Floskeln wie "In der heutigen Analyse" oder "Zusammenfassend lässt sich sagen". 
-        Gehe stattdessen direkt auf die Substanz ein.
+        WICHTIG: Klinge menschlich und kompetent. Gehe direkt auf die Substanz ein.
         
         Struktur:
         1. Kurze Einordnung des Geschäftsmodells und der Marktposition.
-        2. Einschätzung der Kennzahlen (KGV, Dividende, Wachstum) – was bedeuten diese für die Zukunft des Untenehmens?
-        3. Ein kurzes, prägnantes Resümee für langfristige Investoren.
+        2. Einschätzung der Kennzahlen (KGV, Dividende, Wachstum).
+        3. Ein kurzes Resümee für langfristige Investoren.
 
-        Nutze HTML-Tags wie <strong>, <em> oder <p>. Keine Überschriften.
-        Ziel: Einem Investor das Gefühl geben, eine tiefgründige Experten-Meinung zu lesen.
+        Formatierung: Nutze ausschließlich <p> Tags für Absätze und <strong> für Hervorhebungen. Keine Überschriften.
+        Beginne direkt mit dem ersten <p> Tag.
         """
         
         response = client.chat.completions.create(
@@ -87,6 +86,11 @@ def get_ai_long_analysis(ticker, company_name, financial_data, business_summary=
             max_completion_tokens=800
         )
         ans = response.choices[0].message.content.strip()
+        # Clean up any potential markdown code blocks if the AI accidentally adds them
+        ans = ans.replace("```html", "").replace("```", "").strip()
+        if not ans.startswith("<p>"):
+            ans = f"<p>{ans}</p>"
+        
         if not ans or len(ans) < 50:
              return f"<p><strong>{company_name}</strong> zeigt derzeit interessante Entwicklungen in den Fundamentaldaten. Besonders die Dividenden-Kontinuität und die Marktstellung machen den Titel für langfristige Portfolios beobachtenswert.</p>"
         return ans

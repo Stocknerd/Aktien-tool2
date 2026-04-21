@@ -130,9 +130,7 @@ def generate_blog_post():
         <h3>{name} ({symbol})</h3>
         <!-- /wp:heading -->
         
-        <!-- wp:paragraph -->
         {long_analysis}
-        <!-- /wp:paragraph -->
         """
         
         if img_url:
@@ -190,6 +188,7 @@ def generate_blog_post():
         "meta": {
             "prosodia_vgw_os_pzm_method": "automatic",
             "_prosodia_vgw_os_pzm_active": "1",
+            "_prosodia_vgw_os_pzm_status": "assigned",
             "_yoast_wpseo_metadesc": excerpt
         }
     }
