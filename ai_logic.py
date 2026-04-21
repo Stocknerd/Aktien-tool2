@@ -107,16 +107,31 @@ def get_ai_excerpt(title, content):
     
     try:
         client = OpenAI(api_key=api_key)
-        prompt = f"Schreibe eine packende SEO-Metabeschreibung (max. 150 Zeichen) für folgenden Blog-Artikel: {title}. Inhalt: {content[:500]}..."
+        prompt = f"""Schreibe eine packende SEO-Metabeschreibung (max. 150 Zeichen) für folgenden Blog-Artikel: {title}. 
+        WICHTIG: Antworte NUR mit der Beschreibung. KEINE Einleitung wie 'Hier ist...' oder 'Beschreibung:'. 
+        Beginne direkt mit dem Text."""
+        
         response = client.chat.completions.create(
             model="gpt-5.4-mini",
             messages=[{"role": "user", "content": prompt}],
             max_completion_tokens=50
         )
-        return response.choices[0].message.content.strip()[:160]
+        ans = response.choices[0].message.content.strip()
+        # Clean potential prefixes
+        for prefix in ["Hier ist ", "Metabeschreibung:", "SEO:", "Beschreibung:"]:
+            if ans.lower().startswith(prefix.lower()):
+                ans = ans[len(prefix):].strip()
+        return ans[:160]
     except Exception as e:
         print(f"Error generating excerpt: {e}")
         return "Täglich frische Aktienanalysen und Dividenden-Checks für dein Depot."
+
+def get_ai_blog_image_prompt(stock_names):
+    """
+    Generates a prompt for a landscape blog header image.
+    """
+    stocks_str = ", ".join(stock_names)
+    return f"A high-quality, professional 16:9 landscape cinematic header image for a financial news blog about {stocks_str}. Modern architecture, clean lines, financial district at sunset, professional stock market aesthetic, 8k resolution, elegant lighting."
 
 def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b):
     """

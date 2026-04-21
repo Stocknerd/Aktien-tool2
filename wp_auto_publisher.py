@@ -3,7 +3,7 @@ import random
 import requests
 from requests.auth import HTTPBasicAuth
 import pandas as pd
-from core import load_df, render_stock_card
+from core import load_df, render_stock_card, render_blog_header
 from ai_logic import get_ai_verdict, get_ai_long_analysis, get_social_caption, get_ai_excerpt
 from social_publisher import run_social_sync
 from datetime import datetime
@@ -63,6 +63,27 @@ def generate_blog_post():
     <!-- /wp:paragraph -->
     """
 
+    # --- NEW: Generate Landscape Blog Header ---
+    print("Generiere Querformat-Blog-Header...")
+    selected_list = selected.to_dict('records')
+    header_img = render_blog_header(selected_list)
+    header_byte_arr = io.BytesIO()
+    header_img.save(header_byte_arr, format='PNG')
+    header_bytes = header_byte_arr.getvalue()
+
+    print("Lade Blog-Header hoch...")
+    header_response = requests.post(
+        WP_MEDIA_URL,
+        auth=HTTPBasicAuth(WP_USER, WP_PASS),
+        data=header_bytes,
+        headers={
+            'Content-Type': 'image/png',
+            'Content-Disposition': 'attachment; filename="blog_header.png"'
+        }
+    )
+    if header_response.status_code == 201:
+        featured_media_id = header_response.json().get('id')
+    
     excerpt = ""
     for _, row in selected.iterrows():
         symbol = str(row.get('Symbol'))
@@ -121,9 +142,7 @@ def generate_blog_post():
             media_id = media_response.json().get('id')
             img_url = media_response.json().get('source_url', '')
             
-            # Set first image as featured image for the post
-            if featured_media_id is None:
-                featured_media_id = media_id
+            # Note: We no longer set featured_media_id here, as we use the landscape header
         
         html_content += f"""
         <!-- wp:heading {{"level":3}} -->

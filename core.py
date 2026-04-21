@@ -689,12 +689,12 @@ def render_compare(rows: List[pd.Series], metrics: List[str], watermark: str = "
     an_y = ROW_START + len(metrics_clean) * (ROW_H + ROW_GAP) + 12
     if fetch_analyst:
         def _get_an(r):
-            rk = str(r.get("Analysten_Empfehlung") or r.get("Recommendation Key", ""))
+            rk = str(r.get("Recommendation Key") or r.get("Analysten_Empfehlung", ""))
             return {
                 "recommendationKey": rk if rk != "nan" else "",
-                "targetMeanPrice": _safe_float(r.get("Analysten_Kursziel")),
+                "targetMeanPrice": _safe_float(r.get("Analyst Mean Target")) or _safe_float(r.get("Analysten_Kursziel")),
                 "currentPrice": _safe_float(r.get("Current Price")) or _safe_float(r.get("Vortagesschlusskurs")),
-                "numberOfAnalysts": _safe_float(r.get("Anzahl Analystenmeinungen"))
+                "numberOfAnalysts": _safe_float(r.get("Number of Analysts")) or _safe_float(r.get("Anzahl Analystenmeinungen"))
             }
         
         a1 = _get_an(rows[0])
@@ -832,5 +832,71 @@ def render_compare(rows: List[pd.Series], metrics: List[str], watermark: str = "
     draw.text(((W - tw_f) // 2, score_y + 72), foot, fill=(110, 125, 150), font=f_foot)
 
     _draw_watermark(draw, W, H)
+    return img
+
+def render_blog_header(selected_stocks: List[Dict[str, Any]], title_text: str = "AKTIEN-ANALYSE: TOP 3 DIVIDENDEN-STOCKS") -> Image.Image:
+    """
+    Renders a landscape (1200x630) header image for blog posts with 3 stocks.
+    """
+    W, H = 1200, 630
+    img = Image.new("RGBA", (W, H), COLOR_DARK_BG)
+    draw = ImageDraw.Draw(img)
+    MID = W // 2
+    PAD = 40
+
+    # Fonts
+    f_title = _font(FONT_BLD_PATH, 42, ImageFont.load_default())
+    f_ticker = _font(FONT_BLD_PATH, 36, ImageFont.load_default())
+    f_name = _font(FONT_REG_PATH, 24, ImageFont.load_default())
+    f_meta = _font(FONT_REG_PATH, 18, ImageFont.load_default())
+
+    # Gradient/Pattern BG
+    for i in range(H):
+        alpha = int(20 + 30 * (i / H))
+        draw.line([(0, i), (W, i)], fill=(255, 255, 255, alpha))
+
+    # Header Title
+    tw = int(draw.textlength(title_text, font=f_title))
+    draw.text((MID - tw // 2, 60), title_text, fill=COLOR_ACCENT, font=f_title)
+
+    # 3 Columns for stocks
+    COL_W = (W - 4 * PAD) // 3
+    for i, stock in enumerate(selected_stocks):
+        symbol = str(stock.get('Symbol', 'N/A'))
+        name = str(stock.get('Security', 'N/A'))[:25]
+        
+        cx = PAD + i * (COL_W + PAD) + COL_W // 2
+        cy_base = 180
+        
+        # Panel
+        px1, py1 = PAD + i * (COL_W + PAD), 150
+        px2, py2 = px1 + COL_W, H - 100
+        draw.rounded_rectangle([px1, py1, px2, py2], radius=15, fill=(255, 255, 255, 10), outline=(255, 255, 255, 40), width=2)
+        
+        # Logo
+        logo_path = os.path.join(LOGO_DIR, f"{symbol}.png")
+        if os.path.exists(logo_path):
+            try:
+                logo = Image.open(logo_path).convert("RGBA")
+                logo.thumbnail((120, 120))
+                lx = cx - logo.width // 2
+                ly = cy_base + 30
+                img.paste(logo, (lx, ly), logo)
+            except: pass
+            
+        # Ticker & Name
+        ty = cy_base + 170
+        tw_t = int(draw.textlength(symbol, font=f_ticker))
+        draw.text((cx - tw_t // 2, ty), symbol, fill=(255, 255, 255), font=f_ticker)
+        
+        ny = ty + 50
+        tw_n = int(draw.textlength(name, font=f_name))
+        draw.text((cx - tw_n // 2, ny), name, fill=COLOR_MUTED, font=f_name)
+
+    # Footer
+    footer = f"SCHATZSUCHE 4.0  •  MARKT-UPDATE  •  {datetime.today().strftime('%d.%m.%Y')}"
+    tw_f = int(draw.textlength(footer, font=f_meta))
+    draw.text((MID - tw_f // 2, H - 50), footer, fill=(150, 160, 180), font=f_meta)
+
     return img
 
