@@ -3,8 +3,8 @@ import random
 import requests
 from requests.auth import HTTPBasicAuth
 import pandas as pd
-from core import load_df, render_stock_card, render_blog_header
-from ai_logic import get_ai_verdict, get_ai_long_analysis, get_social_caption, get_ai_excerpt
+from core import load_df, render_stock_card
+from ai_logic import get_ai_verdict, get_ai_long_analysis, get_social_caption, get_ai_excerpt, generate_blog_header_image
 from social_publisher import run_social_sync
 from datetime import datetime
 import io
@@ -14,8 +14,24 @@ from pathlib import Path
 
 WP_URL = "https://schatzsuche40.de/wp-json/wp/v2/posts"
 WP_MEDIA_URL = "https://schatzsuche40.de/wp-json/wp/v2/media"
+WP_TAGS_URL = "https://schatzsuche40.de/wp-json/wp/v2/tags"
 WP_USER = "schatzsuche40"
 WP_PASS = "VIhSXAT1tAJagL4dR8LJnHWL"
+
+def get_or_create_tag(tag_name):
+    search_res = requests.get(f"{WP_TAGS_URL}?search={tag_name}", auth=HTTPBasicAuth(WP_USER, WP_PASS))
+    if search_res.status_code == 200:
+        for tag in search_res.json():
+            if tag['name'].lower() == tag_name.lower():
+                return tag['id']
+                
+    create_res = requests.post(WP_TAGS_URL, auth=HTTPBasicAuth(WP_USER, WP_PASS), json={"name": tag_name})
+    if create_res.status_code == 201:
+        return create_res.json().get('id')
+    elif create_res.status_code == 400:
+        # term existing fallback
+        return create_res.json().get('data', {}).get('term_id')
+    return None
 
 def generate_blog_post():
     print("Lade Aktien-Datenbank...")
@@ -63,26 +79,43 @@ def generate_blog_post():
     <!-- /wp:paragraph -->
     """
 
-    # --- NEW: Generate Landscape Blog Header ---
-    print("Generiere Querformat-Blog-Header...")
-    selected_list = selected.to_dict('records')
-    header_img = render_blog_header(selected_list)
+    # --- NEW: Generate Premium Landscape Blog Header via DALL-E ---
+    print("Generiere Premium Querformat-Blog-Header via DALL-E 3...")
+    stock_names = [str(r.get('Security')) for _, r in selected.iterrows()]
+    header_img = generate_blog_header_image(stock_names)
+    
+    # Fallback if DALL-E fails
+    if not header_img:
+        print("Fallback auf lokale Grafik...")
+        from core import render_blog_header
+        selected_list = selected.to_dict('records')
+        header_img = render_blog_header(selected_list)
+        
     header_byte_arr = io.BytesIO()
     header_img.save(header_byte_arr, format='PNG')
     header_bytes = header_byte_arr.getvalue()
 
-    print("Lade Blog-Header hoch...")
+    print("Lade Blog-Header in WordPress hoch...")
     header_response = requests.post(
         WP_MEDIA_URL,
         auth=HTTPBasicAuth(WP_USER, WP_PASS),
         data=header_bytes,
         headers={
             'Content-Type': 'image/png',
-            'Content-Disposition': 'attachment; filename="blog_header.png"'
+            'Content-Disposition': 'attachment; filename="blog_header_premium.png"'
         }
     )
     if header_response.status_code == 201:
         featured_media_id = header_response.json().get('id')
+        print("Update Bild-Metadaten (SEO Alt Text & Titel)...")
+        # Update Media metadata for better SEO
+        meta_data = {
+            "title": f"Aktienanalyse {date_str}: {', '.join(stock_names)}",
+            "alt_text": f"Geprüfte Aktienanalyse und Dividenden-Check für {', '.join(stock_names)}",
+            "caption": "Generierte Analyse von Schatzsuche 4.0",
+            "description": "Premium Finanz-Analyse Header"
+        }
+        requests.post(f"{WP_MEDIA_URL}/{featured_media_id}", auth=HTTPBasicAuth(WP_USER, WP_PASS), json=meta_data)
     
     excerpt = ""
     for _, row in selected.iterrows():
@@ -197,13 +230,18 @@ def generate_blog_post():
     current_weekday = datetime.today().weekday()
     status = "publish" if current_weekday == 0 else "draft"
     
+    # Prepare dynamic tags
+    print("Bereite dynamische SEO-Schlagwörter vor...")
+    tag_names = ["Aktienanalyse", "Dividende", "Börse", "Finanzen"]
+    tag_ids = [tid for tid in (get_or_create_tag(t) for t in tag_names) if tid]
+    
     post_data = {
         "title": title,
         "content": html_content,
         "excerpt": excerpt,
         "status": status,
         "categories": [5],
-        "tags": [13, 23], # Standard-Tags: ETF/Aktien, Europäische Aktien (IDs aus System)
+        "tags": tag_ids, 
         "meta": {
             "prosodia_vgw_os_pzm_method": "automatic",
             "_prosodia_vgw_os_pzm_active": "1",

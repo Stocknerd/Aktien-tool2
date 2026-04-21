@@ -1,4 +1,7 @@
 import os
+import requests
+import io
+from PIL import Image
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -126,12 +129,33 @@ def get_ai_excerpt(title, content):
         print(f"Error generating excerpt: {e}")
         return "Täglich frische Aktienanalysen und Dividenden-Checks für dein Depot."
 
-def get_ai_blog_image_prompt(stock_names):
+def generate_blog_header_image(stock_names):
     """
-    Generates a prompt for a landscape blog header image.
+    Generates a premium landscape blog header image using DALL-E 3.
     """
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key: return None
+    
     stocks_str = ", ".join(stock_names)
-    return f"A high-quality, professional 16:9 landscape cinematic header image for a financial news blog about {stocks_str}. Modern architecture, clean lines, financial district at sunset, professional stock market aesthetic, 8k resolution, elegant lighting."
+    prompt = f"A high-quality, professional 16:9 landscape cinematic header image for a financial news blog about the stock market. Abstract, modern, clean lines, financial district at sunrise, glowing trend lines, professional aesthetic, 8k resolution, elegant lighting. No text in the image. Topic related to: {stocks_str}."
+    
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1792x1024",
+            quality="standard",
+            n=1,
+        )
+        image_url = response.data[0].url
+        img_response = requests.get(image_url)
+        if img_response.status_code == 200:
+             img = Image.open(io.BytesIO(img_response.content))
+             return img
+    except Exception as e:
+        print(f"Error generating DALL-E image: {e}")
+    return None
 
 def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b):
     """
