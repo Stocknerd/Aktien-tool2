@@ -49,7 +49,7 @@ def get_ai_verdict(ticker, company_name, financial_data):
         print(f"OpenAI Error for {ticker}: {e}")
         return f"KI-Fazit: Dienst momentan nicht erreichbar."
 
-def get_ai_long_analysis(ticker, company_name, financial_data):
+def get_ai_long_analysis(ticker, company_name, financial_data, business_summary=None):
     """
     Generates a detailed multi-paragraph investment thesis for blog posts.
     """
@@ -61,10 +61,20 @@ def get_ai_long_analysis(ticker, company_name, financial_data):
         client = OpenAI(api_key=api_key)
         metrics_str = ", ".join([f"{k}: {v}" for k, v in financial_data.items() if v is not None])
         
+        summary_context = f"\nUnternehmens-Hintergrund: {business_summary}\n" if business_summary else ""
+        
         prompt = f"""
         Schreibe einen detaillierten, professionellen und gut lesbaren Blog-Abschnitt über das Unternehmen {company_name} ({ticker}).
+        {summary_context}
         Nutze bei der Bewertung folgende Kennzahlen: {metrics_str}.
-        Schreibe 2-3 Absätze in flüssigem Deutsch. Fokus: Was bedeuten diese Zahlen konkret für Aktionäre? Warum ist die Dividende oder Bewertung attraktiv?
+        Schreibe 2-3 Absätze in flüssigem Deutsch.
+        
+        Struktur:
+        1. Kurzes Unternehmensprofil (basierend auf dem Hintergrund, falls vorhanden).
+        2. Analyse der Kennzahlen und was sie für Aktionäre bedeuten.
+        3. Fazit zur Attraktivität für Einkommensinvestoren.
+
+        Fokus: Was bedeuten diese Zahlen konkret? Warum ist die Dividende oder Bewertung attraktiv?
         Gehe tief auf das Geschäftsmodell und die aktuelle Marktlage ein. 
         Nutze HTML-Tags wie <strong>, <em> oder <p> für Formatierung. Keine Überschriften (H1/H2). Beginne direkt mit dem Text.
         Zielgruppe: Langfristige Einkommensinvestoren.
@@ -73,7 +83,7 @@ def get_ai_long_analysis(ticker, company_name, financial_data):
         response = client.chat.completions.create(
             model="gpt-5.4-mini",
             messages=[{"role": "user", "content": prompt}],
-            max_completion_tokens=600
+            max_completion_tokens=800
         )
         ans = response.choices[0].message.content.strip()
         if not ans or len(ans) < 50:

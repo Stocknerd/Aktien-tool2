@@ -9,6 +9,8 @@ from social_publisher import run_social_sync
 from datetime import datetime
 import io
 import tempfile
+import json
+from pathlib import Path
 
 WP_URL = "https://schatzsuche40.de/wp-json/wp/v2/posts"
 WP_MEDIA_URL = "https://schatzsuche40.de/wp-json/wp/v2/media"
@@ -24,6 +26,9 @@ def generate_blog_post():
         return
 
     social_data = [] # Stores data for post-WP social push
+    featured_media_id = None
+    
+    raw_data_dir = Path("data/raw")
     
     # Filter out invalid stuff
     clean_df = df.dropna(subset=['Symbol', 'Security', 'Marktkapitalisierung', 'Dividendenrendite']).copy()
@@ -62,17 +67,33 @@ def generate_blog_post():
         symbol = str(row.get('Symbol'))
         name = str(row.get('Security'))
         
+        # Get Analyst Mean Target and other keys correctly
+        mean_t = str(row.get("Analyst Mean Target") or row.get("Analysten_Kursziel", "N/A"))
+        num_an = str(row.get("Number of Analysts") or row.get("Anzahl Analystenmeinungen", "N/A"))
+        
         financial_data = {
             "KGV": str(row.get("KGV", "N/A")),
             "Dividendenrendite": str(row.get("Dividendenrendite", "N/A")),
             "Eigenkapitalrendite": str(row.get("Eigenkapitalrendite", "N/A")),
-            "Analysten Kursziel": str(row.get("Analysten_Kursziel", "N/A")),
+            "Analysten Kursziel": mean_t,
+            "Anzahl Analysten": num_an,
             "Wachstum (3J)": str(row.get("Umsatzwachstum 3J (erwartet)", "N/A"))
         }
+
+        # Load Business Summary from raw JSON if available
+        business_summary = ""
+        try:
+            json_path = raw_data_dir / f"{symbol}.json"
+            if json_path.exists():
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    raw_info = json.load(f)
+                    business_summary = raw_info.get("longBusinessSummary", "")
+        except Exception as e:
+            print(f"Warnung: Konnte Rohdaten für {symbol} nicht lesen: {e}")
         
         print(f"Hole KI Analyse für {name} ({symbol})...")
         short_verdict = get_ai_verdict(symbol, name, financial_data)
-        long_analysis = get_ai_long_analysis(symbol, name, financial_data)
+        long_analysis = get_ai_long_analysis(symbol, name, financial_data, business_summary=business_summary)
         
         # Bild generieren
         print(f"Generiere Infografik für {symbol}...")
@@ -94,8 +115,14 @@ def generate_blog_post():
         )
         
         img_url = ""
+        media_id = None
         if media_response.status_code == 201:
+            media_id = media_response.json().get('id')
             img_url = media_response.json().get('source_url', '')
+            
+            # Set first image as featured image for the post
+            if featured_media_id is None:
+                featured_media_id = media_id
         
         html_content += f"""
         <!-- wp:heading {{"level":3}} -->
@@ -145,12 +172,18 @@ def generate_blog_post():
     <!-- /wp:paragraph -->
     """
     
+    # Determine publishing status: 'publish' on Mondays (weekday 0), 'draft' otherwise
+    current_weekday = datetime.today().weekday()
+    status = "publish" if current_weekday == 0 else "draft"
+    
     post_data = {
         "title": title,
         "content": html_content,
-        "status": "draft",
+        "status": status,
         "categories": [5]
     }
+    if featured_media_id:
+        post_data["featured_media"] = featured_media_id
 
     print("Veröffentliche Beitrag in WordPress...")
     response = requests.post(WP_URL, auth=HTTPBasicAuth(WP_USER, WP_PASS), json=post_data, headers={'Content-Type': 'application/json'})
