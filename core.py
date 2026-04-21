@@ -330,12 +330,12 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
     # ── 6. Analyst Section ────────────────────────────────────────
     if fetch_analyst:
         cur = _safe_float(row.get("Current Price")) or _safe_float(row.get("Vortagesschlusskurs"))
-        mean_t = _safe_float(row.get("Analysten_Kursziel"))
-        high_t = _safe_float(row.get("Kursziel_Hoch"))
-        low_t  = _safe_float(row.get("Kursziel_Tief"))
-        rec_key = str(row.get("Analysten_Empfehlung") or row.get("Recommendation Key", ""))
+        mean_t = _safe_float(row.get("Analyst Mean Target")) or _safe_float(row.get("Analysten_Kursziel"))
+        high_t = _safe_float(row.get("Analyst High Target")) or _safe_float(row.get("Kursziel_Hoch"))
+        low_t  = _safe_float(row.get("Analyst Low Target")) or _safe_float(row.get("Kursziel_Tief"))
+        rec_key = str(row.get("Recommendation Key") or row.get("Analysten_Empfehlung", ""))
         if rec_key == "nan": rec_key = ""
-        n_analysts = _safe_float(row.get("Anzahl Analystenmeinungen"))
+        n_analysts = _safe_float(row.get("Number of Analysts")) or _safe_float(row.get("Anzahl Analystenmeinungen"))
     else:
         cur, mean_t, high_t, low_t, rec_key, n_analysts = 0, 0, 0, 0, "", 0
 

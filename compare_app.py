@@ -183,7 +183,7 @@ COLUMN_ALIASES: Dict[str, List[str]] = {
     "Forward PE": ["Forward PE","forwardPE"],
     "KUV": ["KUV","Price to Sales","priceToSalesTrailing12Months"],
     "Free Cashflow Yield": ["Free Cashflow Yield","freeCashflowYield","fcfYield"],
-    "Analysten_Kursziel": ["Analysten_Kursziel","Target Mean Price","targetMeanPrice"],
+    "Analysten_Kursziel": ["Analysten_Kursziel","Target Mean Price","targetMeanPrice","Analyst Mean Target"],
     "Preis": ["Preis","Close","Last","Vortagesschlusskurs"],
     "Umsatzwachstum 10J": ["Umsatzwachstum 10J","Revenue Growth 10Y","revenueGrowth10Y"],
     "Umsatzwachstum 3J (erwartet)": ["Umsatzwachstum 3J (erwartet)","Revenue Growth 3Y (fwd)","revenueGrowth3YForward"],
@@ -649,7 +649,7 @@ def draw_stat_pills(img, draw, center_x, y, row, f_lbl, f_val, card_w=None):
 def draw_analyst_bar(img, draw, center_x, y, width, row, f_lbl, f_val):
     # Aliasse für Rating + Fallback via yfinance
     mean = None
-    for key in ("Empfehlungsdurchschnitt","recommendationMean","Analystenrating","Analysten_Rating","Recommendation Mean"):
+    for key in ("Empfehlungsdurchschnitt","recommendationMean","Analystenrating","Analysten_Rating","Recommendation Mean","Recommendation Key"):
         if key in row.index:
             mean = _to_float(row.get(key))
             if mean is not None:
@@ -684,7 +684,7 @@ def draw_analyst_bar(img, draw, center_x, y, width, row, f_lbl, f_val):
     # Zweizeilige Unterzeile: Zeile 1 = Ø-Rating, Zeile 2 = Erklärung
     # optional: Anzahl Analystenmeinungen
     opinions = None
-    for key in ("Anzahl Analystenmeinungen","numberOfAnalystOpinions","Analysten_Anzahl"):
+    for key in ("Anzahl Analystenmeinungen","numberOfAnalystOpinions","Analysten_Anzahl","Number of Analysts"):
         if key in row.index:
             opinions = _to_float(row.get(key))
             if opinions is not None:
