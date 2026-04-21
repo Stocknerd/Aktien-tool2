@@ -180,7 +180,10 @@ def generate_blog_post():
         "title": title,
         "content": html_content,
         "status": status,
-        "categories": [5]
+        "categories": [5],
+        "meta": {
+            "prosodia_vgw_os_pzm_method": "automatic"
+        }
     }
     if featured_media_id:
         post_data["featured_media"] = featured_media_id
