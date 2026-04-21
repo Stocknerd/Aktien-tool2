@@ -4,7 +4,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 import pandas as pd
 from core import load_df, render_stock_card
-from ai_logic import get_ai_verdict, get_ai_long_analysis, get_social_caption
+from ai_logic import get_ai_verdict, get_ai_long_analysis, get_social_caption, get_ai_excerpt
 from social_publisher import run_social_sync
 from datetime import datetime
 import io
@@ -55,14 +55,15 @@ def generate_blog_post():
     selected = candidates.sample(n=3)
     
     date_str = datetime.today().strftime("%d.%m.%Y")
-    title = f"KI-Analyse: 3 Spannende Einkommensaktien für dein Depot ({date_str})"
+    title = f"Top 3 Dividendenaktien im Check: Analyse & Ausblick ({date_str})"
     
     html_content = f"""
     <!-- wp:paragraph -->
-    <p>Willkommen zu unserem tagesaktuellen KI-Aktienscreening! Unser automatisches Python-Tool durchsucht täglich unsere Datenbank von tiefgründig recherchierten globalen Werten und lässt die aktuellen Kennzahlen von <strong>gpt-5.4-mini</strong> bewerten. Hier sind drei starke Einkommenskandidaten für heute:</p>
+    <p>Herzlich willkommen zu unserem heutigen Markt-Screening. Basierend auf aktuellen Datenbank-Auswertungen haben wir drei spannende Unternehmen herausgefiltert, die derzeit durch attraktive Kennzahlen und eine solide Marktstellung auffallen. Diese Analyse wird durch moderne Daten-Algorithmen unterstützt, um objektive Einblicke in die fundamentale Entwicklung zu geben.</p>
     <!-- /wp:paragraph -->
     """
 
+    excerpt = ""
     for _, row in selected.iterrows():
         symbol = str(row.get('Symbol'))
         name = str(row.get('Security'))
@@ -168,9 +169,12 @@ def generate_blog_post():
     # Add disclaimer at the end
     html_content += f"""
     <!-- wp:paragraph -->
-    <p><em>Hinweis: Dies ist keine Anlageberatung. Führt immer eure eigene Recherche durch (Do Your Own Research - DYOR).</em></p>
+    <p><em>Hinweis: Diese Analyse dient der allgemeinen Information und stellt keine Anlageberatung dar. Aktieninvestments sind mit Risiken verbunden. Führe immer deine eigene Recherche durch.</em></p>
     <!-- /wp:paragraph -->
     """
+    
+    print("Generiere SEO-Vorschautext...")
+    excerpt = get_ai_excerpt(title, html_content)
     
     # Determine publishing status: 'publish' on Mondays (weekday 0), 'draft' otherwise
     current_weekday = datetime.today().weekday()
@@ -179,10 +183,14 @@ def generate_blog_post():
     post_data = {
         "title": title,
         "content": html_content,
+        "excerpt": excerpt,
         "status": status,
         "categories": [5],
+        "tags": [13, 23], # Standard-Tags: ETF/Aktien, Europäische Aktien (IDs aus System)
         "meta": {
-            "prosodia_vgw_os_pzm_method": "automatic"
+            "prosodia_vgw_os_pzm_method": "automatic",
+            "_prosodia_vgw_os_pzm_active": "1",
+            "_yoast_wpseo_metadesc": excerpt
         }
     }
     if featured_media_id:

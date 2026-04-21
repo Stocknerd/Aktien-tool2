@@ -64,20 +64,21 @@ def get_ai_long_analysis(ticker, company_name, financial_data, business_summary=
         summary_context = f"\nUnternehmens-Hintergrund: {business_summary}\n" if business_summary else ""
         
         prompt = f"""
-        Schreibe einen detaillierten, professionellen und gut lesbaren Blog-Abschnitt über das Unternehmen {company_name} ({ticker}).
+        Schreibe eine fundierte, professionelle Analyse zum Unternehmen {company_name} ({ticker}) für ein Finanzblog-Publikum.
         {summary_context}
-        Nutze bei der Bewertung folgende Kennzahlen: {metrics_str}.
-        Schreibe 2-3 Absätze in flüssigem Deutsch.
+        Nutze folgende Kennzahlen als Basis: {metrics_str}.
+        
+        Schreibe 2-3 flüssig geschriebene Absätze auf Deutsch. 
+        WICHTIG: Klinge menschlich, kompetent und weniger wie eine Maschine. Vermeide Floskeln wie "In der heutigen Analyse" oder "Zusammenfassend lässt sich sagen". 
+        Gehe stattdessen direkt auf die Substanz ein.
         
         Struktur:
-        1. Kurzes Unternehmensprofil (basierend auf dem Hintergrund, falls vorhanden).
-        2. Analyse der Kennzahlen und was sie für Aktionäre bedeuten.
-        3. Fazit zur Attraktivität für Einkommensinvestoren.
+        1. Kurze Einordnung des Geschäftsmodells und der Marktposition.
+        2. Einschätzung der Kennzahlen (KGV, Dividende, Wachstum) – was bedeuten diese für die Zukunft des Untenehmens?
+        3. Ein kurzes, prägnantes Resümee für langfristige Investoren.
 
-        Fokus: Was bedeuten diese Zahlen konkret? Warum ist die Dividende oder Bewertung attraktiv?
-        Gehe tief auf das Geschäftsmodell und die aktuelle Marktlage ein. 
-        Nutze HTML-Tags wie <strong>, <em> oder <p> für Formatierung. Keine Überschriften (H1/H2). Beginne direkt mit dem Text.
-        Zielgruppe: Langfristige Einkommensinvestoren.
+        Nutze HTML-Tags wie <strong>, <em> oder <p>. Keine Überschriften.
+        Ziel: Einem Investor das Gefühl geben, eine tiefgründige Experten-Meinung zu lesen.
         """
         
         response = client.chat.completions.create(
@@ -87,10 +88,27 @@ def get_ai_long_analysis(ticker, company_name, financial_data, business_summary=
         )
         ans = response.choices[0].message.content.strip()
         if not ans or len(ans) < 50:
-             # Try a simpler prompt fallback or retry
-             print(f"Empty AI long response for {ticker}, returning fallback info.")
-             return f"<p>Für <strong>{company_name}</strong> liegen aktuell solide Kennzahlen vor, die auf ein stabiles Geschäftsmodell hindeuten. Investoren schätzen hier besonders die Dividendenrendite und die Marktposition.</p>"
+             return f"<p><strong>{company_name}</strong> zeigt derzeit interessante Entwicklungen in den Fundamentaldaten. Besonders die Dividenden-Kontinuität und die Marktstellung machen den Titel für langfristige Portfolios beobachtenswert.</p>"
         return ans
+
+def get_ai_excerpt(title, content):
+    """
+    Generates a short SEO-friendly description/excerpt for the post.
+    """
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key: return "Aktienanalyse und Screening der aktuellen Marktwerte."
+    
+    try:
+        client = OpenAI(api_key=api_key)
+        prompt = f"Schreibe eine packende SEO-Metabeschreibung (max. 150 Zeichen) für folgenden Blog-Artikel: {title}. Inhalt: {content[:500]}..."
+        response = client.chat.completions.create(
+            model="gpt-5.4-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_completion_tokens=50
+        )
+        return response.choices[0].message.content.strip()[:160]
+    except:
+        return "Täglich frische Aktienanalysen und Dividenden-Checks für dein Depot."
     except Exception as e:
         print(f"OpenAI Error for {ticker}: {e}")
         return f"<p>Detaillierte Analyse für {ticker} konnte momentan nicht vollständig generiert werden.</p>"
