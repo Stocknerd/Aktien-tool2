@@ -94,6 +94,9 @@ def get_ai_long_analysis(ticker, company_name, financial_data, business_summary=
         if not ans or len(ans) < 50:
              return f"<p><strong>{company_name}</strong> zeigt derzeit interessante Entwicklungen in den Fundamentaldaten. Besonders die Dividenden-Kontinuität und die Marktstellung machen den Titel für langfristige Portfolios beobachtenswert.</p>"
         return ans
+    except Exception as e:
+        print(f"OpenAI Error for {ticker}: {e}")
+        return f"<p>Detaillierte Analyse für {ticker} konnte momentan nicht vollständig generiert werden.</p>"
 
 def get_ai_excerpt(title, content):
     """
@@ -111,11 +114,9 @@ def get_ai_excerpt(title, content):
             max_completion_tokens=50
         )
         return response.choices[0].message.content.strip()[:160]
-    except:
-        return "Täglich frische Aktienanalysen und Dividenden-Checks für dein Depot."
     except Exception as e:
-        print(f"OpenAI Error for {ticker}: {e}")
-        return f"<p>Detaillierte Analyse für {ticker} konnte momentan nicht vollständig generiert werden.</p>"
+        print(f"Error generating excerpt: {e}")
+        return "Täglich frische Aktienanalysen und Dividenden-Checks für dein Depot."
 
 def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b):
     """
