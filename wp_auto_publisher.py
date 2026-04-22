@@ -261,8 +261,26 @@ def generate_blog_post():
     response = requests.post(WP_URL, auth=HTTPBasicAuth(WP_USER, WP_PASS), json=post_data, headers={'Content-Type': 'application/json'})
 
     if response.status_code == 201:
+        post_id = response.json().get('id')
         blog_url = response.json().get('link')
         print(f"Erfolg! Post erstellt: {blog_url}")
+        
+        # --- NEW: Fallback Meta Injection via XML-RPC ---
+        print("Behebe WordPress SEO-Sperren (XML-RPC Injection)...")
+        import xmlrpc.client
+        try:
+            server = xmlrpc.client.ServerProxy("https://schatzsuche40.de/xmlrpc.php")
+            custom_fields = [
+                {'key': '_yoast_wpseo_metadesc', 'value': excerpt},
+                {'key': '_yoast_wpseo_focuskw', 'value': tag_names[0]},
+                {'key': '_prosodia_vgw_os_pzm_active', 'value': '1'},
+                {'key': '_prosodia_vgw_os_pzm_status', 'value': 'assigned'},
+                {'key': 'prosodia_vgw_os_pzm_method', 'value': 'automatic'}
+            ]
+            server.wp.editPost(0, WP_USER, WP_PASS, post_id, {'custom_fields': custom_fields})
+            print("[OK] XML-RPC Meta Update erfolgreich.")
+        except Exception as e:
+            print(f"Fehler bei XML-RPC Meta-Injizierung: {e}")
         
         # Now trigger Social Media for all 3 stocks
         for item in social_data:
