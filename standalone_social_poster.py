@@ -10,7 +10,7 @@ load_dotenv()
 # Add to path to import correctly
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from core import render_stock_card, render_comparison_card_vertical, CSV_FILE
+from core import render_stock_card, render_compare, CSV_FILE
 from ai_logic import get_tool_promotion_caption, get_ai_verdict, get_ai_comparison_verdict
 from social_publisher import run_social_sync
 
@@ -74,7 +74,7 @@ def run_daily_poster():
         
         # Grafik generieren
         print("Generiere Infografik...")
-        img = render_comparison_card_vertical(row_a, row_b, ai_verdict=verdict)
+        img = render_compare([row_a, row_b], ai_verdict=verdict)
         
         # Meta Infos für Social Publisher
         names = f"{name_a} vs {name_b}"
