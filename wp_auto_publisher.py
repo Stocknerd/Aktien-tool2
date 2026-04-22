@@ -248,12 +248,10 @@ def generate_blog_post():
         "status": status,
         "categories": [5],
         "tags": tag_ids, 
-        "meta": {
-            "prosodia_vgw_os_pzm_method": "automatic",
-            "_prosodia_vgw_os_pzm_active": "1",
-            "_prosodia_vgw_os_pzm_status": "assigned",
-            "_yoast_wpseo_metadesc": excerpt,
-            "_yoast_wpseo_focuskw": tag_names[0]
+        "custom_seo_data": {
+            "yoast_desc": excerpt,
+            "yoast_kw": tag_names[0],
+            "prosodia_active": True
         }
     }
     if featured_media_id:
