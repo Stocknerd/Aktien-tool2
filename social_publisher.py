@@ -18,21 +18,7 @@ META_USER_TOKEN = os.getenv("META_USER_TOKEN") or os.getenv("USER_TOKEN")
 # Instagram Business Account ID
 META_INSTA_ID = os.getenv("META_INSTA_ID")
 
-def get_dynamic_page_token():
-    """Generates a Page Access Token using the User Token if available."""
-    if not META_USER_TOKEN or not META_PAGE_ID:
-        return META_PAGE_ACCESS_TOKEN
-        
-    try:
-        url = f"https://graph.facebook.com/v20.0/{META_PAGE_ID}?fields=access_token&access_token={META_USER_TOKEN}"
-        r = requests.get(url, timeout=10)
-        data = r.json()
-        if "access_token" in data:
-            return data["access_token"]
-        return META_PAGE_ACCESS_TOKEN
-    except Exception as e:
-        print(f"[WARN] Fehler beim Page Token Abruf: {e}")
-        return META_PAGE_ACCESS_TOKEN
+
 
 def post_to_x(caption, image_path):
     """Postet ein Bild mit Text auf X (Twitter)."""
@@ -63,25 +49,30 @@ def post_to_x(caption, image_path):
         print(f"[ERR] X-Posting fehlgeschlagen: {e}")
         return False
 
-def post_to_facebook_page(caption, image_path, link=None):
-    """Postet ein Bild mit Text und optionalem Link auf die Facebook Page."""
-    page_token = get_dynamic_page_token()
-    if not (META_PAGE_ID and page_token):
-        print("[SKIP] Facebook-Credentials (Page ID / Token) fehlen.")
+def post_to_facebook_page(message, image_path=None, link_url=None):
+    """
+    Postet auf die Facebook-Unternehmensseite (Schatzsuche 4.0).
+    Nutzt den never-expiring PAGE_TOKEN.
+    """
+    PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
+    META_PAGE_ID = os.environ.get("META_PAGE_ID")
+    
+    if not PAGE_TOKEN or not META_PAGE_ID:
+        print("[SKIP] Facebook-Post: PAGE_TOKEN oder META_PAGE_ID fehlen.")
         return False
-        
+
     try:
         # Step 1: Upload photo
         url = f"https://graph.facebook.com/v20.0/{META_PAGE_ID}/photos"
         
         # If link is provided, append it to caption
-        full_text = caption
-        if link:
-            full_text += f"\n\n👉 Mehr lesen: {link}"
+        full_text = message
+        if link_url:
+            full_text += f"\n\n👉 Mehr lesen: {link_url}"
             
         params = {
             "caption": full_text,
-            "access_token": page_token
+            "access_token": PAGE_TOKEN
         }
         
         with open(image_path, "rb") as img_file:
@@ -102,8 +93,8 @@ def post_to_facebook_page(caption, image_path, link=None):
 
 def post_to_instagram_feed(caption, image_path, wp_img_url=None):
     """Postet ein Bild auf den Instagram Business Feed (Offizielle API)."""
-    page_token = get_dynamic_page_token()
-    if not (META_INSTA_ID and page_token):
+    PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
+    if not (META_INSTA_ID and PAGE_TOKEN):
         print("[SKIP] Instagram Business ID oder Token fehlt.")
         return False
         
@@ -121,7 +112,7 @@ def post_to_instagram_feed(caption, image_path, wp_img_url=None):
         params = {
             "image_url": public_url,
             "caption": caption,
-            "access_token": page_token
+            "access_token": PAGE_TOKEN
         }
         
         r = requests.post(container_url, params=params)
@@ -138,7 +129,7 @@ def post_to_instagram_feed(caption, image_path, wp_img_url=None):
         publish_url = f"https://graph.facebook.com/v20.0/{META_INSTA_ID}/media_publish"
         params_pub = {
             "creation_id": creation_id,
-            "access_token": page_token
+            "access_token": PAGE_TOKEN
         }
         
         import time
