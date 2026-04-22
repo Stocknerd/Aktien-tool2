@@ -217,6 +217,8 @@ def get_social_caption(stock_names_str, excerpt):
         response = client.chat.completions.create(
           model="gpt-4o-mini",
           messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"Error generating social caption: {e}")
         return f"📊 Neue Aktien-Analyse online! Wir beleuchten die Fundamentaldaten von {stock_names_str} kritisch im Detail. Jetzt auf schatzsuche40.de lesen.\n\nHinweis: Keine Anlageberatung. #Aktien #Börse"
