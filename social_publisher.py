@@ -14,8 +14,25 @@ X_ACCESS_SECRET = os.getenv("X_ACCESS_SECRET")
 # Meta (Facebook/Instagram) Credentials
 META_PAGE_ID = os.getenv("META_PAGE_ID")
 META_PAGE_ACCESS_TOKEN = os.getenv("META_PAGE_ACCESS_TOKEN")
-# Instagram Business Account ID (to be added)
+META_USER_TOKEN = os.getenv("META_USER_TOKEN") or os.getenv("USER_TOKEN")
+# Instagram Business Account ID
 META_INSTA_ID = os.getenv("META_INSTA_ID")
+
+def get_dynamic_page_token():
+    """Generates a Page Access Token using the User Token if available."""
+    if not META_USER_TOKEN or not META_PAGE_ID:
+        return META_PAGE_ACCESS_TOKEN
+        
+    try:
+        url = f"https://graph.facebook.com/v20.0/{META_PAGE_ID}?fields=access_token&access_token={META_USER_TOKEN}"
+        r = requests.get(url, timeout=10)
+        data = r.json()
+        if "access_token" in data:
+            return data["access_token"]
+        return META_PAGE_ACCESS_TOKEN
+    except Exception as e:
+        print(f"[WARN] Fehler beim Page Token Abruf: {e}")
+        return META_PAGE_ACCESS_TOKEN
 
 def post_to_x(caption, image_path):
     """Postet ein Bild mit Text auf X (Twitter)."""
@@ -48,8 +65,9 @@ def post_to_x(caption, image_path):
 
 def post_to_facebook_page(caption, image_path, link=None):
     """Postet ein Bild mit Text und optionalem Link auf die Facebook Page."""
-    if not (META_PAGE_ID and META_PAGE_ACCESS_TOKEN):
-        print("[SKIP] Facebook-Credentials fehlen.")
+    page_token = get_dynamic_page_token()
+    if not (META_PAGE_ID and page_token):
+        print("[SKIP] Facebook-Credentials (Page ID / Token) fehlen.")
         return False
         
     try:
@@ -63,7 +81,7 @@ def post_to_facebook_page(caption, image_path, link=None):
             
         params = {
             "caption": full_text,
-            "access_token": META_PAGE_ACCESS_TOKEN
+            "access_token": page_token
         }
         
         with open(image_path, "rb") as img_file:
@@ -82,24 +100,28 @@ def post_to_facebook_page(caption, image_path, link=None):
         print(f"[ERR] Facebook-Posting fehlgeschlagen: {e}")
         return False
 
-def post_to_instagram_feed(caption, image_path):
+def post_to_instagram_feed(caption, image_path, wp_img_url=None):
     """Postet ein Bild auf den Instagram Business Feed (Offizielle API)."""
-    if not (META_INSTA_ID and META_PAGE_ACCESS_TOKEN):
+    page_token = get_dynamic_page_token()
+    if not (META_INSTA_ID and page_token):
         print("[SKIP] Instagram Business ID oder Token fehlt.")
         return False
         
     try:
         # Step 1: Create Media Container
-        # Meta's servers need to FETCH the image, so we need a public URL.
-        # We assume the file is served under /static/temp_social/ on the AWS server.
-        filename = os.path.basename(image_path)
-        public_url = f"http://3.71.191.12/static/temp_social/{filename}"  # Replace with actual domain if available
+        # Meta's servers need to FETCH the image, so we need a public HTTPS URL.
+        # wp_img_url is the direct URL to the image on the WordPress site.
+        if wp_img_url:
+            public_url = wp_img_url
+        else:
+            filename = os.path.basename(image_path)
+            public_url = f"http://3.71.191.12/static/temp_social/{filename}"
         
         container_url = f"https://graph.facebook.com/v20.0/{META_INSTA_ID}/media"
         params = {
             "image_url": public_url,
             "caption": caption,
-            "access_token": META_PAGE_ACCESS_TOKEN
+            "access_token": page_token
         }
         
         r = requests.post(container_url, params=params)
@@ -116,7 +138,7 @@ def post_to_instagram_feed(caption, image_path):
         publish_url = f"https://graph.facebook.com/v20.0/{META_INSTA_ID}/media_publish"
         params_pub = {
             "creation_id": creation_id,
-            "access_token": META_PAGE_ACCESS_TOKEN
+            "access_token": page_token
         }
         
         r_pub = requests.post(publish_url, params=params_pub)
@@ -133,7 +155,7 @@ def post_to_instagram_feed(caption, image_path):
         print(f"[ERR] Instagram-Posting fehlgeschlagen: {e}")
         return False
 
-def run_social_sync(symbol, caption, image_path, blog_url=None):
+def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None):
     """Hier erfolgt der koordinierte Social-Media-Push."""
     print(f"Bündele Social-Media-Push für {symbol}...")
     
@@ -143,8 +165,8 @@ def run_social_sync(symbol, caption, image_path, blog_url=None):
     # 2. Facebook (Offizielle API)
     post_to_facebook_page(caption, image_path, link=blog_url)
     
-    # 3. Instagram (Placeholder)
-    post_to_instagram_feed(caption, image_path)
+    # 3. Instagram (Offizielle API)
+    post_to_instagram_feed(caption, image_path, wp_img_url=wp_img_url)
 
 if __name__ == "__main__":
     # Test-Run

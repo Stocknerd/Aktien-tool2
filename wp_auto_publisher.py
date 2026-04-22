@@ -212,7 +212,8 @@ def generate_blog_post():
             "symbol": symbol,
             "name": name,
             "image": img,
-            "financial_data": financial_data
+            "financial_data": financial_data,
+            "wp_img_url": img_url
         })
 
         html_content += f"""
@@ -295,7 +296,9 @@ def generate_blog_post():
                 public_path = os.path.join(public_dir, f"{symbol}_post.png")
                 
                 item["image"].save(public_path)
-                run_social_sync(symbol, social_caption, public_path, blog_url=blog_url)
+                
+                wp_img_url = item.get("wp_img_url")
+                run_social_sync(symbol, social_caption, public_path, blog_url=blog_url, wp_img_url=wp_img_url)
                 
             except Exception as e:
                 print(f"Fehler bei Social-Push {item['symbol']}: {e}")
