@@ -834,12 +834,29 @@ def render_compare(rows: List[pd.Series], metrics: List[str], watermark: str = "
     _draw_watermark(draw, W, H)
     return img
 
-def render_blog_header(selected_stocks: List[Dict[str, Any]], title_text: str = "AKTIEN-ANALYSE: TOP 3 DIVIDENDEN-STOCKS") -> Image.Image:
+def render_blog_header(selected_stocks: List[Dict[str, Any]], title_text: str = "AKTIEN-ANALYSE: TOP 3 DIVIDENDEN-STOCKS", bg_img: Image.Image = None) -> Image.Image:
     """
     Renders a landscape (1200x630) header image for blog posts with 3 stocks.
+    If bg_img is provided (e.g. from DALL-E 3), it composites the corporate logos and text using glassmorphism.
     """
     W, H = 1200, 630
-    img = Image.new("RGBA", (W, H), COLOR_DARK_BG)
+    
+    if bg_img:
+        # Resize/Crop the DALL-E image to exactly 1200x630 using LANCZOS
+        from PIL import ImageOps
+        img = ImageOps.fit(bg_img, (W, H), method=Image.Resampling.LANCZOS).convert("RGBA")
+        
+        # Create a darkening overlay so white text reads well
+        overlay = Image.new("RGBA", (W, H), (15, 23, 42, 100)) # Dark transparent layer
+        img = Image.alpha_composite(img, overlay)
+    else:
+        img = Image.new("RGBA", (W, H), COLOR_DARK_BG)
+        # Gradient/Pattern BG
+        draw_temp = ImageDraw.Draw(img)
+        for i in range(H):
+            alpha = int(20 + 30 * (i / H))
+            draw_temp.line([(0, i), (W, i)], fill=(255, 255, 255, alpha))
+
     draw = ImageDraw.Draw(img)
     MID = W // 2
     PAD = 40
@@ -849,11 +866,6 @@ def render_blog_header(selected_stocks: List[Dict[str, Any]], title_text: str = 
     f_ticker = _font(FONT_BLD_PATH, 36, ImageFont.load_default())
     f_name = _font(FONT_REG_PATH, 24, ImageFont.load_default())
     f_meta = _font(FONT_REG_PATH, 18, ImageFont.load_default())
-
-    # Gradient/Pattern BG
-    for i in range(H):
-        alpha = int(20 + 30 * (i / H))
-        draw.line([(0, i), (W, i)], fill=(255, 255, 255, alpha))
 
     # Header Title
     tw = int(draw.textlength(title_text, font=f_title))
@@ -898,5 +910,6 @@ def render_blog_header(selected_stocks: List[Dict[str, Any]], title_text: str = 
     tw_f = int(draw.textlength(footer, font=f_meta))
     draw.text((MID - tw_f // 2, H - 50), footer, fill=(150, 160, 180), font=f_meta)
 
+    _draw_watermark(draw, W, H)
     return img
 

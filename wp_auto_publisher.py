@@ -73,7 +73,17 @@ def generate_blog_post():
     date_str = datetime.today().strftime("%d.%m.%Y")
     title = f"Top 3 Dividendenaktien im Check: Analyse & Ausblick ({date_str})"
     
+    stock_names = [str(r.get('Security')) for _, r in selected.iterrows()]
+    
+    # Generate SEO Outro/Intro early so we can embed it
+    print("Generiere SEO-Vorschautext...")
+    excerpt = get_ai_excerpt(title, f"Analyse der Aktien {', '.join(stock_names)}")
+    
     html_content = f"""
+    <!-- wp:paragraph {{"className":"is-style-default"}} -->
+    <p><em><strong>{excerpt}</strong></em></p>
+    <!-- /wp:paragraph -->
+    
     <!-- wp:paragraph -->
     <p>Herzlich willkommen zu unserem heutigen Markt-Screening. Basierend auf aktuellen Datenbank-Auswertungen haben wir drei spannende Unternehmen herausgefiltert, die derzeit durch attraktive Kennzahlen und eine solide Marktstellung auffallen. Diese Analyse wird durch moderne Daten-Algorithmen unterstützt, um objektive Einblicke in die fundamentale Entwicklung zu geben.</p>
     <!-- /wp:paragraph -->
@@ -81,15 +91,16 @@ def generate_blog_post():
 
     # --- NEW: Generate Premium Landscape Blog Header via DALL-E ---
     print("Generiere Premium Querformat-Blog-Header via DALL-E 3...")
-    stock_names = [str(r.get('Security')) for _, r in selected.iterrows()]
     header_img = generate_blog_header_image(stock_names)
     
     # Fallback if DALL-E fails
     if not header_img:
         print("Fallback auf lokale Grafik...")
-        from core import render_blog_header
-        selected_list = selected.to_dict('records')
-        header_img = render_blog_header(selected_list)
+        
+    from core import render_blog_header
+    selected_list = selected.to_dict('records')
+    # Use render_blog_header to composite logos and stats over the bg_img
+    header_img = render_blog_header(selected_list, bg_img=header_img)
         
     header_byte_arr = io.BytesIO()
     header_img.save(header_byte_arr, format='PNG')
@@ -116,8 +127,6 @@ def generate_blog_post():
             "description": "Premium Finanz-Analyse Header"
         }
         requests.post(f"{WP_MEDIA_URL}/{featured_media_id}", auth=HTTPBasicAuth(WP_USER, WP_PASS), json=meta_data)
-    
-    excerpt = ""
     for _, row in selected.iterrows():
         symbol = str(row.get('Symbol'))
         name = str(row.get('Security'))
@@ -223,9 +232,6 @@ def generate_blog_post():
     <!-- /wp:paragraph -->
     """
     
-    print("Generiere SEO-Vorschautext...")
-    excerpt = get_ai_excerpt(title, html_content)
-    
     # Determine publishing status: 'publish' on Mondays (weekday 0), 'draft' otherwise
     current_weekday = datetime.today().weekday()
     status = "publish" if current_weekday == 0 else "draft"
@@ -246,7 +252,8 @@ def generate_blog_post():
             "prosodia_vgw_os_pzm_method": "automatic",
             "_prosodia_vgw_os_pzm_active": "1",
             "_prosodia_vgw_os_pzm_status": "assigned",
-            "_yoast_wpseo_metadesc": excerpt
+            "_yoast_wpseo_metadesc": excerpt,
+            "_yoast_wpseo_focuskw": tag_names[0]
         }
     }
     if featured_media_id:
