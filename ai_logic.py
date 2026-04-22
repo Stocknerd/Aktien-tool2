@@ -183,7 +183,7 @@ def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Using gpt-4o-mini for efficient comparisons
+            model="gpt-5.4-mini",  # Using gpt-5.4-mini for efficient comparisons
             messages=[{"role": "user", "content": prompt}],
             max_completion_tokens=400
         )
@@ -216,7 +216,7 @@ def get_social_caption(stock_names_str, excerpt):
     try:
         client = OpenAI(api_key=api_key)
         response = client.chat.completions.create(
-          model="gpt-4o-mini",
+          model="gpt-5.4-mini",
           messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content.strip()
@@ -253,7 +253,7 @@ def get_tool_promotion_caption(is_comparison, names, symbols, financial_texts):
     try:
         client = OpenAI(api_key=api_key)
         response = client.chat.completions.create(
-          model="gpt-4o-mini",
+          model="gpt-5.4-mini",
           messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content.strip()
