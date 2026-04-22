@@ -217,11 +217,46 @@ def get_social_caption(stock_names_str, excerpt):
         response = client.chat.completions.create(
           model="gpt-4o-mini",
           messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"Error generating social caption: {e}")
         return f"📊 Neue Aktien-Analyse online! Wir beleuchten die Fundamentaldaten von {stock_names_str} kritisch im Detail. Jetzt auf schatzsuche40.de lesen.\n\nHinweis: Keine Anlageberatung. #Aktien #Börse"
+
+def get_tool_promotion_caption(is_comparison, names, symbols, financial_texts):
+    """Generiert einen kritischen Social-Media-Post für das tägliche Standalone-Feature (mit Link zum Tool)."""
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+         return f"Aktuelle Kennzahlen für {names}. Analysiere selbst auf schatzsuche40.de!\n\nHinweis: Keine Anlageberatung."
+         
+    if is_comparison:
+        prompt_type = f"den Vergleich der fundamentalen Daten der Aktien {names} ({symbols})"
+    else:
+        prompt_type = f"die aktuelle Bewertung der Aktie {names} ({symbols})"
+        
+    prompt = f"""
+    Schreibe einen packenden, aber objektiven und kritischen Instagram/Facebook-Post (max 280 Zeichen) über {prompt_type}.
+    
+    Nutze dafür folgende Daten als Grundlage: 
+    {financial_texts}
+    
+    Vorgaben:
+    - Verliere keine super lativen Werbekomplimente, bleibe sachlich. Werte nicht in den Himmel loben, nur interpretieren.
+    - Baue folgenden Aufruf organisch ein: "Mehr Analysen & dieses Tool findest du auf schatzsuche40.de"
+    - Füge als LETZTEN Satz isoliert den Disclaimer hinzu: "Hinweis: Keine Anlageberatung. Bilde dir eine eigene Meinung."
+    - Nutze 2-4 Emojis passend zum Thema Börse.
+    - Nutze 3-5 relevante Hashtags (z.B. #Aktien #Börse #Investing).
+    - Texte in deutscher Sprache.
+    """
+    
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+          model="gpt-4o-mini",
+          messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"Error generating promotion caption: {e}")
+        return f"🧐 {names} ({symbols}) im Check. Wie sind die aktuellen KGV & Margen?\n\n👉 Alle Daten & das Analysetool: schatzsuche40.de\n\nHinweis: Keine Anlageberatung. #Investieren #Börse"
 
 if __name__ == "__main__":
     # Test block
