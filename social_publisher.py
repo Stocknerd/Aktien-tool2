@@ -134,22 +134,33 @@ def post_to_instagram_feed(caption, image_path, wp_img_url=None):
         creation_id = data["id"]
         print(f"[OK] Instagram: Media Container erstellt ({creation_id}).")
         
-        # Step 2: Publish Media
+        # Step 2: Publish Media (with retry for async processing)
         publish_url = f"https://graph.facebook.com/v20.0/{META_INSTA_ID}/media_publish"
         params_pub = {
             "creation_id": creation_id,
             "access_token": page_token
         }
         
-        r_pub = requests.post(publish_url, params=params_pub)
-        data_pub = r_pub.json()
-        
-        if "id" in data_pub:
-            print(f"[OK] Instagram: Post erfolgreich veröffentlicht (Media ID: {data_pub['id']}).")
-            return True
-        else:
-            print(f"[ERR] Instagram Publish Fehlermeldung: {data_pub}")
-            return False
+        import time
+        max_retries = 3
+        for attempt in range(max_retries):
+            # Wait a few seconds for Meta's CDN to download the image
+            time.sleep(5)
+            r_pub = requests.post(publish_url, params=params_pub)
+            data_pub = r_pub.json()
+            
+            if "id" in data_pub:
+                print(f"[OK] Instagram: Post erfolgreich veröffentlicht (Media ID: {data_pub['id']}).")
+                return True
+            elif data_pub.get('error', {}).get('code') == 9007:
+                print(f"[WAIT] Instagram Bild verarbeitet noch... (Versuch {attempt+1}/{max_retries})")
+                continue
+            else:
+                print(f"[ERR] Instagram Publish Fehlermeldung: {data_pub}")
+                return False
+                
+        print(f"[ERR] Instagram Timeout: Bild konnte nicht publiziert werden.")
+        return False
             
     except Exception as e:
         print(f"[ERR] Instagram-Posting fehlgeschlagen: {e}")
