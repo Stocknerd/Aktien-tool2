@@ -4,6 +4,7 @@ import io
 from PIL import Image
 from openai import OpenAI
 from dotenv import load_dotenv
+import json
 
 # Load .env file if it exists
 load_dotenv()
