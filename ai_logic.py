@@ -194,22 +194,23 @@ def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b
         print(f"OpenAI Error Comparison {symbol_a} vs {symbol_b}: {e}")
         return "Detaillierter KI-Vergleich konnte momentan nicht vollständig generiert werden."
 
-def get_social_caption(symbol, name, data):
-    """Generiert einen kurzen Social-Media-Post (Instagram/X) für eine Aktie."""
+def get_social_caption(stock_names_str, excerpt):
+    """Generiert einen kritischen, zusammenfassenden Social-Media-Post für den gesamten Artikel."""
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        return f"🚨 Analyse-Update: {name} ({symbol}). Jetzt die neuesten Kennzahlen auf schatzsuche40.de checken! #Aktien"
+        return f"🚨 Neue Analyse online! Wir nehmen {stock_names_str} kritisch unter die Lupe. Jetzt auf schatzsuche40.de lesen. \n\nHinweis: Keine Anlageberatung. #Aktien #Finanzen"
 
     prompt = f"""
-    Schreibe einen kurzen, packenden Social-Media-Post (max 280 Zeichen) für die Aktie {name} ({symbol}).
-    Nutze diese Kennzahlen: {data}.
+    Schreibe einen packenden, aber kritischen Social-Media-Post (max 280 Zeichen) für einen neuen Blogartikel über diese Aktien: {stock_names_str}.
+    Die Kernaussage des Artikels lautet: {excerpt}
     
-    Vorgaben:
-    - Nutze Emojis.
-    - Füge 3-5 relevante Hashtags hinzu (z.B. #Aktien #Investing #Dividende).
-    - Sei analytisch aber motivierend.
+    Achte UNBEDINGT auf folgende Vorgaben:
+    - Werbe nicht zu krass für die Aktien. Bleibe analytisch, sachlich und erwähne auch, dass man genau hinschauen muss.
+    - Füge am Ende des Textes IMMER diesen Disclaimer als eigenen Satz hinzu: "Hinweis: Keine Anlageberatung. Führe immer eine eigene Recherche durch."
+    - Nutze passend 2-3 Emojis.
+    - Füge 3-5 relevante Hashtags hinzu (z.B. #Aktienanalyse #Dividenden).
     - Der Text muss auf Deutsch sein.
-    - Keine Platzhalter.
+    - Keine Platzhalter verwenden.
     """
     try:
         client = OpenAI(api_key=api_key)
@@ -219,8 +220,8 @@ def get_social_caption(symbol, name, data):
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        print(f"Error generating social caption for {symbol}: {e}")
-        return f"🚨 Analyse-Update: {name} ({symbol}). Jetzt die neuesten Kennzahlen auf schatzsuche40.de checken! #Aktien #Investieren"
+        print(f"Error generating social caption: {e}")
+        return f"📊 Neue Aktien-Analyse online! Wir beleuchten die Fundamentaldaten von {stock_names_str} kritisch im Detail. Jetzt auf schatzsuche40.de lesen.\n\nHinweis: Keine Anlageberatung. #Aktien #Börse"
 
 if __name__ == "__main__":
     # Test block

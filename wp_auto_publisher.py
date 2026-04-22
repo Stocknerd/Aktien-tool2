@@ -283,25 +283,26 @@ def generate_blog_post():
         except Exception as e:
             print(f"Fehler bei XML-RPC Meta-Injizierung: {e}")
         
-        # Now trigger Social Media for all 3 stocks
-        for item in social_data:
-            try:
-                symbol, name = item["symbol"], item["name"]
-                print(f"Hole Social-Media-Caption für {name} ({symbol})...")
-                social_caption = get_social_caption(symbol, name, item["financial_data"])
+        # --- NEW: Trigger ONE Social Media Post for the ENTIRE Article ---
+        try:
+            print("Hole generelle Social-Media-Caption für den Blogartikel...")
+            stock_names_str = ", ".join(stock_names)
+            social_caption = get_social_caption(stock_names_str, excerpt)
+            
+            # Save the landscape header image to the public path for Meta API fetch
+            public_dir = os.path.join("static", "temp_social")
+            os.makedirs(public_dir, exist_ok=True)
+            public_path = os.path.join(public_dir, "blog_header_social.png")
+            header_img.save(public_path)
+            
+            header_url = None
+            if header_response and header_response.status_code == 201:
+                header_url = header_response.json().get('source_url')
                 
-                # Save to public static folder for Meta API fetch
-                public_dir = os.path.join("static", "temp_social")
-                os.makedirs(public_dir, exist_ok=True)
-                public_path = os.path.join(public_dir, f"{symbol}_post.png")
-                
-                item["image"].save(public_path)
-                
-                wp_img_url = item.get("wp_img_url")
-                run_social_sync(symbol, social_caption, public_path, blog_url=blog_url, wp_img_url=wp_img_url)
-                
-            except Exception as e:
-                print(f"Fehler bei Social-Push {item['symbol']}: {e}")
+            run_social_sync("MARKET-UPDATE", social_caption, public_path, blog_url=blog_url, wp_img_url=header_url)
+            
+        except Exception as e:
+            print(f"Fehler bei Social-Push (Artikel-Ebene): {e}")
     else:
         print(f"Warnung: Veröffentlichung fehlgeschlagen. Code: {response.status_code}")
         print(response.text)
