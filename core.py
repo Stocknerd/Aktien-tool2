@@ -726,6 +726,10 @@ def render_compare(rows: List[pd.Series], metrics: List[str], watermark: str = "
                 n_a = a_data.get("numberOfAnalysts", 0) or 0
                 pot = ((m_t - c_prc) / c_prc * 100) if c_prc else 0
                 
+                txt_ziel = f"Ziel: "
+                txt_pot = f"{'+' if pot > 0 else ''}{pot:.1f}%" if m_t else "N/A"
+                txt_tail = f" ({int(n_a)} Analysten)" if n_a else ""
+                
                 if rec_ger in ["STARKER KAUF", "KAUFEN"]:
                     bg_col = (16, 185, 129)  # Green
                 elif rec_ger in ["VERKAUFEN", "STARKER VERKAUF"]:
