@@ -298,7 +298,7 @@ def download_logo(
     
     # Versuche verschiedene Quellen in Reihenfolge
     sources = [
-        ('Clearbit', lambda: get_logo_from_clearbit(symbol, clean_name, session)),
+        # ('Clearbit', lambda: get_logo_from_clearbit(symbol, clean_name, session)),
         ('Yahoo Finance', lambda: get_logo_from_yahoo_finance(symbol, session)),
         ('Wikipedia', lambda: get_logo_from_wikipedia(clean_name, session)),
         ('CompaniesLogo', lambda: get_logo_from_companieslogo(clean_name, session)),

@@ -996,13 +996,21 @@ def search():
     q_norm = normalize(q)
     
     for _, r in df.iterrows():
-        sym = normalize(r.get('Symbol') or '')
-        sec = normalize(r.get('Security') or r.get('Langname') or '')
+        s_val = r.get('Symbol')
+        sym = normalize(s_val or '')
+        
+        name_val = r.get('Security')
+        if pd.isna(name_val) or not str(name_val).strip():
+            name_val = r.get('Langname')
+        if pd.isna(name_val):
+            name_val = ''
+            
+        sec = normalize(name_val)
         
         if q_norm in sym or q_norm in sec:
             candidates.append({
-                'symbol': str(r.get('Symbol', '')), 
-                'name': str(r.get('Security', r.get('Langname', '')))
+                'symbol': str(s_val or ''), 
+                'name': str(name_val)
             })
         if len(candidates) >= 15: break
 @app.route('/admin/bugs')
