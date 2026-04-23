@@ -226,8 +226,47 @@ def generate_blog_post():
         <!-- /wp:spacer -->
         """
 
+    # Get Affiliate Links from ENV or use placeholder
+    affiliate_url = os.environ.get("AFFILIATE_URL", "https://traderepublic.com/de-de")
+    affiliate_broker = os.environ.get("AFFILIATE_BROKER", "Trade Republic")
+    
+    # Add Affiliate Monetization Block
+    html_content += f"""
+    <!-- wp:spacer {{"height":"20px"}} -->
+    <div style="height:20px" aria-hidden="true" class="wp-block-spacer"></div>
+    <!-- /wp:spacer -->
+    
+    <!-- wp:group {{"style":{{"border":{{"radius":"10px","color":"#e2e8f0","width":"2px","style":"solid"}},"spacing":{{"padding":{{"top":"20px","right":"20px","bottom":"20px","left":"20px"}}}}}},"backgroundColor":"luminous-vivid-amber","layout":{{"type":"constrained"}}}} -->
+    <div class="wp-block-group has-border-color has-luminous-vivid-amber-background-color has-background" style="border-color:#e2e8f0;border-radius:10px;border-style:solid;border-width:2px;padding-top:20px;padding-right:20px;padding-bottom:20px;padding-left:20px">
+    <!-- wp:paragraph {{"align":"center","style":{{"typography":{{"fontSize":"18px","fontWeight":"700"}}}},"textColor":"black"}} -->
+    <p class="has-text-align-center has-black-color has-text-color" style="font-size:18px;font-weight:700">💰 Du willst in diese Aktien investieren?</p>
+    <!-- /wp:paragraph -->
+    
+    <!-- wp:paragraph {{"align":"center","textColor":"black"}} -->
+    <p class="has-text-align-center has-black-color has-text-color">Eröffne jetzt dein Depot bei <strong>{affiliate_broker}</strong>, handle Aktien für nur 1€ und sichere dir exzellente Zinsen auf dein nicht investiertes Kapital!</p>
+    <!-- /wp:paragraph -->
+    
+    <!-- wp:buttons {{"layout":{{"type":"flex","justifyContent":"center"}}}} -->
+    <div class="wp-block-buttons">
+    <!-- wp:button {{"backgroundColor":"vivid-green-cyan"}} -->
+    <div class="wp-block-button"><a class="wp-block-button__link has-vivid-green-cyan-background-color has-background wp-element-button" href="{affiliate_url}" target="_blank" rel="noreferrer noopener"><strong>Kostenlos Depot eröffnen &amp; investieren</strong></a></div>
+    <!-- /wp:button -->
+    </div>
+    <!-- /wp:buttons -->
+    
+    <!-- wp:paragraph {{"align":"center","style":{{"typography":{{"fontSize":"12px"}}}},"textColor":"contrast-3"}} -->
+    <p class="has-text-align-center has-contrast-3-color has-text-color" style="font-size:12px"><em>(Anzeige / Affiliate Link: Wenn du über diesen Link ein Konto eröffnest, unterstützt du unsere Arbeit ohne Zusatzkosten für dich.)</em></p>
+    <!-- /wp:paragraph -->
+    </div>
+    <!-- /wp:group -->
+    """
+
     # Add disclaimer at the end
     html_content += f"""
+    <!-- wp:spacer {{"height":"30px"}} -->
+    <div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+    <!-- /wp:spacer -->
+    
     <!-- wp:paragraph -->
     <p><em>Hinweis: Diese Analyse dient der allgemeinen Information und stellt keine Anlageberatung dar. Aktieninvestments sind mit Risiken verbunden. Führe immer deine eigene Recherche durch.</em></p>
     <!-- /wp:paragraph -->
@@ -299,7 +338,7 @@ def generate_blog_post():
             if header_response and header_response.status_code == 201:
                 header_url = header_response.json().get('source_url')
                 
-            run_social_sync("MARKET-UPDATE", social_caption, public_path, blog_url=blog_url, wp_img_url=header_url)
+            run_social_sync("MARKET-UPDATE", social_caption, public_path, blog_url=blog_url, wp_img_url=header_url, title=title)
             
         except Exception as e:
             print(f"Fehler bei Social-Push (Artikel-Ebene): {e}")

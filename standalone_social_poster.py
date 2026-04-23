@@ -155,7 +155,7 @@ def run_daily_poster():
 
     url_link = "https://schatzsuche40.de"
     
-    run_social_sync(symbols, caption, public_path, blog_url=url_link, wp_img_url=wp_img_url)
+    run_social_sync(symbols, caption, public_path, blog_url=url_link, wp_img_url=wp_img_url, title=names)
     
     print("✅ Täglicher Post erfolgreich abgesetzt!")
 

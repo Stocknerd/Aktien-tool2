@@ -157,7 +157,62 @@ def post_to_instagram_feed(caption, image_path, wp_img_url=None):
         print(f"[ERR] Instagram-Posting fehlgeschlagen: {e}")
         return False
 
-def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None):
+def post_to_pinterest(title, description, image_path, link_url=None):
+    """Postet ein Bild auf Pinterest über die offizielle Pinterest v5 API."""
+    PIN_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN")
+    BOARD_ID = os.environ.get("PINTEREST_BOARD_ID")
+    
+    if not PIN_TOKEN or not BOARD_ID:
+        print("[SKIP] Pinterest: Access Token oder Board ID fehlen in der .env.")
+        return False
+        
+    try:
+        import base64
+        with open(image_path, "rb") as img_file:
+            b64_data = base64.b64encode(img_file.read()).decode('utf-8')
+            
+        url = "https://api.pinterest.com/v5/pins"
+        headers = {
+            "Authorization": f"Bearer {PIN_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        
+        # Determine content type based on extension
+        ext = image_path.lower().split('.')[-1]
+        c_type = "image/jpeg" if ext in ['jpg', 'jpeg'] else "image/png"
+        
+        # Clean title for Pinterest (max 100 chars)
+        clean_title = (title[:97] + '...') if len(title) > 100 else title
+        
+        payload = {
+            "board_id": BOARD_ID,
+            "title": clean_title,
+            "description": description,
+            "media_source": {
+                "source_type": "image_base64",
+                "content_type": c_type,
+                "data": b64_data
+            }
+        }
+        
+        if link_url:
+            payload["link"] = link_url
+            
+        r = requests.post(url, headers=headers, json=payload)
+        
+        if r.status_code == 201:
+            data = r.json()
+            print(f"[OK] Pinterest: Pin erfolgreich erstellt (ID: {data.get('id')}).")
+            return True
+        else:
+            print(f"[ERR] Pinterest API Fehler: {r.text}")
+            return False
+            
+    except Exception as e:
+        print(f"[ERR] Pinterest-Posting fehlgeschlagen: {e}")
+        return False
+
+def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None, title=None):
     """Hier erfolgt der koordinierte Social-Media-Push."""
     print(f"Bündele Social-Media-Push für {symbol}...")
     
@@ -165,10 +220,15 @@ def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None)
     post_to_x(caption, image_path)
     
     # 2. Facebook (Offizielle API)
-    post_to_facebook_page(caption, image_path, link=blog_url)
+    post_to_facebook_page(caption, image_path, link_url=blog_url)
     
     # 3. Instagram (Offizielle API)
     post_to_instagram_feed(caption, image_path, wp_img_url=wp_img_url)
+    
+    # 4. Pinterest (Offizielle API)
+    # Pinterest requires a strict title. Fallback to symbol if not provided.
+    pin_title = title if title else f"Aktienanalyse: {symbol}"
+    post_to_pinterest(pin_title, caption, image_path, link_url=blog_url)
 
 if __name__ == "__main__":
     # Test-Run
