@@ -499,7 +499,7 @@ def _parse_num(s: str):
 def _is_low_better(metric_key: str) -> bool:
     return any(k in metric_key.upper() for k in ["KGV", "PE", "KUV", "KBV", "SCHULDEN", "PEG", "EV/"])
 
-def render_compare(rows: List[pd.Series], metrics: List[str], watermark: str = "",
+def render_compare(rows: List[pd.Series], metrics: List[str] = None, watermark: str = "",
                    bg_path: str = None, fetch_analyst: bool = False, ai_verdict: str = "") -> Image.Image:
     """Render a premium side-by-side stock comparison card (1080×1350)."""
     W, H = OUTPUT_WIDTH, OUTPUT_HEIGHT
@@ -620,6 +620,8 @@ def render_compare(rows: List[pd.Series], metrics: List[str], watermark: str = "
     draw.line([(MID, 155), (MID, 255)], fill=(255, 255, 255, 50), width=2)
 
     # ── 6. Metric Rows ─────────────────────────────────────────────
+    if metrics is None:
+        metrics = DEFAULT_METRICS
     metrics_clean = [m for m in metrics if m][:8]
     ROW_START = 240
     ROW_H     = 66
