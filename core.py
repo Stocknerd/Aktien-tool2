@@ -500,7 +500,7 @@ def _is_low_better(metric_key: str) -> bool:
     return any(k in metric_key.upper() for k in ["KGV", "PE", "KUV", "KBV", "SCHULDEN", "PEG", "EV/"])
 
 def render_compare(rows: List[pd.Series], metrics: List[str], watermark: str = "",
-                   bg_path: str = None, fetch_analyst: bool = False) -> Image.Image:
+                   bg_path: str = None, fetch_analyst: bool = False, ai_verdict: str = "") -> Image.Image:
     """Render a premium side-by-side stock comparison card (1080×1350)."""
     W, H = OUTPUT_WIDTH, OUTPUT_HEIGHT
 
@@ -785,6 +785,33 @@ def render_compare(rows: List[pd.Series], metrics: List[str], watermark: str = "
             draw_analyst_side(a2, False)
             an_y += AN_H + 20
 
+    # ── 7. AI Verdict Section (New) ──────────────────────────────
+    if ai_verdict and ai_verdict.strip():
+        av_pad = 40
+        av_w = W - 2*PAD
+        f_av_bld = _font(FONT_BLD_PATH, 24, ImageFont.load_default())
+        
+        # Calculate text wrapping
+        av_text = ai_verdict.strip()
+        av_lines = wrap_title(draw, av_text, f_av_bld, av_w - 60)
+        # Dynamic box height: header + lines * line_height + bottom padding
+        av_box_h = 65 + len(av_lines) * 28
+        
+        av_y = an_y + 2
+        # Draw AI Branding / Box
+        draw.rounded_rectangle([PAD, av_y, W - PAD, av_y + av_box_h], radius=15, fill=(10, 35, 25, 240))
+        draw.rounded_rectangle([PAD, av_y, W - PAD, av_y + av_box_h], radius=15, outline=(16, 185, 129, 200), width=3)
+        
+        # Icon/Label (Centered)
+        ai_label = "KI-BEWERTUNG"
+        al_w = int(draw.textlength(ai_label, font=f_av_bld))
+        draw.text(((W - al_w) // 2, av_y + 12), ai_label, fill=WHITE, font=f_av_bld)
+        
+        for li, line in enumerate(av_lines):
+            lw = int(draw.textlength(line, font=f_av_bld))
+            draw.text(((W - lw) // 2, av_y + 50 + li * 28), line, fill=WHITE, font=f_av_bld)
+            
+        an_y = av_y + av_box_h + 20
 
     # ── 8. Score Panel ─────────────────────────────────────────────
     score_y = an_y
