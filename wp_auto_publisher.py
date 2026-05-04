@@ -3,7 +3,7 @@ import random
 import requests
 from requests.auth import HTTPBasicAuth
 import pandas as pd
-from core import load_df, render_stock_card
+from core import load_df, render_stock_card, render_social_square_header
 from ai_logic import get_ai_verdict, get_ai_long_analysis, get_social_caption, get_ai_excerpt, generate_blog_header_image
 from social_publisher import run_social_sync
 from datetime import datetime
@@ -91,16 +91,16 @@ def generate_blog_post():
 
     # --- NEW: Generate Premium Landscape Blog Header via DALL-E ---
     print("Generiere Premium Querformat-Blog-Header via DALL-E 3...")
-    header_img = generate_blog_header_image(stock_names)
+    header_img_raw = generate_blog_header_image(stock_names)
     
     # Fallback if DALL-E fails
-    if not header_img:
+    if not header_img_raw:
         print("Fallback auf lokale Grafik...")
         
     from core import render_blog_header
     selected_list = selected.to_dict('records')
     # Use render_blog_header to composite logos and stats over the bg_img
-    header_img = render_blog_header(selected_list, bg_img=header_img)
+    header_img = render_blog_header(selected_list, bg_img=header_img_raw)
         
     header_byte_arr = io.BytesIO()
     header_img.save(header_byte_arr, format='PNG')
@@ -328,17 +328,22 @@ def generate_blog_post():
             stock_names_str = ", ".join(stock_names)
             social_caption = get_social_caption(stock_names_str, excerpt)
             
-            # Save the landscape header image to the public path for Meta API fetch
+            # Generate a separate SQUARE image for Social Media (better for Instagram/Facebook)
+            print("Generiere quadratisches Social-Media-Header-Bild...")
+            social_img = render_social_square_header(selected_list, title_text="TOP 3 DIVIDENDEN-CHECKS", bg_img=header_img_raw) # Note: we need to keep raw header_img if we want to reuse it
+            
+            # Save the square header image to the public path for Meta API fetch
             public_dir = os.path.join("static", "temp_social")
             os.makedirs(public_dir, exist_ok=True)
-            public_path = os.path.join(public_dir, "blog_header_social.png")
-            header_img.save(public_path)
+            public_path_sq = os.path.join(public_dir, "blog_header_sq.png")
+            social_img.save(public_path_sq)
             
             header_url = None
             if header_response and header_response.status_code == 201:
                 header_url = header_response.json().get('source_url')
                 
-            run_social_sync("MARKET-UPDATE", social_caption, public_path, blog_url=blog_url, wp_img_url=header_url, title=title)
+            run_social_sync("MARKET-UPDATE", social_caption, public_path_sq, blog_url=blog_url, wp_img_url=None, title=title) # Pass wp_img_url=None to force local path for now or upload square one too
+            
             
         except Exception as e:
             print(f"Fehler bei Social-Push (Artikel-Ebene): {e}")

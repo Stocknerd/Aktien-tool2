@@ -946,3 +946,78 @@ def render_blog_header(selected_stocks: List[Dict[str, Any]], title_text: str = 
     _draw_watermark(draw, W, H)
     return img
 
+def render_social_square_header(selected_stocks: List[Dict[str, Any]], title_text: str = "AKTIEN-DUELL & ANALYSE", bg_img: Image.Image = None) -> Image.Image:
+    """
+    Renders a square (1080x1080) header image optimized for Instagram and Facebook.
+    Ideal for sharing the "Top 3" or similar highlights.
+    """
+    W, H = 1080, 1080
+    
+    if bg_img:
+        from PIL import ImageOps
+        img = ImageOps.fit(bg_img, (W, H), method=Image.Resampling.LANCZOS).convert("RGBA")
+        overlay = Image.new("RGBA", (W, H), (15, 23, 42, 140)) # Slightly darker for square
+        img = Image.alpha_composite(img, overlay)
+    else:
+        img = Image.new("RGBA", (W, H), (10, 18, 35, 255))
+        draw_temp = ImageDraw.Draw(img)
+        for i in range(H):
+            alpha = int(30 + 40 * (i / H))
+            draw_temp.line([(0, i), (W, i)], fill=(255, 255, 255, alpha))
+
+    draw = ImageDraw.Draw(img)
+    MID = W // 2
+    PAD = 60
+
+    # Fonts
+    f_title = _font(FONT_BLD_PATH, 54, ImageFont.load_default())
+    f_ticker = _font(FONT_BLD_PATH, 42, ImageFont.load_default())
+    f_name = _font(FONT_REG_PATH, 32, ImageFont.load_default())
+    f_meta = _font(FONT_REG_PATH, 24, ImageFont.load_default())
+
+    # Header Title
+    tw = int(draw.textlength(title_text.upper(), font=f_title))
+    draw.text((MID - tw // 2, 100), title_text.upper(), fill=(16, 185, 129), font=f_title)
+
+    # 3 Stocks in vertical or grid? Let's do a vertical stack for square
+    BOX_H = 220
+    START_Y = 220
+    GAP = 40
+    
+    for i, stock in enumerate(selected_stocks[:3]):
+        symbol = str(stock.get('Symbol', 'N/A'))
+        name = str(stock.get('Security', 'N/A'))[:30]
+        
+        y1 = START_Y + i * (BOX_H + GAP)
+        y2 = y1 + BOX_H
+        
+        # Glass panel
+        draw.rounded_rectangle([PAD, y1, W - PAD, y2], radius=20, fill=(255, 255, 255, 15), outline=(255, 255, 255, 50), width=3)
+        
+        # Logo
+        logo_path = os.path.join(LOGO_DIR, f"{symbol}.png")
+        if os.path.exists(logo_path):
+            try:
+                logo = Image.open(logo_path).convert("RGBA")
+                logo.thumbnail((120, 120))
+                lx = PAD + 40
+                ly = y1 + (BOX_H - logo.height) // 2
+                img.paste(logo, (lx, ly), logo)
+            except: pass
+            
+        # Text
+        tx = PAD + 200
+        draw.text((tx, y1 + 55), symbol, fill=(255, 255, 255), font=f_ticker)
+        draw.text((tx, y1 + 115), name, fill=(180, 195, 220), font=f_name)
+        
+        # Arrow or chevron
+        draw.text((W - PAD - 80, y1 + 75), "→", fill=(16, 185, 129), font=f_ticker)
+
+    # Footer
+    footer = f"JETZT ONLINE: SCHATZSUCHE40.DE  •  {datetime.today().strftime('%d.%m.%Y')}"
+    tw_f = int(draw.textlength(footer, font=f_meta))
+    draw.text((MID - tw_f // 2, H - 80), footer, fill=(150, 160, 180), font=f_meta)
+
+    _draw_watermark(draw, W, H)
+    return img
+

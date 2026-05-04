@@ -91,7 +91,7 @@ def post_to_facebook_page(message, image_path=None, link_url=None):
         print(f"[ERR] Facebook-Posting fehlgeschlagen: {e}")
         return False
 
-def post_to_instagram_feed(caption, image_path, wp_img_url=None):
+def post_to_instagram_feed(caption, image_path, wp_img_url=None, link_url=None):
     """Postet ein Bild auf den Instagram Business Feed (Offizielle API)."""
     PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
     if not (META_INSTA_ID and PAGE_TOKEN):
@@ -99,6 +99,11 @@ def post_to_instagram_feed(caption, image_path, wp_img_url=None):
         return False
         
     try:
+        # Append link to caption if provided (Instagram doesn't have a separate link field)
+        full_caption = caption
+        if link_url:
+            full_caption += f"\n\n🔗 Mehr dazu: {link_url}"
+            
         # Step 1: Create Media Container
         # Meta's servers need to FETCH the image, so we need a public HTTPS URL.
         # wp_img_url is the direct URL to the image on the WordPress site.
@@ -111,7 +116,7 @@ def post_to_instagram_feed(caption, image_path, wp_img_url=None):
         container_url = f"https://graph.facebook.com/v20.0/{META_INSTA_ID}/media"
         params = {
             "image_url": public_url,
-            "caption": caption,
+            "caption": full_caption,
             "access_token": PAGE_TOKEN
         }
         
@@ -223,7 +228,7 @@ def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None,
     post_to_facebook_page(caption, image_path, link_url=blog_url)
     
     # 3. Instagram (Offizielle API)
-    post_to_instagram_feed(caption, image_path, wp_img_url=wp_img_url)
+    post_to_instagram_feed(caption, image_path, wp_img_url=wp_img_url, link_url=blog_url)
     
     # 4. Pinterest (Offizielle API)
     # Pinterest requires a strict title. Fallback to symbol if not provided.
