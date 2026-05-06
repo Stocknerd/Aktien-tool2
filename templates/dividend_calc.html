@@ -121,7 +121,7 @@
             }
 
             debounceTimer = setTimeout(() => {
-                fetch(`/api/search?q=${encodeURIComponent(query)}`)
+                fetch(`/search?q=${encodeURIComponent(query)}`)
                     .then(r => r.json())
                     .then(data => {
                         searchResults.innerHTML = '';
@@ -193,7 +193,7 @@
                 selectedTicker.value = params.get('ticker');
                 investAmount.value = params.get('amount') || 1000;
                 // Fetch info for the ticker to show name
-                fetch(`/api/search?q=${params.get('ticker')}`)
+                fetch(`/search?q=${params.get('ticker')}`)
                     .then(r => r.json())
                     .then(data => {
                         if (data.length > 0) {

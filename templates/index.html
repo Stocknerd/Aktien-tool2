@@ -193,8 +193,7 @@
           <a href="/analyse/{{ stock.symbol }}" class="stock-card-link text-decoration-none">
             <div class="glass-card p-3 text-center h-100 stock-hover-card">
               <div class="mb-2">
-                <img src="https://logo.clearbit.com/{{ stock.name.split(' ')[0] | lower }}.com" 
-                     onerror="this.src='https://ui-avatars.com/api/?name={{ stock.symbol }}&background=1e293b&color=10b981'" 
+                <img src="https://ui-avatars.com/api/?name={{ stock.symbol }}&background=1e293b&color=10b981" 
                      class="rounded-circle" style="width: 32px; height: 32px; object-fit: contain; filter: grayscale(0.2);">
               </div>
               <div class="fw-bold small text-white mb-1">{{ stock.symbol }}</div>
@@ -205,6 +204,109 @@
         {% endfor %}
       </div>
     </div>
+    {% endif %}
+
+    <!-- ─── Dividend Calculator Section ─── -->
+    {% if not ticker and not is_embedded %}
+    <div class="dividend-section mb-5 mx-auto" style="max-width: 900px;">
+        <div class="glass-card p-5">
+            <div class="text-center mb-4">
+                <h3 class="fw-bold" style="color: #10b981;">💰 Quick-Check: Dividenden-Rechner</h3>
+                <p class="text-muted">Wie viel passives Einkommen werfen deine Aktien ab?</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label text-uppercase">Aktie wählen</label>
+                    <div class="position-relative">
+                        <input type="text" id="divStockSearch" class="form-control" placeholder="z.B. Realty Income, Allianz..." autocomplete="off">
+                        <ul id="divSuggestions" class="list-group position-absolute top-100 start-0 w-100 shadow-lg mt-1" style="display:none; z-index:1000; background:#1e293b; border: 1px solid rgba(255,255,255,0.1); max-height:200px; overflow-y:auto;"></ul>
+                        <input type="hidden" id="divSelectedTicker">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-uppercase">Investment (€)</label>
+                    <input type="number" id="divAmount" class="form-control" value="1000" step="100">
+                </div>
+            </div>
+
+            <div id="divResults" class="row mt-4 g-3 text-center" style="display:none;">
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);">
+                        <small class="text-muted d-block mb-1">Jährlich</small>
+                        <span id="resAnnual" class="fw-bold text-success fs-5">0 €</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2);">
+                        <small class="text-muted d-block mb-1">Monatlich</small>
+                        <span id="resMonthly" class="fw-bold text-primary fs-5">0 €</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2);">
+                        <small class="text-muted d-block mb-1">Anteile</small>
+                        <span id="resShares" class="fw-bold text-warning fs-5">0</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3" style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2);">
+                        <small class="text-muted d-block mb-1">Rendite</small>
+                        <span id="resYield" class="fw-bold text-purple fs-5" style="color: #a78bfa;">0 %</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dSearch = document.getElementById('divStockSearch');
+            const dSugg = document.getElementById('divSuggestions');
+            const dTicker = document.getElementById('divSelectedTicker');
+            const dAmount = document.getElementById('divAmount');
+            const dRes = document.getElementById('divResults');
+
+            dSearch.addEventListener('input', async e => {
+                const q = e.target.value.trim();
+                if (q.length < 2) { dSugg.style.display = 'none'; return; }
+                const r = await fetch(`/search?q=${encodeURIComponent(q)}`);
+                const data = r.ok ? await r.json() : [];
+                if (!data.length) { dSugg.style.display = 'none'; return; }
+                dSugg.innerHTML = data.map(o => `<li class='list-group-item search-item' data-sym='${o.symbol}' style="cursor:pointer; background:transparent; color:white; border-bottom:1px solid rgba(255,255,255,0.05);">${o.symbol} – ${o.name}</li>`).join('');
+                dSugg.style.display = 'block';
+            });
+
+            dSugg.addEventListener('click', e => {
+                const li = e.target.closest('li');
+                if (!li) return;
+                dSearch.value = li.innerText;
+                dTicker.value = li.dataset.sym;
+                dSugg.style.display = 'none';
+                runDivCalc();
+            });
+
+            dAmount.addEventListener('input', runDivCalc);
+
+            async function runDivCalc() {
+                const t = dTicker.value;
+                const a = dAmount.value;
+                if (!t || !a) return;
+                const r = await fetch(`/api/calculate-dividend?ticker=${t}&amount=${a}`);
+                const data = await r.json();
+                if (data.error) return;
+
+                document.getElementById('resAnnual').innerText = data.annual.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+                document.getElementById('resMonthly').innerText = data.monthly.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+                document.getElementById('resShares').innerText = data.shares.toFixed(2);
+                document.getElementById('resYield').innerText = data.yield + ' %';
+                dRes.style.display = 'flex';
+            }
+        });
+    </script>
+    <style>
+        .search-item:hover { background: rgba(16, 185, 129, 0.1) !important; }
+    </style>
     {% endif %}
 
     <div class="text-center mb-4 d-flex justify-content-center align-items-center gap-3">
