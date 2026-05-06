@@ -1013,6 +1013,79 @@ def search():
                 'name': str(name_val)
             })
         if len(candidates) >= 15: break
+    return jsonify(candidates)
+
+# ─── Dividend Calculator ────────────────────────────────────────
+@app.route('/dividend-rechner')
+def dividend_rechner():
+    return render_template('dividend_calc.html')
+
+@app.route('/api/search')
+def api_search():
+    q = (request.args.get('q') or '').strip().lower()
+    df = core.load_df()
+    if not q: return jsonify([])
+    candidates = []
+    
+    def normalize(s):
+        return str(s).lower().replace('-', ' ').replace('.', ' ').strip()
+    q_norm = normalize(q)
+    
+    for _, r in df.iterrows():
+        s_val = r.get('Symbol')
+        name_val = r.get('Security') or r.get('Langname', '')
+        if pd.isna(name_val): name_val = ''
+        
+        if q_norm in normalize(s_val or '') or q_norm in normalize(name_val):
+            candidates.append({'symbol': str(s_val), 'name': str(name_val)})
+        if len(candidates) >= 10: break
+    return jsonify(candidates)
+
+@app.route('/api/calculate-dividend')
+def calculate_dividend():
+    ticker = request.args.get('ticker')
+    amount = float(request.args.get('amount', 0))
+    
+    df = core.load_df()
+    row = df[df['Symbol'] == ticker]
+    if row.empty:
+        return jsonify({'error': 'Ticker not found'}), 404
+    
+    row = row.iloc[0]
+    
+    # Parse Yield
+    div_yield_str = str(row.get('Dividendenrendite', '0'))
+    div_yield = 0.0
+    try:
+        div_yield = float(div_yield_str.replace('%', '').replace(',', '.').strip())
+    except: pass
+    
+    # Parse Price
+    price_val = row.get('Vortagesschlusskurs', 0)
+    try:
+        if isinstance(price_val, str):
+            price = float(price_val.replace(',', '.').strip())
+        else:
+            price = float(price_val)
+    except:
+        price = 0.0
+        
+    if price <= 0:
+        # Fallback to yield based calculation if price is missing
+        shares = 0
+        annual = amount * (div_yield / 100)
+    else:
+        shares = amount / price
+        annual = amount * (div_yield / 100)
+        
+    return jsonify({
+        'symbol': ticker,
+        'yield': round(div_yield, 2),
+        'price': round(price, 2),
+        'shares': round(shares, 2),
+        'annual': round(annual, 2),
+        'monthly': round(annual / 12, 2)
+    })
 @app.route('/admin/bugs')
 def admin_bugs():
     token = request.args.get('token')

@@ -170,12 +170,17 @@
     <div class="nav-actions">
         <a href="/" class="btn btn-outline-light btn-sm rounded-pill" style="border: 1px solid rgba(255,255,255,0.1);">🏠 Home</a>
         <a href="/compare?embed=1" class="btn btn-outline-light btn-sm rounded-pill" style="border: 1px solid rgba(255,255,255,0.1);">📊 Vergleich</a>
+        <a href="/dividend-rechner" class="btn btn-outline-success btn-sm rounded-pill" style="border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981;">💰 Dividenden-Rechner</a>
     </div>
 
     {% if not is_embedded %}
     <div class="hero-section text-center py-5">
       <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #fff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Professionelle Aktienanalysen</h1>
-      <p class="lead text-muted mx-auto" style="max-width: 700px;">Generiere hochauflösende Infografiken mit KI-gestützten Insights für deine Social Media Kanäle oder deinen Blog.</p>
+      <p class="lead text-muted mx-auto mb-4" style="max-width: 700px;">Generiere hochauflösende Infografiken mit KI-gestützten Insights für deine Social Media Kanäle oder deinen Blog.</p>
+      <div class="d-flex justify-content-center gap-3 mb-5">
+          <a href="/compare" class="btn btn-outline-info px-4 rounded-pill">Aktien vergleichen</a>
+          <a href="/dividend-rechner" class="btn btn-success px-4 rounded-pill">Dividenden-Rechner</a>
+      </div>
     </div>
     {% endif %}
 
