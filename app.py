@@ -145,6 +145,25 @@ def stock_landing(ticker):
         is_landing=True
     )
 
+@app.route('/search')
+def search():
+    q = (request.args.get('q') or '').strip().lower()
+    df = core.load_df()
+    if not q: return jsonify([])
+    candidates = []
+    def normalize(s):
+        return str(s).lower().replace('-', ' ').replace('.', ' ').strip()
+    q_norm = normalize(q)
+    for _, row in df.iterrows():
+        sym = normalize(row.get('Symbol') or '')
+        sec = normalize(row.get('Security') or '')
+        lng = normalize(row.get('Langname') or '')
+        if q_norm in sym or q_norm in sec or q_norm in lng:
+            candidates.append({
+                'symbol': str(row.get('Symbol', '')), 
+                'name': str(row.get('Security', ''))
+            })
+        if len(candidates) >= 15: break
     return jsonify(candidates)
 
 # ─── Dividend Calculator ────────────────────────────────────────

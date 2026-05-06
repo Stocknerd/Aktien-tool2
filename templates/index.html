@@ -207,7 +207,7 @@
     {% endif %}
 
     <!-- ─── Dividend Calculator Section ─── -->
-    {% if not ticker and not is_embedded %}
+    {% if not is_embedded %}
     <div class="dividend-section mb-5 mx-auto" style="max-width: 900px;">
         <div class="glass-card p-5">
             <div class="text-center mb-4">
@@ -219,9 +219,9 @@
                 <div class="col-md-6">
                     <label class="form-label text-uppercase">Aktie wählen</label>
                     <div class="position-relative">
-                        <input type="text" id="divStockSearch" class="form-control" placeholder="z.B. Realty Income, Allianz..." autocomplete="off">
+                        <input type="text" id="divStockSearch" class="form-control" placeholder="z.B. Realty Income, Allianz..." autocomplete="off" value="{% if ticker %}{{ company_name or ticker }}{% endif %}">
                         <ul id="divSuggestions" class="list-group position-absolute top-100 start-0 w-100 shadow-lg mt-1" style="display:none; z-index:1000; background:#1e293b; border: 1px solid rgba(255,255,255,0.1); max-height:200px; overflow-y:auto;"></ul>
-                        <input type="hidden" id="divSelectedTicker">
+                        <input type="hidden" id="divSelectedTicker" value="{{ ticker if ticker else '' }}">
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -301,6 +301,11 @@
                 document.getElementById('resShares').innerText = data.shares.toFixed(2);
                 document.getElementById('resYield').innerText = data.yield + ' %';
                 dRes.style.display = 'flex';
+            }
+
+            // Initial calculation if ticker is pre-filled
+            if (dTicker.value) {
+                runDivCalc();
             }
         });
     </script>
