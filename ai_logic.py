@@ -202,16 +202,19 @@ def get_social_caption(stock_names_str, excerpt):
         return f"🚨 Neue Analyse online! Wir nehmen {stock_names_str} kritisch unter die Lupe. Jetzt auf schatzsuche40.de lesen. \n\nHinweis: Keine Anlageberatung. #Aktien #Finanzen"
 
     prompt = f"""
-    Schreibe einen packenden, aber kritischen Social-Media-Post (max 280 Zeichen) für einen neuen Blogartikel über diese Aktien: {stock_names_str}.
+    Schreibe einen fesselnden Social-Media-Post (max 280 Zeichen) für einen neuen Blogartikel über diese Aktien: {stock_names_str}.
     Die Kernaussage des Artikels lautet: {excerpt}
     
-    Achte UNBEDINGT auf folgende Vorgaben:
-    - Werbe nicht zu krass für die Aktien. Bleibe analytisch, sachlich und erwähne auch, dass man genau hinschauen muss.
-    - Füge am Ende des Textes IMMER diesen Disclaimer als eigenen Satz hinzu: "Hinweis: Keine Anlageberatung. Führe immer eine eigene Recherche durch."
-    - Nutze passend 2-3 Emojis.
-    - Füge 3-5 relevante Hashtags hinzu (z.B. #Aktienanalyse #Dividenden).
-    - Der Text muss auf Deutsch sein.
-    - Keine Platzhalter verwenden.
+    Achte auf folgenden Aufbau:
+    1. Hook: Beginne mit einer starken Frage oder einer überraschenden Beobachtung (z.B. "Warum reden alle über {stock_names_str.split(',')[0]}?").
+    2. Value: Fasse die Kernaussage kurz zusammen. Bleibe analytisch-kritisch, kein Hype.
+    3. CTA: Fordere zum Lesen auf schatzsuche40.de auf.
+    
+    Vorgaben:
+    - Füge am Ende den Disclaimer hinzu: "Hinweis: Keine Anlageberatung. Führe immer eine eigene Recherche durch."
+    - Nutze 2-3 Emojis.
+    - Füge 3-5 relevante Hashtags hinzu.
+    - Sprache: Deutsch.
     """
     try:
         client = OpenAI(api_key=api_key)
@@ -236,17 +239,21 @@ def get_tool_promotion_caption(is_comparison, names, symbols, financial_texts):
         prompt_type = f"die aktuelle Bewertung der Aktie {names} ({symbols})"
         
     prompt = f"""
-    Schreibe einen packenden, aber objektiven und kritischen Instagram/Facebook-Post (max 280 Zeichen) über {prompt_type}.
+    Schreibe einen fesselnden Instagram/Facebook-Post (max 280 Zeichen) über {prompt_type}.
     
     Nutze dafür folgende Daten als Grundlage: 
     {financial_texts}
     
+    Achte auf folgenden Aufbau:
+    1. Hook: Beginne mit einem starken Satz über die aktuelle Marktlage oder die Bewertung dieser speziellen Aktien.
+    2. Insight: Gib einen kurzen, kritischen Einblick basierend auf den Zahlen.
+    3. CTA: "Mehr Analysen & dieses Tool findest du auf schatzsuche40.de"
+    
     Vorgaben:
-    - Verliere keine super lativen Werbekomplimente, bleibe sachlich. Werte nicht in den Himmel loben, nur interpretieren.
-    - Baue folgenden Aufruf organisch ein: "Mehr Analysen & dieses Tool findest du auf schatzsuche40.de"
+    - Bleibe sachlich und seriös, vermeide Übertreibungen.
     - Füge als LETZTEN Satz isoliert den Disclaimer hinzu: "Hinweis: Keine Anlageberatung. Bilde dir eine eigene Meinung."
     - Nutze 2-4 Emojis passend zum Thema Börse.
-    - Nutze 3-5 relevante Hashtags (z.B. #Aktien #Börse #Investing).
+    - Nutze 3-5 relevante Hashtags.
     - Texte in deutscher Sprache.
     """
     

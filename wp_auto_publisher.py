@@ -259,6 +259,18 @@ def generate_blog_post():
     <!-- /wp:paragraph -->
     </div>
     <!-- /wp:group -->
+
+    <!-- wp:heading {{"level":4}} -->
+    <h4 class="wp-block-heading">Interessante Links für dich:</h4>
+    <!-- /wp:heading -->
+
+    <!-- wp:list -->
+    <ul class="wp-block-list">
+        <li><a href="https://compare.schatzsuche40.de"><strong>Aktien-Vergleichstool:</strong> Vergleiche deine Lieblingsaktien direkt miteinander.</a></li>
+        <li><a href="https://schatzsuche40.de/category/aktienanalysen/"><strong>Alle Analysen:</strong> Entdecke weitere spannende Aktienchecks.</a></li>
+        <li><a href="https://schatzsuche40.de/dividenden-strategie/"><strong>Dividenden-Strategie:</strong> So baust du dir ein passives Einkommen auf.</a></li>
+    </ul>
+    <!-- /wp:list -->
     """
 
     # Add disclaimer at the end
