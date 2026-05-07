@@ -174,7 +174,8 @@ def dividend_rechner():
 @app.route('/api/calculate-dividend')
 def calculate_dividend():
     ticker = request.args.get('ticker')
-    amount = float(request.args.get('amount', 0))
+    amount_str = request.args.get('amount', '0')
+    shares_str = request.args.get('shares', '0')
     
     df = core.load_df()
     row = df[df['Symbol'] == ticker]
@@ -200,18 +201,27 @@ def calculate_dividend():
     except:
         price = 0.0
         
-    if price <= 0:
-        shares = 0
-        annual = amount * (div_yield / 100)
-    else:
-        shares = amount / price
-        annual = amount * (div_yield / 100)
+    amount = 0.0
+    shares = 0.0
+    
+    try:
+        if shares_str and float(shares_str) > 0:
+            shares = float(shares_str)
+            amount = shares * price
+        else:
+            amount = float(amount_str)
+            shares = amount / price if price > 0 else 0
+    except:
+        pass
+
+    annual = amount * (div_yield / 100)
         
     return jsonify({
         'symbol': ticker,
         'yield': round(div_yield, 2),
         'price': round(price, 2),
         'shares': round(shares, 2),
+        'amount': round(amount, 2),
         'annual': round(annual, 2),
         'monthly': round(annual / 12, 2)
     })

@@ -71,8 +71,19 @@
                     <input type="hidden" id="selectedTicker">
                 </div>
                 <div class="form-group">
+                    <label for="calcMode">Berechnungsmodus</label>
+                    <select id="calcMode" class="form-select bg-dark text-white border-secondary mb-2">
+                        <option value="amount">Investitionsbetrag (€)</option>
+                        <option value="shares">Anzahl der Anteile</option>
+                    </select>
+                </div>
+                <div class="form-group" id="amountGroup">
                     <label for="investAmount">Investitionsbetrag (€)</label>
                     <input type="number" id="investAmount" value="1000" step="100" min="0">
+                </div>
+                <div class="form-group" id="sharesGroup" style="display: none;">
+                    <label for="investShares">Anzahl der Anteile</label>
+                    <input type="number" id="investShares" value="10" step="1" min="0">
                 </div>
             </div>
 
@@ -85,9 +96,13 @@
                     <span class="label">Monatlich (Ø)</span>
                     <span id="monthlyDiv" class="value monthly">0,00 €</span>
                 </div>
-                <div class="result-card">
+                <div class="result-card" id="cardShares">
                     <span class="label">Aktienanteile</span>
                     <span id="shareCount" class="value shares">0</span>
+                </div>
+                <div class="result-card" id="cardAmount" style="display: none;">
+                    <span class="label">Investitionswert</span>
+                    <span id="amountVal" class="value">0,00 €</span>
                 </div>
                 <div class="result-card">
                     <span class="label">Rendite</span>
@@ -148,14 +163,43 @@
             calculate();
         }
 
+        const calcMode = document.getElementById('calcMode');
+        const amountGroup = document.getElementById('amountGroup');
+        const sharesGroup = document.getElementById('sharesGroup');
+        const investShares = document.getElementById('investShares');
+        const cardShares = document.getElementById('cardShares');
+        const cardAmount = document.getElementById('cardAmount');
+
+        calcMode.addEventListener('change', () => {
+            if (calcMode.value === 'amount') {
+                amountGroup.style.display = 'block';
+                sharesGroup.style.display = 'none';
+                cardShares.style.display = 'block';
+                cardAmount.style.display = 'none';
+            } else {
+                amountGroup.style.display = 'none';
+                sharesGroup.style.display = 'block';
+                cardShares.style.display = 'none';
+                cardAmount.style.display = 'block';
+            }
+            calculate();
+        });
+
         investAmount.addEventListener('input', calculate);
+        investShares.addEventListener('input', calculate);
 
         function calculate() {
             const ticker = selectedTicker.value;
-            const amount = investAmount.value;
-            if (!ticker || !amount) return;
+            if (!ticker) return;
 
-            fetch(`/api/calculate-dividend?ticker=${ticker}&amount=${amount}`)
+            let url = `/api/calculate-dividend?ticker=${ticker}`;
+            if (calcMode.value === 'amount') {
+                url += `&amount=${investAmount.value}`;
+            } else {
+                url += `&shares=${investShares.value}`;
+            }
+
+            fetch(url)
                 .then(r => r.json())
                 .then(data => {
                     if (data.error) return;
@@ -163,6 +207,7 @@
                     document.getElementById('annualDiv').innerText = data.annual.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
                     document.getElementById('monthlyDiv').innerText = data.monthly.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
                     document.getElementById('shareCount').innerText = data.shares.toFixed(2);
+                    document.getElementById('amountVal').innerText = data.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
                     document.getElementById('divYield').innerText = data.yield + ' %';
                     
                     results.style.display = 'grid';
