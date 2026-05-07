@@ -33,9 +33,9 @@ def get_ai_verdict(ticker, company_name, financial_data):
         Antworte NUR mit dem Fazit-Text, ohne Einleitung oder Anführungszeichen.
         """
         
-        # Model selection: using gpt-5.4-mini
+        # Model selection: using gpt-5.5-mini
         response = client.chat.completions.create(
-            model="gpt-5.4-mini",
+            model="gpt-5.5-mini",
             messages=[
                 {"role": "user", "content": prompt}
             ],
@@ -85,7 +85,7 @@ def get_ai_long_analysis(ticker, company_name, financial_data, business_summary=
         """
         
         response = client.chat.completions.create(
-            model="gpt-5.4-mini",
+            model="gpt-5.5-mini",
             messages=[{"role": "user", "content": prompt}],
             max_completion_tokens=800
         )
@@ -116,7 +116,7 @@ def get_ai_excerpt(title, content):
         Beginne direkt mit dem Text."""
         
         response = client.chat.completions.create(
-            model="gpt-5.4-mini",
+            model="gpt-5.5-mini",
             messages=[{"role": "user", "content": prompt}],
             max_completion_tokens=50
         )
@@ -183,7 +183,7 @@ def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b
 
     try:
         response = client.chat.completions.create(
-            model="gpt-5.4-mini",  # Using gpt-5.4-mini for efficient comparisons
+            model="gpt-5.5-mini",  # Using gpt-5.4-mini for efficient comparisons
             messages=[{"role": "user", "content": prompt}],
             max_completion_tokens=400
         )
@@ -219,7 +219,7 @@ def get_social_caption(stock_names_str, excerpt):
     try:
         client = OpenAI(api_key=api_key)
         response = client.chat.completions.create(
-          model="gpt-5.4-mini",
+          model="gpt-5.5-mini",
           messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content.strip()
