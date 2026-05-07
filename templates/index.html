@@ -246,6 +246,14 @@
                 <span id="resYield" class="value text-info">0,0 %</span>
             </div>
         </div>
+
+        <!-- Broker CTA -->
+        <div id="brokerCta" class="mt-4 p-4 rounded-3 text-center" style="display:none; background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.3);">
+            <p class="mb-2 text-muted small">Passiv Einkommen aufbauen mit einem Sparplan:</p>
+            <h5 class="fw-bold mb-3">Diese Aktie ist als Sparplan verfügbar bei Trade Republic</h5>
+            <a href="https://trade.re/p/schatzsuche" target="_blank" class="btn btn-success px-4 rounded-pill fw-bold">Konto eröffnen & Bonus sichern*</a>
+            <p class="mt-2" style="font-size: 0.6rem; opacity: 0.5;">*Affiliate Link. Investieren birgt Risiken.</p>
+        </div>
     </div>
 
     <script>
@@ -297,6 +305,7 @@
                 document.getElementById('resShares').innerText = data.shares.toFixed(2);
                 document.getElementById('resYield').innerText = data.yield + ' %';
                 dRes.style.display = 'grid';
+                document.getElementById('brokerCta').style.display = 'block';
             }
 
             if (dTicker.value) {
