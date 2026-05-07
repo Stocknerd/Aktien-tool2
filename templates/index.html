@@ -211,7 +211,7 @@
     {% if not is_embedded %}
     <div class="calc-container mb-5">
         <div class="calc-header">
-            <h1>Dividenden-Rechner</h1>
+            <h1>Dividenden-Rechner <small style="font-size: 0.8rem; opacity: 0.5;">v2.1</small></h1>
             <p class="text-muted">Berechne dein passives Einkommen mit deinen Lieblingsaktien.</p>
         </div>
 
@@ -223,8 +223,19 @@
                 <input type="hidden" id="divSelectedTicker" value="{{ ticker if ticker else '' }}">
             </div>
             <div class="form-group">
+                <label for="divCalcMode">Berechnungsmodus</label>
+                <select id="divCalcMode" class="form-select bg-dark text-white border-secondary mb-2">
+                    <option value="amount">Investitionsbetrag (€)</option>
+                    <option value="shares">Anzahl der Anteile</option>
+                </select>
+            </div>
+            <div class="form-group" id="divAmountGroup">
                 <label for="divAmount">Investitionsbetrag (€)</label>
                 <input type="number" id="divAmount" value="1000" step="100" min="0">
+            </div>
+            <div class="form-group" id="divSharesGroup" style="display: none;">
+                <label for="divShares">Anzahl der Anteile</label>
+                <input type="number" id="divShares" value="10" step="1" min="0">
             </div>
         </div>
 
@@ -237,9 +248,13 @@
                 <span class="label">Monatlich (Ø)</span>
                 <span id="resMonthly" class="value monthly">0,00 €</span>
             </div>
-            <div class="result-card">
+            <div class="result-card" id="resCardShares">
                 <span class="label">Aktienanteile</span>
                 <span id="resShares" class="value shares">0</span>
+            </div>
+            <div class="result-card" id="resCardAmount" style="display: none;">
+                <span class="label">Investitionswert</span>
+                <span id="resAmountVal" class="value">0,00 €</span>
             </div>
             <div class="result-card">
                 <span class="label">Rendite</span>
@@ -290,19 +305,50 @@
                 runDivCalc();
             });
 
+            const dCalcMode = document.getElementById('divCalcMode');
+            const dAmountGroup = document.getElementById('divAmountGroup');
+            const dSharesGroup = document.getElementById('divSharesGroup');
+            const dShares = document.getElementById('divShares');
+            const resCardShares = document.getElementById('resCardShares');
+            const resCardAmount = document.getElementById('resCardAmount');
+
+            dCalcMode.addEventListener('change', () => {
+                if (dCalcMode.value === 'amount') {
+                    dAmountGroup.style.display = 'block';
+                    dSharesGroup.style.display = 'none';
+                    resCardShares.style.display = 'block';
+                    resCardAmount.style.display = 'none';
+                } else {
+                    dAmountGroup.style.display = 'none';
+                    dSharesGroup.style.display = 'block';
+                    resCardShares.style.display = 'none';
+                    resCardAmount.style.display = 'block';
+                }
+                runDivCalc();
+            });
+
             dAmount.addEventListener('input', runDivCalc);
+            dShares.addEventListener('input', runDivCalc);
 
             async function runDivCalc() {
                 const t = dTicker.value;
-                const a = dAmount.value;
-                if (!t || !a) return;
-                const r = await fetch(`/api/calculate-dividend?ticker=${t}&amount=${a}`);
+                if (!t) return;
+
+                let url = `/api/calculate-dividend?ticker=${t}`;
+                if (dCalcMode.value === 'amount') {
+                    url += `&amount=${dAmount.value}`;
+                } else {
+                    url += `&shares=${dShares.value}`;
+                }
+
+                const r = await fetch(url);
                 const data = await r.json();
                 if (data.error) return;
 
                 document.getElementById('resAnnual').innerText = data.annual.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
                 document.getElementById('resMonthly').innerText = data.monthly.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
                 document.getElementById('resShares').innerText = data.shares.toFixed(2);
+                document.getElementById('resAmountVal').innerText = data.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
                 document.getElementById('resYield').innerText = data.yield + ' %';
                 dRes.style.display = 'grid';
                 document.getElementById('brokerCta').style.display = 'block';
