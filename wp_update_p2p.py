@@ -12,10 +12,10 @@ HEADERS = {
 }
 
 LOGOS = {
-    'mintos': 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Mintos_logo.svg',
-    'bondora': 'https://upload.wikimedia.org/wikipedia/commons/d/df/Bondora_logo.svg',
-    'twino': 'https://upload.wikimedia.org/wikipedia/commons/b/b3/Twino_logo.svg',
-    'robocash': 'https://p2pempire.com/media/images/robocash-logo.png',
+    'mintos': 'https://assets.mintos.com/webapp/img/mintos-logo-dark-bg.31e96f8.webp',
+    'bondora': 'https://bondora.group/wp-content/uploads/2023/11/bondora_logo_black_txt.png',
+    'twino': 'https://cdn.brandfetch.io/idvBItVqiS/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1758849062557',
+    'robocash': 'https://robo.cash/images/logos/logo.svg',
 }
 
 P2P_HTML = f"""<!-- wp:html -->

@@ -28,27 +28,41 @@ def main():
     # 3. Commit and Push to GitHub
     print("--- Pushing data to GitHub ---")
     try:
-        subprocess.run(["git", "add", "stock_data.csv"], cwd=BASE_DIR)
-        subprocess.run(["git", "commit", "-m", f"Automated Data Update {datetime.now().strftime('%Y-%m-%d')}"], cwd=BASE_DIR)
-        subprocess.run(["git", "push", "origin", "main"], cwd=BASE_DIR)
+        subprocess.run(["git", "add", "stock_data.csv"], cwd=BASE_DIR, check=True)
+        # Check if there are changes
+        status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, cwd=BASE_DIR)
+        if status.stdout:
+            subprocess.run(["git", "commit", "-m", f"Automated Data Update {datetime.now().strftime('%Y-%m-%d')}"], cwd=BASE_DIR, check=True)
+            subprocess.run(["git", "push", "origin", "main"], cwd=BASE_DIR, check=True)
+            print("Git Push: Done.")
+        else:
+            print("Git Push: No data changes detected.")
     except Exception as e:
-        print(f"Git Error: {e}")
-        # Not fatal if already up to date
+        print(f"Git Warning: {e}")
     
     # 4. Trigger Remote Deployment
     print("--- Triggering Remote Deploy via SSH ---")
     # Using the key that worked: id_rsa_antigravity_2048
+    ssh_key = "C:/Users/fhofmann/.ssh/id_rsa_antigravity_2048"
+    if not os.path.exists(ssh_key):
+        print(f"ERROR: SSH Key not found at {ssh_key}")
+        return
+
     ssh_cmd = [
-        "ssh", "-i", "C:/Users/fhofmann/.ssh/id_rsa_antigravity_2048",
+        "ssh", "-i", ssh_key,
         "ubuntu@3.71.191.12",
         "cd /home/ubuntu/aktien-tool2 && bash deploy.sh && sudo systemctl restart compare-app.service"
     ]
     res = subprocess.run(ssh_cmd)
     
     if res.returncode == 0:
+        print("\n" + "="*40)
         print("✅ SUCCESS: Data updated and deployed to server!")
+        print("="*40)
     else:
+        print("\n" + "="*40)
         print("❌ FAILED: Deployment trigger failed.")
+        print("="*40)
 
 if __name__ == "__main__":
     main()
