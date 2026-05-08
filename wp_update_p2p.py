@@ -12,10 +12,10 @@ HEADERS = {
 }
 
 LOGOS = {
-    'mintos': 'https://schatzsuche40.de/wp-content/uploads/2026/05/p2p_mintos_premium.jpg',
-    'bondora': 'https://schatzsuche40.de/wp-content/uploads/2026/05/p2p_bondora_premium.jpg',
-    'twino': 'https://schatzsuche40.de/wp-content/uploads/2026/05/p2p_twino_premium.jpg',
-    'robocash': 'https://schatzsuche40.de/wp-content/uploads/2026/05/p2p_robocash_premium.jpg',
+    'mintos': 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Mintos_logo.svg',
+    'bondora': 'https://upload.wikimedia.org/wikipedia/commons/d/df/Bondora_logo.svg',
+    'twino': 'https://upload.wikimedia.org/wikipedia/commons/b/b3/Twino_logo.svg',
+    'robocash': 'https://p2pempire.com/media/images/robocash-logo.png',
 }
 
 P2P_HTML = f"""<!-- wp:html -->
@@ -28,8 +28,8 @@ P2P_HTML = f"""<!-- wp:html -->
 .p2p-comparison {{ margin: 60px 0; }}
 .p2p-card {{ background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 40px; margin-bottom: 30px; display: flex; align-items: center; gap: 40px; transition: all 0.3s ease; }}
 .p2p-card:hover {{ transform: translateY(-5px); border-color: #10b981; box-shadow: 0 20px 40px rgba(0,0,0,0.3); background: rgba(30, 41, 59, 0.6); }}
-.p2p-logo {{ width: 100px; height: 100px; background: #fff; border-radius: 20px; display: flex; align-items: center; justify-content: center; padding: 10px; flex-shrink: 0; box-shadow: 0 10px 20px rgba(0,0,0,0.2); overflow: hidden; }}
-.p2p-logo img {{ width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }}
+.p2p-logo {{ width: 140px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }}
+.p2p-logo img {{ width: 100%; height: auto; max-height: 100%; object-fit: contain; }}
 .p2p-content {{ flex: 1; }}
 .p2p-tag {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 6px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.05em; }}
 .p2p-title {{ font-size: 1.8rem; font-weight: 800; color: #fff !important; margin-bottom: 12px; }}
