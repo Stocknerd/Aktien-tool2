@@ -260,6 +260,54 @@ def generate_blog_post():
     </div>
     <!-- /wp:group -->
 
+    <!-- wp:spacer {{"height":"30px"}} -->
+    <div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+    <!-- /wp:spacer -->
+
+    <!-- wp:group {{"style":{{"border":{{"radius":"10px","color":"#e2e8f0","width":"2px","style":"solid"}},"spacing":{{"padding":{{"top":"20px","right":"20px","bottom":"20px","left":"20px"}}}}}},"backgroundColor":"luminous-vivid-orange","layout":{{"type":"constrained"}}}} -->
+    <div class="wp-block-group has-border-color has-luminous-vivid-orange-background-color has-background" style="border-color:#e2e8f0;border-radius:10px;border-style:solid;border-width:2px;padding-top:20px;padding-right:20px;padding-bottom:20px;padding-left:20px">
+    <!-- wp:paragraph {{"align":"center","style":{{"typography":{{"fontSize":"18px","fontWeight":"700"}}}},"textColor":"black"}} -->
+    <p class="has-text-align-center has-black-color has-text-color" style="font-size:18px;font-weight:700">🏦 Tipp: Das beste Girokonto Deutschlands</p>
+    <!-- /wp:paragraph -->
+    
+    <!-- wp:paragraph {{"align":"center","textColor":"black"}} -->
+    <p class="has-text-align-center has-black-color has-text-color">Du suchst ein kostenloses Konto mit Top-Zinsen? Die <strong>C24 Bank</strong> bietet alles, was du brauchst: Kostenlose Kontoführung, Mastercard und Echtzeit-Überweisungen.</p>
+    <!-- /wp:paragraph -->
+    
+    <!-- wp:buttons {{"layout":{{"type":"flex","justifyContent":"center"}}}} -->
+    <div class="wp-block-buttons">
+    <!-- wp:button {{"backgroundColor":"vivid-cyan-blue"}} -->
+    <div class="wp-block-button"><a class="wp-block-button__link has-vivid-cyan-blue-background-color has-background wp-element-button" href="https://a.check24.net/misc/click.php?pid=109920&aid=18&deep=c24bank&cat=14" target="_blank" rel="noreferrer noopener"><strong>C24 Konto kostenlos eröffnen</strong></a></div>
+    <!-- /wp:button -->
+    </div>
+    <!-- /wp:buttons -->
+    </div>
+    <!-- /wp:group -->
+
+    <!-- wp:spacer {{"height":"30px"}} -->
+    <div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+    <!-- /wp:spacer -->
+
+    <!-- wp:group {{"style":{{"border":{{"radius":"10px","color":"#e2e8f0","width":"2px","style":"solid"}},"spacing":{{"padding":{{"top":"20px","right":"20px","bottom":"20px","left":"20px"}}}}}},"backgroundColor":"pale-cyan-blue","layout":{{"type":"constrained"}}}} -->
+    <div class="wp-block-group has-border-color has-pale-cyan-blue-background-color has-background" style="border-color:#e2e8f0;border-radius:10px;border-style:solid;border-width:2px;padding-top:20px;padding-right:20px;padding-bottom:20px;padding-left:20px">
+    <!-- wp:paragraph {{"align":"center","style":{{"typography":{{"fontSize":"18px","fontWeight":"700"}}}},"textColor":"black"}} -->
+    <p class="has-text-align-center has-black-color has-text-color" style="font-size:18px;font-weight:700">📘 Gratis: Leitfaden Aktienbewertung</p>
+    <!-- /wp:paragraph -->
+    
+    <!-- wp:paragraph {{"align":"center","textColor":"black"}} -->
+    <p class="has-text-align-center has-black-color has-text-color">Lerne Schritt für Schritt, wie du den fairen Wert einer Aktie berechnest. Hol dir jetzt unseren kostenlosen PDF-Leitfaden!</p>
+    <!-- /wp:paragraph -->
+    
+    <!-- wp:buttons {{"layout":{{"type":"flex","justifyContent":"center"}}}} -->
+    <div class="wp-block-buttons">
+    <!-- wp:button {{"backgroundColor":"vivid-cyan-blue"}} -->
+    <div class="wp-block-button"><a class="wp-block-button__link has-vivid-cyan-blue-background-color has-background wp-element-button" href="https://schatzsuche40.de/leitfaden-download/" target="_blank" rel="noreferrer noopener"><strong>PDF Leitfaden herunterladen</strong></a></div>
+    <!-- /wp:button -->
+    </div>
+    <!-- /wp:buttons -->
+    </div>
+    <!-- /wp:group -->
+
     <!-- wp:heading {{"level":4}} -->
     <h4 class="wp-block-heading">Interessante Links für dich:</h4>
     <!-- /wp:heading -->

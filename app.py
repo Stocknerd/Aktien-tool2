@@ -98,8 +98,47 @@ def home():
         is_stale=(time.time() - mtime) / 86400.0 > 1.5,
         show_cta=show_cta,
         is_embedded=is_embedded,
-        top_stocks=top_stocks
+        top_stocks=top_stocks,
+        ticker=request.args.get('ticker')
     )
+
+@app.route('/dividenden-kalender')
+def dividend_calendar_page():
+    is_embedded = request.args.get('embed') == '1'
+    return render_template('dividend_calendar.html', is_embedded=is_embedded)
+
+@app.route('/api/dividenden-kalender')
+def api_dividend_calendar():
+    df = core.load_df()
+    if 'Ex-Dividenden-Datum' not in df.columns:
+        return jsonify([])
+    
+    # Filter only those with a date
+    df_div = df[df['Ex-Dividenden-Datum'].notna()].copy()
+    
+    # Sort by Date
+    df_div = df_div.sort_values('Ex-Dividenden-Datum')
+    
+    # Convert to list of dicts
+    today = datetime.now().strftime("%Y-%m-%d")
+    # Only upcoming dividends (today or later)
+    df_div = df_div[df_div['Ex-Dividenden-Datum'] >= today]
+    
+    # Limit to next 50 for performance
+    df_div = df_div.head(50)
+    
+    results = []
+    for _, r in df_div.iterrows():
+        results.append({
+            'symbol': r['Symbol'],
+            'name': str(r.get('Langname', r.get('Security', r['Symbol']))),
+            'ex_date': r['Ex-Dividenden-Datum'],
+            'yield': r.get('Dividendenrendite', 0),
+            'amount': r.get('Dividenden-Betrag', 0),
+            'currency': r.get('Währung', 'EUR')
+        })
+    
+    return jsonify(results)
 
 @app.route('/analyse/<ticker>')
 @app.route('/<ticker>')

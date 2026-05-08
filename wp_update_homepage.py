@@ -175,6 +175,62 @@ HOMEPAGE_HTML = """<!-- wp:html -->
   .s40-stats { grid-template-columns: 1fr; }
   .s40-wrapper { padding: 28px 20px; }
 }
+
+/* Newsletter Section */
+.s40-newsletter {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(99, 102, 241, 0.3);
+  border-radius: 20px;
+  padding: 40px;
+  margin-top: 40px;
+  text-align: center;
+}
+.s40-newsletter h3 {
+  color: #fff !important;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.s40-newsletter p {
+  color: #94a3b8;
+  font-size: 1rem;
+  max-width: 500px;
+  margin: 0 auto 24px;
+}
+.s40-newsletter-form {
+  display: flex;
+  max-width: 450px;
+  margin: 0 auto;
+  gap: 10px;
+}
+.s40-newsletter-form input {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #fff;
+  outline: none;
+}
+.s40-newsletter-form input:focus {
+  border-color: #6366f1;
+}
+.s40-newsletter-btn {
+  background: #6366f1;
+  color: #fff !important;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.s40-newsletter-btn:hover {
+  opacity: 0.9;
+}
+@media (max-width: 500px) {
+  .s40-newsletter-form { flex-direction: column; }
+}
 </style>
 
 <div class="s40-wrapper">
@@ -196,8 +252,8 @@ HOMEPAGE_HTML = """<!-- wp:html -->
       <span class="s40-stat-label">Kennzahlen pro Aktie</span>
     </div>
     <div class="s40-stat">
-      <span class="s40-stat-number">KI</span>
-      <span class="s40-stat-label">GPT-4o Analyse</span>
+      <span class="s40-stat-number">KI 5.4</span>
+      <span class="s40-stat-label">gpt-5.4-mini Analyse</span>
     </div>
   </div>
 
@@ -207,7 +263,7 @@ HOMEPAGE_HTML = """<!-- wp:html -->
     <a href="https://schatzsuche40.de/aktien-tool/" class="s40-tool-card">
       <span class="s40-tool-icon">&#128202;</span>
       <div class="s40-tool-title">Aktien-Bild Generator</div>
-      <p class="s40-tool-desc">Erstelle in Sekunden professionelle Infografiken mit &uuml;ber 30 Kennzahlen &ndash; inklusive KI-Bewertung von GPT-4o. Perfekt f&uuml;r Instagram, LinkedIn und deinen Blog.</p>
+      <p class="s40-tool-desc">Erstelle in Sekunden professionelle Infografiken mit &uuml;ber 30 Kennzahlen &ndash; inklusive KI-Bewertung von 5.4. Perfekt f&uuml;r Instagram, LinkedIn und deinen Blog.</p>
       <span class="s40-tool-tag">&#127381; KI-Analyse</span>
       <span class="s40-tool-tag">&#128444; PNG Export</span>
       <span class="s40-tool-tag">Dark Mode</span>
@@ -226,15 +282,43 @@ HOMEPAGE_HTML = """<!-- wp:html -->
       <br>
       <span class="s40-tool-cta">Aktien vergleichen &rarr;</span>
     </a>
-
-    <!-- Tool 3: Coming Soon -->
-    <div class="s40-tool-card s40-coming-soon">
+    <!-- Tool 3: Dividenden-Rechner -->
+    <a href="https://compare.schatzsuche40.de/dividend-rechner" class="s40-tool-card">
       <span class="s40-tool-icon">&#128181;</span>
-      <div class="s40-tool-title">Dividenden-Tracker</div>
-      <p class="s40-tool-desc">Behalte deine passiven Einkommensstr&ouml;me im Blick. Plane deine Dividenden-Zahlungen und analysiere deinen Cashflow &mdash; kommt bald!</p>
-      <span class="s40-tool-tag">&#9200; Coming Soon</span>
-      <span class="s40-tool-tag">Cashflow-Analyse</span>
-    </div>
+      <div class="s40-tool-title">Dividenden-Rechner</div>
+      <p class="s40-tool-desc">Behalte deine passiven Einkommensstr&ouml;me im Blick. Berechne deine Dividenden-Zahlungen und analysiere deinen monatlichen Cashflow in Sekunden.</p>
+      <span class="s40-tool-tag">&#128200; Cashflow-Check</span>
+      <span class="s40-tool-tag">Monats-Vorschau</span>
+      <br>
+      <span class="s40-tool-cta">Jetzt berechnen &rarr;</span>
+    </a>
+
+    <!-- Tool 4: P2P-Vergleich -->
+    <a href="https://schatzsuche40.de/die-besten-plattformen/" class="s40-tool-card">
+      <span class="s40-tool-icon">&#128184;</span>
+      <div class="s40-tool-title">P2P-Plattformen</div>
+      <p class="s40-tool-desc">Passives Einkommen durch Privatkredite. Wir vergleichen die besten Plattformen wie Mintos und Bondora für dein Portfolio.</p>
+      <span class="s40-tool-tag">&#128200; 10%+ Rendite</span>
+      <span class="s40-tool-tag">Cashflow-Boost</span>
+      <br>
+      <span class="s40-tool-cta">Plattformen prüfen &rarr;</span>
+    </a>
+
+  </div>
+
+  <!-- Newsletter / Lead Magnet -->
+  <div class="s40-newsletter">
+    <h3>&#128216; Gratis: Leitfaden Aktienbewertung</h3>
+    <p>Melde dich zum Newsletter an und erhalte sofort unseren exklusiven Leitfaden zur Aktienbewertung f&uuml;r Einsteiger als PDF.</p>
+    
+    <form class="s40-newsletter-form" action="https://schatzsuche40.de/?na=s" method="post">
+        <input type="email" name="ne" placeholder="Deine E-Mail-Adresse" required>
+        <button type="submit" class="s40-newsletter-btn">PDF sichern &rarr;</button>
+    </form>
+    
+    <p style="font-size: 0.75rem; margin-top: 15px; opacity: 0.5;">
+        Abmeldung jederzeit möglich. Datenschutz wird groß geschrieben.
+    </p>
   </div>
 </div>
 <!-- /wp:html -->"""
@@ -246,9 +330,9 @@ def update_homepage():
     print("=" * 60)
 
     # Get current page
-    r = requests.get(f"{BASE}/pages/191?context=edit", headers=HEADERS, timeout=10)
+    r = requests.get(f"{BASE}/pages/1045?context=edit", headers=HEADERS, timeout=10)
     if r.status_code != 200:
-        print(f"Could not fetch page 191: {r.status_code} {r.text[:200]}")
+        print(f"Could not fetch page 1045: {r.status_code} {r.text[:200]}")
         return False
 
     page = r.json()
@@ -264,7 +348,7 @@ def update_homepage():
         new_content = HOMEPAGE_HTML + "\n\n" + current
 
     payload = {"content": new_content}
-    r = requests.post(f"{BASE}/pages/191", headers=HEADERS, json=payload, timeout=20)
+    r = requests.post(f"{BASE}/pages/1045", headers=HEADERS, json=payload, timeout=20)
 
     if r.status_code in (200, 201):
         d = r.json()

@@ -78,6 +78,8 @@ SPALTEN_KENNZAHLEN = [
     # Analysten & Kursziele
     "Analyst Mean Target", "Analyst High Target", "Analyst Low Target", 
     "Current Price", "Recommendation Key", "Number of Analysts",
+    # Dividenden-Kalender (NEU)
+    "Ex-Dividenden-Datum", "Dividenden-Frequenz", "Dividenden-Betrag",
 ]
 META_SPALTEN = ["Abfragedatum", "Datenquelle", "Datenqualität", "Fehlende_Kennzahlen"]
 
@@ -130,6 +132,10 @@ def map_info(info: Dict) -> Dict:
         "Current Price": info.get("currentPrice") or info.get("regularMarketPrice"),
         "Recommendation Key": info.get("recommendationKey"),
         "Number of Analysts": info.get("numberOfAnalystOpinions"),
+        # Dividenden-Kalender
+        "Ex-Dividenden-Datum": datetime.fromtimestamp(info.get("exDividendDate")).strftime("%Y-%m-%d") if info.get("exDividendDate") else None,
+        "Dividenden-Frequenz": info.get("dividendRate"), # This is often the rate, I'll need to check how to get frequency
+        "Dividenden-Betrag": info.get("dividendRate") or info.get("trailingAnnualDividendRate"),
     }
 
 
