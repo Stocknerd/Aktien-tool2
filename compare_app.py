@@ -1797,6 +1797,33 @@ b.addEventListener('change', updateCount);
 </html>
 """
 
+@app.route('/dividenden-kalender')
+def dividend_calendar_page():
+    is_embedded = request.args.get('embed') == '1'
+    return render_template('dividend_calendar.html', is_embedded=is_embedded)
+
+@app.route('/api/dividenden-kalender')
+def api_dividend_calendar():
+    df = load_df()
+    if 'Ex-Dividenden-Datum' not in df.columns:
+        return jsonify([])
+    df_div = df[df['Ex-Dividenden-Datum'].notna()].copy()
+    df_div = df_div.sort_values('Ex-Dividenden-Datum')
+    today = datetime.now().strftime("%Y-%m-%d")
+    df_div = df_div[df_div['Ex-Dividenden-Datum'] >= today]
+    df_div = df_div.head(50)
+    results = []
+    for _, r in df_div.iterrows():
+        results.append({
+            'symbol': r['Symbol'],
+            'name': str(r.get('Langname', r.get('Security', r['Symbol']))),
+            'ex_date': r['Ex-Dividenden-Datum'],
+            'yield': r.get('Dividendenrendite', 0),
+            'amount': r.get('Dividenden-Betrag', 0),
+            'currency': r.get('Währung', 'EUR')
+        })
+    return jsonify(results)
+
 # ───────────────────────── Run ─────────────────────────
 if __name__ == '__main__':
     saas_logic.init_db()
