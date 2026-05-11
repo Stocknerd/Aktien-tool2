@@ -111,11 +111,14 @@ def dividend_calendar_page():
 def api_dividend_calendar():
     df = core.load_df()
     
-    # Helper to safely convert to float
+    # Helper to safely convert to float (must reject inf/nan for JSON)
+    import math
     def safe_float(val, default=0):
         try:
             if pd.notna(val):
-                return round(float(str(val).replace(',', '.')), 2)
+                v = float(str(val).replace(',', '.'))
+                if math.isfinite(v):
+                    return round(v, 2)
         except:
             pass
         return default
