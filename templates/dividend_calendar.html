@@ -4,372 +4,573 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dividenden-Kalender 2026 | Schatzsuche 4.0</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <meta name="description" content="Finde die nächsten Ex-Dividenden-Termine für über 500 Aktien. Sortiere nach Rendite, Monat und Sektor.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.6);
+            --bg: #0b1120;
+            --surface: rgba(15, 23, 42, 0.95);
+            --card: rgba(30, 41, 59, 0.45);
+            --border: rgba(148, 163, 184, 0.12);
             --accent: #10b981;
-            --accent-hover: #059669;
-            --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.1);
+            --accent-soft: rgba(16, 185, 129, 0.12);
+            --red: #ef4444;
+            --red-soft: rgba(239, 68, 68, 0.12);
+            --amber: #f59e0b;
+            --amber-soft: rgba(245, 158, 11, 0.12);
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-dim: #64748b;
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background: var(--bg);
-            color: white;
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
+            color: var(--text);
+            font-family: 'Inter', -apple-system, sans-serif;
+            line-height: 1.5;
             {% if is_embedded %} background: transparent !important; {% endif %}
         }
 
-        .calendar-container {
-            max-width: 1100px;
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 40px 24px;
         }
 
-        .header-section {
-            text-align: left;
-            margin-bottom: 40px;
-            border-left: 4px solid var(--accent);
-            padding-left: 20px;
-        }
-
-        .header-section h1 {
-            font-weight: 800;
-            font-size: 2.2rem;
-            margin-bottom: 5px;
-        }
-
-        .header-section p {
-            color: var(--text-muted);
-            margin: 0;
-        }
-
-        /* Monats-Filter */
-        .month-filters {
+        /* ── Header ── */
+        .hero {
             display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-            scrollbar-width: thin;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
         }
-
-        .month-btn {
-            background: var(--card-bg);
+        .hero-left h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+        }
+        .hero-left h1 span { color: var(--accent); }
+        .hero-left p { color: var(--text-secondary); font-size: 0.95rem; }
+        .stock-count {
+            background: var(--card);
             border: 1px solid var(--border);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 50px;
+            padding: 10px 20px;
+            border-radius: 12px;
             font-size: 0.85rem;
+            color: var(--text-secondary);
+            backdrop-filter: blur(12px);
+        }
+        .stock-count strong { color: var(--accent); font-size: 1.3rem; font-weight: 800; }
+
+        /* ── Toolbar ── */
+        .toolbar {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            backdrop-filter: blur(16px);
+        }
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px 10px 36px;
+            color: white;
+            font-size: 0.9rem;
+            font-family: inherit;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 10px center;
+            background-size: 18px;
+            transition: border-color 0.2s;
+        }
+        .search-box:focus { outline: none; border-color: var(--accent); }
+        .search-box::placeholder { color: var(--text-dim); }
+
+        .filter-select {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: white;
+            font-size: 0.85rem;
+            font-family: inherit;
+            min-width: 140px;
+            cursor: pointer;
+        }
+        .filter-select:focus { outline: none; border-color: var(--accent); }
+        .filter-select option { background: #1e293b; color: white; }
+
+        /* ── Month Bar ── */
+        .month-bar {
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            margin-bottom: 4px;
+            scrollbar-width: none;
+        }
+        .month-bar::-webkit-scrollbar { display: none; }
+        .month-pill {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
             font-weight: 600;
+            cursor: pointer;
             white-space: nowrap;
-            transition: 0.2s;
+            transition: all 0.15s ease;
+            font-family: inherit;
         }
-
-        .month-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .month-btn.active {
+        .month-pill:hover { border-color: var(--accent); color: var(--text); }
+        .month-pill.active {
             background: var(--accent);
             border-color: var(--accent);
             color: white;
+            font-weight: 700;
+        }
+        .month-pill .count {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-left: 2px;
         }
 
-        /* Tabelle */
-        .table-container {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
+        /* ── Table ── */
+        .table-wrap {
+            background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 20px;
+            border-radius: 16px;
             overflow: hidden;
+            backdrop-filter: blur(16px);
         }
-
-        .div-table {
+        table {
             width: 100%;
             border-collapse: collapse;
         }
-
-        .div-table th {
+        thead th {
             background: rgba(0,0,0,0.2);
-            padding: 15px 20px;
+            padding: 14px 16px;
             text-align: left;
-            font-size: 0.8rem;
+            font-size: 0.72rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
             border-bottom: 1px solid var(--border);
             cursor: pointer;
-            transition: 0.2s;
+            user-select: none;
+            white-space: nowrap;
+            transition: color 0.15s;
+            position: sticky;
+            top: 0;
+            z-index: 2;
         }
+        thead th:hover { color: var(--accent); }
+        thead th.sorted-asc::after { content: ' ▲'; color: var(--accent); font-size: 0.6rem; }
+        thead th.sorted-desc::after { content: ' ▼'; color: var(--accent); font-size: 0.6rem; }
 
-        .div-table th:hover {
-            color: white;
-            background: rgba(255,255,255,0.05);
-        }
-
-        .div-table th i {
-            margin-left: 5px;
-            font-size: 0.7rem;
-        }
-
-        .div-table td {
-            padding: 18px 20px;
+        tbody tr {
             border-bottom: 1px solid var(--border);
-            font-size: 0.95rem;
+            transition: background 0.12s ease;
+        }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: rgba(255,255,255,0.025); }
+
+        td {
+            padding: 14px 16px;
+            font-size: 0.9rem;
             vertical-align: middle;
         }
 
-        .div-table tr:last-child td {
-            border-bottom: none;
+        /* Stock cell */
+        .stock-cell { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+        .stock-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-soft), rgba(16,185,129,0.05));
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 0.7rem; color: var(--accent);
+            flex-shrink: 0;
+        }
+        .stock-name { font-weight: 700; font-size: 0.88rem; line-height: 1.3; }
+        .stock-ticker {
+            font-size: 0.72rem; color: var(--text-dim);
+            font-weight: 600; letter-spacing: 0.03em;
         }
 
-        .div-table tr:hover {
-            background: rgba(255,255,255,0.02);
-        }
-
-        .stock-name-cell {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .ticker-badge {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--accent);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 800;
-        }
-
-        .yield-value {
-            color: var(--accent);
-            font-weight: 700;
-        }
-
-        .amount-value {
+        /* Sector pill */
+        .sector-pill {
+            display: inline-block;
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
             font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
         }
 
-        .date-cell {
-            font-family: monospace;
-            font-weight: 600;
-        }
+        /* Values */
+        .yield-val { color: var(--accent); font-weight: 800; font-size: 0.95rem; }
+        .yield-val.low { color: var(--text-dim); }
+        .amount-val { font-weight: 600; font-family: 'Inter', monospace; }
+        .date-val { font-weight: 600; white-space: nowrap; }
 
-        .action-cell {
-            text-align: right;
-        }
-
-        .buy-btn {
-            background: transparent;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
+        /* Urgency badge */
+        .urgency {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
             font-weight: 700;
+            white-space: nowrap;
+        }
+        .urgency.hot { background: var(--red-soft); color: var(--red); }
+        .urgency.warm { background: var(--amber-soft); color: var(--amber); }
+        .urgency.cool { background: var(--accent-soft); color: var(--accent); }
+
+        /* Action */
+        .action-link {
+            color: var(--accent);
             text-decoration: none;
-            transition: 0.2s;
+            font-weight: 700;
+            font-size: 0.82rem;
+            padding: 6px 14px;
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            transition: all 0.15s;
+            white-space: nowrap;
         }
-
-        .buy-btn:hover {
+        .action-link:hover {
             background: var(--accent);
             color: white;
         }
 
-        /* Mobile View */
-        @media (max-width: 768px) {
-            .div-table thead { display: none; }
-            .div-table td {
-                display: block;
-                text-align: right;
-                padding: 10px 20px;
-                border-bottom: none;
-            }
-            .div-table td::before {
-                content: attr(data-label);
-                float: left;
-                color: var(--text-muted);
-                font-size: 0.8rem;
-                font-weight: 600;
-                text-transform: uppercase;
-            }
-            .div-table td.stock-name-cell {
-                text-align: left;
-                background: rgba(255,255,255,0.05);
-                padding: 15px 20px;
-                display: flex;
-                justify-content: space-between;
-            }
-            .div-table td.stock-name-cell::before { display: none; }
-            .div-table tr {
-                display: block;
-                border-bottom: 2px solid var(--border);
-                margin-bottom: 10px;
-            }
-            .action-cell {
-                text-align: center;
-                padding: 15px 20px !important;
-            }
-            .buy-btn {
-                width: 100%;
-                display: block;
-            }
+        /* Footer stats */
+        .table-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            background: rgba(0,0,0,0.15);
+            border-top: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--text-dim);
         }
 
-        #loader { text-align: center; padding: 100px; color: var(--text-muted); }
+        /* Empty / loading */
+        .state-msg {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-dim);
+        }
+        .state-msg h3 { color: var(--text-secondary); margin-bottom: 8px; font-size: 1.1rem; }
+        .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Mobile */
+        @media (max-width: 900px) {
+            .hero { flex-direction: column; align-items: flex-start; }
+            .toolbar { flex-direction: column; }
+            .search-box { min-width: 100%; }
+            .table-wrap { overflow-x: auto; }
+            table { min-width: 700px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="calendar-container">
-    <div class="header-section">
-        <h1>Dividenden-Kalender</h1>
-        <p>Alle anstehenden Ausschüttungen in der Übersicht.</p>
-    </div>
-
-    <div class="month-filters" id="monthFilters">
-        <button class="month-btn active" data-month="all">Alle</button>
-        <button class="month-btn" data-month="1">Jan</button>
-        <button class="month-btn" data-month="2">Feb</button>
-        <button class="month-btn" data-month="3">Mär</button>
-        <button class="month-btn" data-month="4">Apr</button>
-        <button class="month-btn" data-month="5">Mai</button>
-        <button class="month-btn" data-month="6">Jun</button>
-        <button class="month-btn" data-month="7">Jul</button>
-        <button class="month-btn" data-month="8">Aug</button>
-        <button class="month-btn" data-month="9">Sep</button>
-        <button class="month-btn" data-month="10">Okt</button>
-        <button class="month-btn" data-month="11">Nov</button>
-        <button class="month-btn" data-month="12">Dez</button>
-    </div>
-
-    <div class="table-container">
-        <div id="loader">
-            <div class="spinner-border text-success" role="status"></div>
-            <div class="mt-3">Lade Marktdaten...</div>
+<div class="container">
+    <!-- Hero -->
+    <div class="hero">
+        <div class="hero-left">
+            <h1>Dividenden-<span>Kalender</span></h1>
+            <p>Alle anstehenden Ex-Dividenden-Termine auf einen Blick.</p>
         </div>
-        
-        <table class="div-table" id="divTable" style="display: none;">
+        <div class="stock-count">
+            <strong id="totalCount">–</strong> Aktien mit anstehender Dividende
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <input type="text" class="search-box" id="search" placeholder="Aktie suchen (z.B. Apple, BMW, AAPL)...">
+        <select class="filter-select" id="sectorFilter">
+            <option value="">Alle Sektoren</option>
+        </select>
+        <select class="filter-select" id="yieldFilter">
+            <option value="">Alle Renditen</option>
+            <option value="1">≥ 1%</option>
+            <option value="2">≥ 2%</option>
+            <option value="3">≥ 3%</option>
+            <option value="5">≥ 5%</option>
+        </select>
+    </div>
+
+    <!-- Month Pills -->
+    <div class="month-bar" id="monthBar"></div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+        <div class="state-msg" id="loader">
+            <div class="spinner"></div>
+            Lade Dividenden-Daten...
+        </div>
+
+        <table id="divTable" style="display:none;">
             <thead>
                 <tr>
-                    <th onclick="sortTable(0)">Aktie <i class="bi bi-arrow-down-up"></i></th>
-                    <th onclick="sortTable(1)">Ex-Datum <i class="bi bi-arrow-down-up"></i></th>
-                    <th onclick="sortTable(2)">Rendite <i class="bi bi-arrow-down-up"></i></th>
-                    <th onclick="sortTable(3)">Betrag <i class="bi bi-arrow-down-up"></i></th>
+                    <th data-col="name">Aktie</th>
+                    <th data-col="sector">Sektor</th>
+                    <th data-col="ex_date">Ex-Datum</th>
+                    <th data-col="urgency">Countdown</th>
+                    <th data-col="div_yield" style="text-align:right">Rendite</th>
+                    <th data-col="amount" style="text-align:right">Betrag</th>
                     <th></th>
                 </tr>
             </thead>
-            <tbody id="divBody"></tbody>
+            <tbody id="tbody"></tbody>
         </table>
+
+        <div class="state-msg" id="emptyState" style="display:none;">
+            <h3>Keine Treffer</h3>
+            <p>Versuche einen anderen Filter oder Suchbegriff.</p>
+        </div>
+
+        <div class="table-footer" id="tableFooter" style="display:none;">
+            <span id="footerInfo">–</span>
+            <span>Quelle: Yahoo Finance · Zuletzt aktualisiert: heute</span>
+        </div>
     </div>
 </div>
 
 <script>
-    let allData = [];
-    const body = document.getElementById('divBody');
-    const table = document.getElementById('divTable');
-    const loader = document.getElementById('loader');
+// ── State ──
+let allData = [];
+let filteredData = [];
+let sortCol = 'ex_date';
+let sortAsc = true;
 
-    async function fetchData() {
-        try {
-            const res = await fetch('/api/dividenden-kalender');
-            allData = await res.json();
-            renderData(allData);
-            loader.style.display = 'none';
-            table.style.display = 'table';
-        } catch (e) {
-            console.error(e);
-            loader.innerText = "Fehler beim Laden der Daten.";
-        }
-    }
+const MONTHS = ['', 'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+let activeMonth = 0; // 0 = all
 
-    function renderData(data) {
-        body.innerHTML = '';
-        data.forEach(item => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td class="stock-name-cell" data-label="Aktie">
-                    <div>
-                        <div style="font-weight: 700;">${item.name}</div>
-                        <span class="ticker-badge">${item.symbol}</span>
-                    </div>
-                </td>
-                <td class="date-cell" data-label="Ex-Datum">
-                    ${new Date(item.ex_date).toLocaleDateString('de-DE')}
-                </td>
-                <td class="yield-value" data-label="Rendite">
-                    ${(item.yield).toFixed(2)} %
-                </td>
-                <td class="amount-value" data-label="Betrag">
-                    ${item.amount.toFixed(2)} ${item.currency}
-                </td>
-                <td class="action-cell">
-                    <a href="https://trade.re/p/schatzsuche" target="_blank" class="buy-btn">Kaufen</a>
-                </td>
-            `;
-            body.appendChild(row);
+// ── DOM ──
+const $search = document.getElementById('search');
+const $sector = document.getElementById('sectorFilter');
+const $yield = document.getElementById('yieldFilter');
+const $tbody = document.getElementById('tbody');
+const $table = document.getElementById('divTable');
+const $loader = document.getElementById('loader');
+const $empty = document.getElementById('emptyState');
+const $footer = document.getElementById('tableFooter');
+const $footerInfo = document.getElementById('footerInfo');
+const $totalCount = document.getElementById('totalCount');
+const $monthBar = document.getElementById('monthBar');
+
+// ── Fetch ──
+async function fetchData() {
+    try {
+        const res = await fetch('/api/dividenden-kalender');
+        const json = await res.json();
+        allData = json.stocks || [];
+        
+        // Populate sector filter
+        (json.sectors || []).forEach(s => {
+            const o = document.createElement('option');
+            o.value = s;
+            o.textContent = s;
+            $sector.appendChild(o);
         });
+        
+        $totalCount.textContent = json.total || allData.length;
+        buildMonthBar();
+        applyFilters();
+        
+        $loader.style.display = 'none';
+        $table.style.display = 'table';
+        $footer.style.display = 'flex';
+    } catch (e) {
+        $loader.innerHTML = '<h3>Fehler beim Laden</h3><p>' + e.message + '</p>';
     }
+}
 
-    // Monats-Filter Logik
-    document.querySelectorAll('.month-btn').forEach(btn => {
+// ── Month bar ──
+function buildMonthBar() {
+    // Count stocks per month
+    const counts = {};
+    allData.forEach(d => {
+        const m = d.ex_month;
+        counts[m] = (counts[m] || 0) + 1;
+    });
+    
+    let html = `<button class="month-pill active" data-m="0">Alle <span class="count">(${allData.length})</span></button>`;
+    for (let i = 1; i <= 12; i++) {
+        const c = counts[i] || 0;
+        html += `<button class="month-pill" data-m="${i}">${MONTHS[i]} <span class="count">(${c})</span></button>`;
+    }
+    $monthBar.innerHTML = html;
+    
+    $monthBar.querySelectorAll('.month-pill').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+            $monthBar.querySelectorAll('.month-pill').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
-            const month = btn.dataset.month;
-            if (month === 'all') {
-                renderData(allData);
-            } else {
-                const filtered = allData.filter(d => {
-                    const dDate = new Date(d.ex_date);
-                    return (dDate.getMonth() + 1) == month;
-                });
-                renderData(filtered);
-            }
+            activeMonth = parseInt(btn.dataset.m);
+            applyFilters();
         });
     });
+}
 
-    // Sortier Logik
-    let sortOrders = [true, true, true, true];
-    function sortTable(n) {
-        const dir = sortOrders[n] ? 1 : -1;
-        sortOrders[n] = !sortOrders[n];
-        
-        allData.sort((a, b) => {
-            let valA, valB;
-            if (n === 0) { valA = a.name; valB = b.name; }
-            if (n === 1) { valA = new Date(a.ex_date); valB = new Date(b.ex_date); }
-            if (n === 2) { valA = a.yield; valB = b.yield; }
-            if (n === 3) { valA = a.amount; valB = b.amount; }
-            
-            if (valA < valB) return -1 * dir;
-            if (valA > valB) return 1 * dir;
-            return 0;
-        });
-        renderData(allData);
-    }
+// ── Filters ──
+function applyFilters() {
+    const q = $search.value.toLowerCase().trim();
+    const sec = $sector.value;
+    const minY = parseFloat($yield.value) || 0;
+    
+    filteredData = allData.filter(d => {
+        if (q && !d.name.toLowerCase().includes(q) && !d.symbol.toLowerCase().includes(q)) return false;
+        if (sec && d.sector !== sec) return false;
+        if (minY && d.div_yield < minY) return false;
+        if (activeMonth && d.ex_month !== activeMonth) return false;
+        return true;
+    });
+    
+    sortData();
+    render();
+}
 
-    fetchData();
-
-    // iFrame Resize handling
-    if (window.parent !== window) {
-        function sendHeight() {
-            const h = document.documentElement.scrollHeight;
-            window.parent.postMessage({ type: 'setHeight', height: h }, '*');
+// ── Sorting ──
+function sortData() {
+    filteredData.sort((a, b) => {
+        let va, vb;
+        switch (sortCol) {
+            case 'name': va = a.name; vb = b.name; break;
+            case 'sector': va = a.sector; vb = b.sector; break;
+            case 'ex_date': va = a.ex_date; vb = b.ex_date; break;
+            case 'urgency': va = a.ex_date; vb = b.ex_date; break;
+            case 'div_yield': va = a.div_yield; vb = b.div_yield; break;
+            case 'amount': va = a.amount; vb = b.amount; break;
+            default: va = a.ex_date; vb = b.ex_date;
         }
-        window.addEventListener('load', sendHeight);
-        new ResizeObserver(sendHeight).observe(document.body);
-    }
-</script>
+        if (va < vb) return sortAsc ? -1 : 1;
+        if (va > vb) return sortAsc ? 1 : -1;
+        return 0;
+    });
+}
 
+function setSort(col) {
+    if (sortCol === col) {
+        sortAsc = !sortAsc;
+    } else {
+        sortCol = col;
+        sortAsc = col === 'name' || col === 'sector'; // alpha asc, numbers desc default
+    }
+    // Update headers
+    document.querySelectorAll('thead th').forEach(th => {
+        th.classList.remove('sorted-asc', 'sorted-desc');
+        if (th.dataset.col === sortCol) {
+            th.classList.add(sortAsc ? 'sorted-asc' : 'sorted-desc');
+        }
+    });
+    applyFilters();
+}
+
+// ── Render ──
+function render() {
+    if (filteredData.length === 0) {
+        $table.style.display = 'none';
+        $empty.style.display = 'block';
+        $footer.style.display = 'none';
+        return;
+    }
+    $table.style.display = 'table';
+    $empty.style.display = 'none';
+    $footer.style.display = 'flex';
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    $tbody.innerHTML = filteredData.map(d => {
+        const exDate = new Date(d.ex_date);
+        const diff = Math.ceil((exDate - today) / 86400000);
+        
+        // Urgency
+        let urgencyClass, urgencyText;
+        if (diff <= 0) { urgencyClass = 'hot'; urgencyText = 'Heute!'; }
+        else if (diff === 1) { urgencyClass = 'hot'; urgencyText = 'Morgen'; }
+        else if (diff <= 3) { urgencyClass = 'hot'; urgencyText = `${diff} Tage`; }
+        else if (diff <= 7) { urgencyClass = 'warm'; urgencyText = `${diff} Tage`; }
+        else { urgencyClass = 'cool'; urgencyText = `${diff} Tage`; }
+        
+        // Yield styling
+        const yieldClass = d.div_yield >= 1 ? '' : ' low';
+        
+        // Date format
+        const dateStr = exDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        
+        // Initials for icon
+        const initials = d.symbol.substring(0, 2);
+        
+        return `<tr>
+            <td>
+                <div class="stock-cell">
+                    <div class="stock-icon">${initials}</div>
+                    <div>
+                        <div class="stock-name">${escHtml(d.name)}</div>
+                        <div class="stock-ticker">${d.symbol}</div>
+                    </div>
+                </div>
+            </td>
+            <td><span class="sector-pill">${escHtml(d.sector || '–')}</span></td>
+            <td class="date-val">${dateStr}</td>
+            <td><span class="urgency ${urgencyClass}">${urgencyText}</span></td>
+            <td style="text-align:right"><span class="yield-val${yieldClass}">${d.div_yield.toFixed(2)} %</span></td>
+            <td style="text-align:right"><span class="amount-val">${d.amount.toFixed(2)} ${d.currency}</span></td>
+            <td style="text-align:right"><a href="/analyse/${d.symbol}" class="action-link" target="_blank">Analyse</a></td>
+        </tr>`;
+    }).join('');
+    
+    $footerInfo.textContent = `${filteredData.length} von ${allData.length} Aktien angezeigt`;
+}
+
+function escHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── Events ──
+$search.addEventListener('input', applyFilters);
+$sector.addEventListener('change', applyFilters);
+$yield.addEventListener('change', applyFilters);
+
+document.querySelectorAll('thead th[data-col]').forEach(th => {
+    th.addEventListener('click', () => setSort(th.dataset.col));
+});
+
+// ── Init ──
+fetchData();
+
+// iFrame Resize
+if (window.parent !== window) {
+    function sendHeight() {
+        window.parent.postMessage({ type: 'setHeight', height: document.documentElement.scrollHeight }, '*');
+    }
+    window.addEventListener('load', sendHeight);
+    new ResizeObserver(sendHeight).observe(document.body);
+}
+</script>
 </body>
 </html>

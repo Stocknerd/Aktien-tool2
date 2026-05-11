@@ -1806,23 +1806,45 @@ def dividend_calendar_page():
 def api_dividend_calendar():
     df = load_df()
     if 'Ex-Dividenden-Datum' not in df.columns:
-        return jsonify([])
+        return jsonify({'stocks': [], 'sectors': [], 'total': 0})
+    
     df_div = df[df['Ex-Dividenden-Datum'].notna()].copy()
-    df_div = df_div.sort_values('Ex-Dividenden-Datum')
+    df_div = df_div[df_div['Ex-Dividenden-Datum'].str.match(r'^\d{4}-\d{2}-\d{2}$', na=False)]
+    
     today = datetime.now().strftime("%Y-%m-%d")
     df_div = df_div[df_div['Ex-Dividenden-Datum'] >= today]
-    df_div = df_div.head(50)
+    df_div = df_div.sort_values('Ex-Dividenden-Datum')
+    df_div = df_div.head(200)
+    
     results = []
     for _, r in df_div.iterrows():
+        dy = r.get('Dividendenrendite', 0)
+        try:
+            dy = float(dy) if pd.notna(dy) else 0
+        except:
+            dy = 0
+        amt = r.get('Dividenden-Betrag', 0)
+        try:
+            amt = float(amt) if pd.notna(amt) else 0
+        except:
+            amt = 0
+        ex_date = str(r['Ex-Dividenden-Datum'])
+        ex_month = int(ex_date[5:7]) if len(ex_date) >= 7 else 0
         results.append({
             'symbol': r['Symbol'],
-            'name': str(r.get('Langname', r.get('Security', r['Symbol']))),
-            'ex_date': r['Ex-Dividenden-Datum'],
-            'yield': r.get('Dividendenrendite', 0),
-            'amount': r.get('Dividenden-Betrag', 0),
-            'currency': r.get('Währung', 'EUR')
+            'name': str(r.get('Security', r['Symbol'])),
+            'ex_date': ex_date,
+            'ex_month': ex_month,
+            'div_yield': round(dy, 2),
+            'amount': round(amt, 2),
+            'currency': str(r.get('Währung', 'EUR')),
+            'sector': str(r.get('Sektor', '')),
+            'region': str(r.get('Region', '')),
         })
-    return jsonify(results)
+    
+    all_sectors = sorted(df[df['Sektor'].notna()]['Sektor'].unique().tolist())
+    return jsonify({'stocks': results, 'sectors': all_sectors, 'total': len(results)})
+
 
 # ───────────────────────── Run ─────────────────────────
 if __name__ == '__main__':

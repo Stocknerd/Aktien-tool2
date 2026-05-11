@@ -113,32 +113,66 @@ def api_dividend_calendar():
     if 'Ex-Dividenden-Datum' not in df.columns:
         return jsonify([])
     
-    # Filter only those with a date
+    # Filter only those with a valid date and positive yield
     df_div = df[df['Ex-Dividenden-Datum'].notna()].copy()
+    df_div = df_div[df_div['Ex-Dividenden-Datum'].str.match(r'^\d{4}-\d{2}-\d{2}$', na=False)]
     
-    # Sort by Date
+    # Optional filters from query params
+    month_filter = request.args.get('month')
+    sector_filter = request.args.get('sector')
+    min_yield = request.args.get('min_yield', type=float)
+    show_past = request.args.get('show_past', 'false') == 'true'
+    
+    if not show_past:
+        today = datetime.now().strftime("%Y-%m-%d")
+        df_div = df_div[df_div['Ex-Dividenden-Datum'] >= today]
+    
+    if month_filter and month_filter.isdigit():
+        m = int(month_filter)
+        df_div = df_div[df_div['Ex-Dividenden-Datum'].str[5:7].astype(int) == m]
+    
+    if sector_filter:
+        df_div = df_div[df_div['Sektor'].str.lower() == sector_filter.lower()]
+    
+    if min_yield is not None:
+        df_div = df_div[pd.to_numeric(df_div['Dividendenrendite'], errors='coerce').fillna(0) >= min_yield]
+    
+    # Sort by date
     df_div = df_div.sort_values('Ex-Dividenden-Datum')
-    
-    # Convert to list of dicts
-    today = datetime.now().strftime("%Y-%m-%d")
-    # Only upcoming dividends (today or later)
-    df_div = df_div[df_div['Ex-Dividenden-Datum'] >= today]
-    
-    # Limit to next 50 for performance
-    df_div = df_div.head(50)
+    df_div = df_div.head(200)
     
     results = []
     for _, r in df_div.iterrows():
+        dy = r.get('Dividendenrendite', 0)
+        try:
+            dy = float(dy) if pd.notna(dy) else 0
+        except:
+            dy = 0
+        amt = r.get('Dividenden-Betrag', 0)
+        try:
+            amt = float(amt) if pd.notna(amt) else 0
+        except:
+            amt = 0
+        
+        ex_date = str(r['Ex-Dividenden-Datum'])
+        ex_month = int(ex_date[5:7]) if len(ex_date) >= 7 else 0
+        
         results.append({
             'symbol': r['Symbol'],
-            'name': str(r.get('Langname', r.get('Security', r['Symbol']))),
-            'ex_date': r['Ex-Dividenden-Datum'],
-            'yield': r.get('Dividendenrendite', 0),
-            'amount': r.get('Dividenden-Betrag', 0),
-            'currency': r.get('Währung', 'EUR')
+            'name': str(r.get('Security', r['Symbol'])),
+            'ex_date': ex_date,
+            'ex_month': ex_month,
+            'div_yield': round(dy, 2),
+            'amount': round(amt, 2),
+            'currency': str(r.get('Währung', 'EUR')),
+            'sector': str(r.get('Sektor', '')),
+            'region': str(r.get('Region', '')),
         })
     
-    return jsonify(results)
+    # Also return available sectors for filter
+    all_sectors = sorted(df[df['Sektor'].notna()]['Sektor'].unique().tolist())
+    
+    return jsonify({'stocks': results, 'sectors': all_sectors, 'total': len(results)})
 
 @app.route('/analyse/<ticker>')
 @app.route('/<ticker>')
