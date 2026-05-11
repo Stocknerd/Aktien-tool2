@@ -110,67 +110,67 @@ def dividend_calendar_page():
 @app.route('/api/dividenden-kalender')
 def api_dividend_calendar():
     df = core.load_df()
-    if 'Ex-Dividenden-Datum' not in df.columns:
-        return jsonify([])
     
-    # Filter only those with a valid date and positive yield
-    df_div = df[df['Ex-Dividenden-Datum'].notna()].copy()
-    df_div = df_div[df_div['Ex-Dividenden-Datum'].str.match(r'^\d{4}-\d{2}-\d{2}$', na=False)]
+    # Helper to safely convert to float
+    def safe_float(val, default=0):
+        try:
+            if pd.notna(val):
+                return round(float(str(val).replace(',', '.')), 2)
+        except:
+            pass
+        return default
     
-    # Optional filters from query params
-    month_filter = request.args.get('month')
-    sector_filter = request.args.get('sector')
-    min_yield = request.args.get('min_yield', type=float)
-    show_past = request.args.get('show_past', 'false') == 'true'
+    # Show ALL dividend-paying stocks (yield > 0), not just those with ex-date
+    dy_col = pd.to_numeric(df.get('Dividendenrendite', pd.Series(dtype=float)), errors='coerce')
+    df_div = df[dy_col > 0].copy()
     
-    if not show_past:
-        today = datetime.now().strftime("%Y-%m-%d")
-        df_div = df_div[df_div['Ex-Dividenden-Datum'] >= today]
-    
-    if month_filter and month_filter.isdigit():
-        m = int(month_filter)
-        df_div = df_div[df_div['Ex-Dividenden-Datum'].str[5:7].astype(int) == m]
-    
-    if sector_filter:
-        df_div = df_div[df_div['Sektor'].str.lower() == sector_filter.lower()]
-    
-    if min_yield is not None:
-        df_div = df_div[pd.to_numeric(df_div['Dividendenrendite'], errors='coerce').fillna(0) >= min_yield]
-    
-    # Sort by date
-    df_div = df_div.sort_values('Ex-Dividenden-Datum')
-    df_div = df_div.head(200)
+    # Sort: stocks with upcoming ex-dates first, then by yield
+    has_ex = df_div['Ex-Dividenden-Datum'].notna() if 'Ex-Dividenden-Datum' in df_div.columns else pd.Series(False, index=df_div.index)
+    df_div['_sort_key'] = (~has_ex).astype(int)
+    df_div = df_div.sort_values(['_sort_key', 'Ex-Dividenden-Datum'], ascending=[True, True])
     
     results = []
     for _, r in df_div.iterrows():
-        dy = r.get('Dividendenrendite', 0)
-        try:
-            dy = float(dy) if pd.notna(dy) else 0
-        except:
-            dy = 0
-        amt = r.get('Dividenden-Betrag', 0)
-        try:
-            amt = float(amt) if pd.notna(amt) else 0
-        except:
-            amt = 0
+        dy = safe_float(r.get('Dividendenrendite'))
+        if dy <= 0:
+            continue
         
-        ex_date = str(r['Ex-Dividenden-Datum'])
-        ex_month = int(ex_date[5:7]) if len(ex_date) >= 7 else 0
+        amt = safe_float(r.get('Dividenden-Betrag'))
+        kgv = safe_float(r.get('KGV'), None)
+        kuv = safe_float(r.get('KUV'), None)
+        mcap = safe_float(r.get('Marktkapitalisierung'), None)
+        
+        ex_date = ''
+        ex_month = 0
+        if 'Ex-Dividenden-Datum' in r.index and pd.notna(r.get('Ex-Dividenden-Datum')):
+            ex_raw = str(r['Ex-Dividenden-Datum'])
+            if len(ex_raw) >= 10 and ex_raw[4] == '-':
+                ex_date = ex_raw
+                try:
+                    ex_month = int(ex_raw[5:7])
+                except:
+                    pass
+        
+        # Normalize sector names
+        sector = str(r.get('Sektor', '')) if pd.notna(r.get('Sektor')) else ''
         
         results.append({
-            'symbol': r['Symbol'],
+            'symbol': str(r['Symbol']),
             'name': str(r.get('Security', r['Symbol'])),
             'ex_date': ex_date,
             'ex_month': ex_month,
-            'div_yield': round(dy, 2),
-            'amount': round(amt, 2),
-            'currency': str(r.get('Währung', 'EUR')),
-            'sector': str(r.get('Sektor', '')),
-            'region': str(r.get('Region', '')),
+            'div_yield': dy,
+            'amount': amt,
+            'currency': str(r.get('Währung', 'EUR')) if pd.notna(r.get('Währung')) else 'USD',
+            'sector': sector,
+            'region': str(r.get('Region', '')) if pd.notna(r.get('Region')) else '',
+            'kgv': kgv,
+            'kuv': kuv,
+            'mcap': mcap,
         })
     
-    # Also return available sectors for filter
-    all_sectors = sorted(df[df['Sektor'].notna()]['Sektor'].unique().tolist())
+    # Deduplicate sectors and sort
+    all_sectors = sorted(set(s for s in df[df['Sektor'].notna()]['Sektor'].unique() if s))
     
     return jsonify({'stocks': results, 'sectors': all_sectors, 'total': len(results)})
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dividenden-Kalender 2026 | Schatzsuche 4.0</title>
-    <meta name="description" content="Finde die nächsten Ex-Dividenden-Termine für über 500 Aktien. Sortiere nach Rendite, Monat und Sektor.">
+    <meta name="description" content="Über 2.900 Dividenden-Aktien im Überblick. Sortiere nach Rendite, Sektor, KGV und mehr.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -18,13 +18,13 @@
             --red-soft: rgba(239, 68, 68, 0.12);
             --amber: #f59e0b;
             --amber-soft: rgba(245, 158, 11, 0.12);
+            --blue: #3b82f6;
+            --blue-soft: rgba(59, 130, 246, 0.12);
             --text: #f1f5f9;
             --text-secondary: #94a3b8;
             --text-dim: #64748b;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             background: var(--bg);
             color: var(--text);
@@ -32,255 +32,131 @@
             line-height: 1.5;
             {% if is_embedded %} background: transparent !important; {% endif %}
         }
+        .container { max-width: 1280px; margin: 0 auto; padding: 40px 24px; }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 24px;
-        }
-
-        /* ── Header ── */
-        .hero {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            margin-bottom: 32px;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-        .hero-left h1 {
-            font-size: 2rem;
-            font-weight: 900;
-            letter-spacing: -0.02em;
-            margin-bottom: 4px;
-        }
+        /* Hero */
+        .hero { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+        .hero-left h1 { font-size: 2rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 4px; }
         .hero-left h1 span { color: var(--accent); }
         .hero-left p { color: var(--text-secondary); font-size: 0.95rem; }
-        .stock-count {
-            background: var(--card);
-            border: 1px solid var(--border);
-            padding: 10px 20px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
+        .stat-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+        .stat-chip {
+            background: var(--card); border: 1px solid var(--border); padding: 8px 16px;
+            border-radius: 10px; font-size: 0.8rem; color: var(--text-secondary);
             backdrop-filter: blur(12px);
         }
-        .stock-count strong { color: var(--accent); font-size: 1.3rem; font-weight: 800; }
+        .stat-chip strong { color: var(--accent); font-size: 1.2rem; font-weight: 800; margin-right: 4px; }
 
-        /* ── Toolbar ── */
+        /* Toolbar */
         .toolbar {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 16px 20px;
-            margin-bottom: 16px;
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
+            background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+            padding: 14px 18px; margin-bottom: 12px;
+            display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
             backdrop-filter: blur(16px);
         }
         .search-box {
-            flex: 1;
-            min-width: 200px;
-            background: rgba(0,0,0,0.25);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 10px 14px 10px 36px;
-            color: white;
-            font-size: 0.9rem;
-            font-family: inherit;
+            flex: 1; min-width: 200px; background: rgba(0,0,0,0.25); border: 1px solid var(--border);
+            border-radius: 8px; padding: 9px 12px 9px 34px; color: white; font-size: 0.85rem; font-family: inherit;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: 10px center;
-            background-size: 18px;
-            transition: border-color 0.2s;
+            background-repeat: no-repeat; background-position: 9px center; background-size: 16px; transition: border-color 0.2s;
         }
         .search-box:focus { outline: none; border-color: var(--accent); }
         .search-box::placeholder { color: var(--text-dim); }
-
         .filter-select {
-            background: rgba(0,0,0,0.25);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 10px 14px;
-            color: white;
-            font-size: 0.85rem;
-            font-family: inherit;
-            min-width: 140px;
-            cursor: pointer;
+            background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 8px;
+            padding: 9px 12px; color: white; font-size: 0.82rem; font-family: inherit; min-width: 130px; cursor: pointer;
         }
         .filter-select:focus { outline: none; border-color: var(--accent); }
         .filter-select option { background: #1e293b; color: white; }
 
-        /* ── Month Bar ── */
-        .month-bar {
-            display: flex;
-            gap: 4px;
-            overflow-x: auto;
-            padding-bottom: 12px;
-            margin-bottom: 4px;
-            scrollbar-width: none;
+        /* Column toggle */
+        .col-toggle {
+            background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 8px;
+            padding: 8px 14px; color: var(--text-dim); font-size: 0.82rem; font-family: inherit;
+            cursor: pointer; transition: all 0.15s; white-space: nowrap;
         }
-        .month-bar::-webkit-scrollbar { display: none; }
-        .month-pill {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.15s ease;
-            font-family: inherit;
-        }
-        .month-pill:hover { border-color: var(--accent); color: var(--text); }
-        .month-pill.active {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: white;
-            font-weight: 700;
-        }
-        .month-pill .count {
-            font-size: 0.7rem;
-            opacity: 0.7;
-            margin-left: 2px;
-        }
+        .col-toggle:hover { border-color: var(--accent); color: var(--text); }
+        .col-toggle.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 
-        /* ── Table ── */
+        /* Table */
         .table-wrap {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            overflow: hidden;
-            backdrop-filter: blur(16px);
+            background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+            overflow: hidden; backdrop-filter: blur(16px);
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+        .table-scroll { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
         thead th {
-            background: rgba(0,0,0,0.2);
-            padding: 14px 16px;
-            text-align: left;
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--text-dim);
-            border-bottom: 1px solid var(--border);
-            cursor: pointer;
-            user-select: none;
-            white-space: nowrap;
-            transition: color 0.15s;
-            position: sticky;
-            top: 0;
-            z-index: 2;
+            background: rgba(0,0,0,0.2); padding: 12px 14px; text-align: left;
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-dim); border-bottom: 1px solid var(--border); cursor: pointer;
+            user-select: none; white-space: nowrap; transition: color 0.15s; position: sticky; top: 0; z-index: 2;
         }
         thead th:hover { color: var(--accent); }
-        thead th.sorted-asc::after { content: ' ▲'; color: var(--accent); font-size: 0.6rem; }
-        thead th.sorted-desc::after { content: ' ▼'; color: var(--accent); font-size: 0.6rem; }
-
-        tbody tr {
-            border-bottom: 1px solid var(--border);
-            transition: background 0.12s ease;
-        }
+        thead th.sorted-asc::after { content: ' ▲'; color: var(--accent); font-size: 0.55rem; }
+        thead th.sorted-desc::after { content: ' ▼'; color: var(--accent); font-size: 0.55rem; }
+        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
         tbody tr:last-child { border-bottom: none; }
-        tbody tr:hover { background: rgba(255,255,255,0.025); }
+        tbody tr:hover { background: rgba(255,255,255,0.02); }
+        td { padding: 11px 14px; font-size: 0.85rem; vertical-align: middle; }
+        .col-extra { display: none; }
+        .show-extras .col-extra { display: table-cell; }
 
-        td {
-            padding: 14px 16px;
-            font-size: 0.9rem;
-            vertical-align: middle;
-        }
-
-        /* Stock cell */
-        .stock-cell { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+        /* Cells */
+        .stock-cell { display: flex; align-items: center; gap: 10px; min-width: 200px; }
         .stock-icon {
-            width: 36px; height: 36px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, var(--accent-soft), rgba(16,185,129,0.05));
+            width: 32px; height: 32px; border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-soft), rgba(16,185,129,0.04));
             display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 0.7rem; color: var(--accent);
-            flex-shrink: 0;
+            font-weight: 900; font-size: 0.65rem; color: var(--accent); flex-shrink: 0;
         }
-        .stock-name { font-weight: 700; font-size: 0.88rem; line-height: 1.3; }
-        .stock-ticker {
-            font-size: 0.72rem; color: var(--text-dim);
-            font-weight: 600; letter-spacing: 0.03em;
-        }
-
-        /* Sector pill */
+        .stock-name { font-weight: 700; font-size: 0.82rem; line-height: 1.3; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .stock-ticker { font-size: 0.68rem; color: var(--text-dim); font-weight: 600; letter-spacing: 0.03em; }
         .sector-pill {
-            display: inline-block;
-            background: var(--card);
-            border: 1px solid var(--border);
-            padding: 3px 10px;
-            border-radius: 6px;
-            font-size: 0.72rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            white-space: nowrap;
+            display: inline-block; background: var(--card); border: 1px solid var(--border);
+            padding: 2px 8px; border-radius: 5px; font-size: 0.68rem; font-weight: 600;
+            color: var(--text-secondary); white-space: nowrap; max-width: 130px; overflow: hidden; text-overflow: ellipsis;
         }
-
-        /* Values */
-        .yield-val { color: var(--accent); font-weight: 800; font-size: 0.95rem; }
+        .yield-val { color: var(--accent); font-weight: 800; font-size: 0.88rem; }
         .yield-val.low { color: var(--text-dim); }
-        .amount-val { font-weight: 600; font-family: 'Inter', monospace; }
-        .date-val { font-weight: 600; white-space: nowrap; }
-
-        /* Urgency badge */
+        .amount-val { font-weight: 600; font-size: 0.83rem; }
+        .date-val { font-weight: 600; white-space: nowrap; font-size: 0.83rem; }
+        .date-val.none { color: var(--text-dim); font-style: italic; font-weight: 400; }
+        .metric-val { font-weight: 600; font-size: 0.83rem; color: var(--text-secondary); }
+        .metric-val.na { color: var(--text-dim); font-style: italic; font-weight: 400; }
         .urgency {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 6px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            white-space: nowrap;
+            display: inline-block; padding: 2px 8px; border-radius: 5px;
+            font-size: 0.68rem; font-weight: 700; white-space: nowrap;
         }
         .urgency.hot { background: var(--red-soft); color: var(--red); }
         .urgency.warm { background: var(--amber-soft); color: var(--amber); }
         .urgency.cool { background: var(--accent-soft); color: var(--accent); }
-
-        /* Action */
+        .urgency.none { background: transparent; color: var(--text-dim); }
         .action-link {
-            color: var(--accent);
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.82rem;
-            padding: 6px 14px;
-            border: 1px solid var(--accent);
-            border-radius: 8px;
-            transition: all 0.15s;
-            white-space: nowrap;
+            color: var(--accent); text-decoration: none; font-weight: 700; font-size: 0.78rem;
+            padding: 5px 12px; border: 1px solid var(--accent); border-radius: 6px; transition: all 0.15s; white-space: nowrap;
         }
-        .action-link:hover {
-            background: var(--accent);
-            color: white;
-        }
+        .action-link:hover { background: var(--accent); color: white; }
 
-        /* Footer stats */
+        /* Pagination */
         .table-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 20px;
-            background: rgba(0,0,0,0.15);
-            border-top: 1px solid var(--border);
-            font-size: 0.8rem;
-            color: var(--text-dim);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 18px; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border);
+            font-size: 0.78rem; color: var(--text-dim); flex-wrap: wrap; gap: 10px;
         }
+        .pagination { display: flex; gap: 4px; align-items: center; }
+        .page-btn {
+            background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+            padding: 5px 11px; border-radius: 6px; font-size: 0.78rem; cursor: pointer; font-family: inherit; transition: 0.12s;
+        }
+        .page-btn:hover { border-color: var(--accent); color: var(--text); }
+        .page-btn.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 700; }
+        .page-btn:disabled { opacity: 0.3; cursor: default; }
+        .page-info { color: var(--text-secondary); font-size: 0.78rem; }
 
-        /* Empty / loading */
-        .state-msg {
-            text-align: center;
-            padding: 80px 20px;
-            color: var(--text-dim);
-        }
+        /* States */
+        .state-msg { text-align: center; padding: 80px 20px; color: var(--text-dim); }
         .state-msg h3 { color: var(--text-secondary); margin-bottom: 8px; font-size: 1.1rem; }
-        .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; margin: 0 auto 16px; }
+        .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; margin: 0 auto 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Mobile */
@@ -288,183 +164,148 @@
             .hero { flex-direction: column; align-items: flex-start; }
             .toolbar { flex-direction: column; }
             .search-box { min-width: 100%; }
-            .table-wrap { overflow-x: auto; }
-            table { min-width: 700px; }
+            table { min-width: 650px; }
         }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <!-- Hero -->
     <div class="hero">
         <div class="hero-left">
             <h1>Dividenden-<span>Kalender</span></h1>
-            <p>Alle anstehenden Ex-Dividenden-Termine auf einen Blick.</p>
+            <p>Alle Dividenden-Aktien aus deiner Datenbank auf einen Blick.</p>
         </div>
-        <div class="stock-count">
-            <strong id="totalCount">–</strong> Aktien mit anstehender Dividende
+        <div class="stat-chips">
+            <div class="stat-chip"><strong id="totalCount">–</strong> Dividenden-Aktien</div>
+            <div class="stat-chip"><strong id="filteredCount">–</strong> angezeigt</div>
         </div>
     </div>
 
-    <!-- Toolbar -->
     <div class="toolbar">
         <input type="text" class="search-box" id="search" placeholder="Aktie suchen (z.B. Apple, BMW, AAPL)...">
-        <select class="filter-select" id="sectorFilter">
-            <option value="">Alle Sektoren</option>
-        </select>
+        <select class="filter-select" id="sectorFilter"><option value="">Alle Sektoren</option></select>
         <select class="filter-select" id="yieldFilter">
             <option value="">Alle Renditen</option>
-            <option value="1">≥ 1%</option>
-            <option value="2">≥ 2%</option>
-            <option value="3">≥ 3%</option>
-            <option value="5">≥ 5%</option>
+            <option value="1">≥ 1 %</option>
+            <option value="2">≥ 2 %</option>
+            <option value="3">≥ 3 %</option>
+            <option value="5">≥ 5 %</option>
+            <option value="8">≥ 8 %</option>
         </select>
+        <select class="filter-select" id="exDateFilter">
+            <option value="">Alle Termine</option>
+            <option value="upcoming">Nur mit Ex-Datum</option>
+            <option value="week">Diese Woche</option>
+            <option value="month">Dieser Monat</option>
+        </select>
+        <button class="col-toggle" id="toggleExtras" title="KGV, KUV & Marktkapitalisierung ein-/ausblenden">⚙ Mehr Spalten</button>
     </div>
 
-    <!-- Month Pills -->
-    <div class="month-bar" id="monthBar"></div>
-
-    <!-- Table -->
     <div class="table-wrap">
-        <div class="state-msg" id="loader">
-            <div class="spinner"></div>
-            Lade Dividenden-Daten...
+        <div class="state-msg" id="loader"><div class="spinner"></div>Lade Daten für 4.000+ Aktien...</div>
+        <div class="table-scroll" id="tableScroll" style="display:none;">
+            <table id="divTable">
+                <thead>
+                    <tr>
+                        <th data-col="name">Aktie</th>
+                        <th data-col="sector">Sektor</th>
+                        <th data-col="ex_date">Ex-Datum</th>
+                        <th data-col="countdown">Countdown</th>
+                        <th data-col="div_yield" style="text-align:right">Rendite</th>
+                        <th data-col="amount" style="text-align:right">Betrag</th>
+                        <th data-col="kgv" style="text-align:right" class="col-extra">KGV</th>
+                        <th data-col="kuv" style="text-align:right" class="col-extra">KUV</th>
+                        <th data-col="mcap" style="text-align:right" class="col-extra">Mkt. Kap.</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
         </div>
-
-        <table id="divTable" style="display:none;">
-            <thead>
-                <tr>
-                    <th data-col="name">Aktie</th>
-                    <th data-col="sector">Sektor</th>
-                    <th data-col="ex_date">Ex-Datum</th>
-                    <th data-col="urgency">Countdown</th>
-                    <th data-col="div_yield" style="text-align:right">Rendite</th>
-                    <th data-col="amount" style="text-align:right">Betrag</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-        </table>
-
-        <div class="state-msg" id="emptyState" style="display:none;">
-            <h3>Keine Treffer</h3>
-            <p>Versuche einen anderen Filter oder Suchbegriff.</p>
-        </div>
-
+        <div class="state-msg" id="emptyState" style="display:none;"><h3>Keine Treffer</h3><p>Versuche einen anderen Filter.</p></div>
         <div class="table-footer" id="tableFooter" style="display:none;">
             <span id="footerInfo">–</span>
-            <span>Quelle: Yahoo Finance · Zuletzt aktualisiert: heute</span>
+            <div class="pagination" id="pagination"></div>
         </div>
     </div>
 </div>
 
 <script>
-// ── State ──
-let allData = [];
-let filteredData = [];
-let sortCol = 'ex_date';
-let sortAsc = true;
+const PER_PAGE = 50;
+let allData = [], filteredData = [], page = 1;
+let sortCol = 'div_yield', sortAsc = false;
+let showExtras = false;
 
-const MONTHS = ['', 'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-let activeMonth = 0; // 0 = all
+const $ = id => document.getElementById(id);
+const $search = $('search'), $sector = $('sectorFilter'), $yield = $('yieldFilter');
+const $exDate = $('exDateFilter'), $tbody = $('tbody'), $scroll = $('tableScroll');
+const $loader = $('loader'), $empty = $('emptyState'), $footer = $('tableFooter');
+const $footerInfo = $('footerInfo'), $totalCount = $('totalCount'), $filteredCount = $('filteredCount');
+const $pagination = $('pagination'), $toggleExtras = $('toggleExtras');
 
-// ── DOM ──
-const $search = document.getElementById('search');
-const $sector = document.getElementById('sectorFilter');
-const $yield = document.getElementById('yieldFilter');
-const $tbody = document.getElementById('tbody');
-const $table = document.getElementById('divTable');
-const $loader = document.getElementById('loader');
-const $empty = document.getElementById('emptyState');
-const $footer = document.getElementById('tableFooter');
-const $footerInfo = document.getElementById('footerInfo');
-const $totalCount = document.getElementById('totalCount');
-const $monthBar = document.getElementById('monthBar');
-
-// ── Fetch ──
 async function fetchData() {
     try {
         const res = await fetch('/api/dividenden-kalender');
         const json = await res.json();
         allData = json.stocks || [];
-        
-        // Populate sector filter
+        $totalCount.textContent = allData.length.toLocaleString('de-DE');
         (json.sectors || []).forEach(s => {
-            const o = document.createElement('option');
-            o.value = s;
-            o.textContent = s;
+            const o = document.createElement('option'); o.value = s; o.textContent = s;
             $sector.appendChild(o);
         });
-        
-        $totalCount.textContent = json.total || allData.length;
-        buildMonthBar();
         applyFilters();
-        
         $loader.style.display = 'none';
-        $table.style.display = 'table';
+        $scroll.style.display = 'block';
         $footer.style.display = 'flex';
     } catch (e) {
-        $loader.innerHTML = '<h3>Fehler beim Laden</h3><p>' + e.message + '</p>';
+        $loader.innerHTML = '<h3>Fehler</h3><p>' + e.message + '</p>';
     }
 }
 
-// ── Month bar ──
-function buildMonthBar() {
-    // Count stocks per month
-    const counts = {};
-    allData.forEach(d => {
-        const m = d.ex_month;
-        counts[m] = (counts[m] || 0) + 1;
-    });
-    
-    let html = `<button class="month-pill active" data-m="0">Alle <span class="count">(${allData.length})</span></button>`;
-    for (let i = 1; i <= 12; i++) {
-        const c = counts[i] || 0;
-        html += `<button class="month-pill" data-m="${i}">${MONTHS[i]} <span class="count">(${c})</span></button>`;
-    }
-    $monthBar.innerHTML = html;
-    
-    $monthBar.querySelectorAll('.month-pill').forEach(btn => {
-        btn.addEventListener('click', () => {
-            $monthBar.querySelectorAll('.month-pill').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            activeMonth = parseInt(btn.dataset.m);
-            applyFilters();
-        });
-    });
-}
-
-// ── Filters ──
 function applyFilters() {
     const q = $search.value.toLowerCase().trim();
     const sec = $sector.value;
     const minY = parseFloat($yield.value) || 0;
-    
+    const exF = $exDate.value;
+    const now = new Date(); now.setHours(0,0,0,0);
+    const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + 7);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
     filteredData = allData.filter(d => {
         if (q && !d.name.toLowerCase().includes(q) && !d.symbol.toLowerCase().includes(q)) return false;
         if (sec && d.sector !== sec) return false;
         if (minY && d.div_yield < minY) return false;
-        if (activeMonth && d.ex_month !== activeMonth) return false;
+        if (exF === 'upcoming' && !d.ex_date) return false;
+        if (exF === 'week' && d.ex_date) {
+            const ed = new Date(d.ex_date);
+            if (ed < now || ed > weekEnd) return false;
+        } else if (exF === 'week' && !d.ex_date) return false;
+        if (exF === 'month' && d.ex_date) {
+            const ed = new Date(d.ex_date);
+            if (ed < now || ed > monthEnd) return false;
+        } else if (exF === 'month' && !d.ex_date) return false;
         return true;
     });
-    
+
     sortData();
+    page = 1;
     render();
 }
 
-// ── Sorting ──
 function sortData() {
     filteredData.sort((a, b) => {
         let va, vb;
         switch (sortCol) {
             case 'name': va = a.name; vb = b.name; break;
             case 'sector': va = a.sector; vb = b.sector; break;
-            case 'ex_date': va = a.ex_date; vb = b.ex_date; break;
-            case 'urgency': va = a.ex_date; vb = b.ex_date; break;
+            case 'ex_date': va = a.ex_date || 'z'; vb = b.ex_date || 'z'; break;
+            case 'countdown': va = a.ex_date || 'z'; vb = b.ex_date || 'z'; break;
             case 'div_yield': va = a.div_yield; vb = b.div_yield; break;
             case 'amount': va = a.amount; vb = b.amount; break;
-            default: va = a.ex_date; vb = b.ex_date;
+            case 'kgv': va = a.kgv ?? 9999; vb = b.kgv ?? 9999; break;
+            case 'kuv': va = a.kuv ?? 9999; vb = b.kuv ?? 9999; break;
+            case 'mcap': va = a.mcap ?? 0; vb = b.mcap ?? 0; break;
+            default: va = a.div_yield; vb = b.div_yield;
         }
         if (va < vb) return sortAsc ? -1 : 1;
         if (va > vb) return sortAsc ? 1 : -1;
@@ -473,101 +314,106 @@ function sortData() {
 }
 
 function setSort(col) {
-    if (sortCol === col) {
-        sortAsc = !sortAsc;
-    } else {
-        sortCol = col;
-        sortAsc = col === 'name' || col === 'sector'; // alpha asc, numbers desc default
-    }
-    // Update headers
+    if (sortCol === col) { sortAsc = !sortAsc; }
+    else { sortCol = col; sortAsc = (col === 'name' || col === 'sector'); }
     document.querySelectorAll('thead th').forEach(th => {
         th.classList.remove('sorted-asc', 'sorted-desc');
-        if (th.dataset.col === sortCol) {
-            th.classList.add(sortAsc ? 'sorted-asc' : 'sorted-desc');
-        }
+        if (th.dataset.col === sortCol) th.classList.add(sortAsc ? 'sorted-asc' : 'sorted-desc');
     });
     applyFilters();
 }
 
-// ── Render ──
 function render() {
-    if (filteredData.length === 0) {
-        $table.style.display = 'none';
-        $empty.style.display = 'block';
-        $footer.style.display = 'none';
+    $filteredCount.textContent = filteredData.length.toLocaleString('de-DE');
+    if (!filteredData.length) {
+        $scroll.style.display = 'none'; $empty.style.display = 'block'; $footer.style.display = 'none';
         return;
     }
-    $table.style.display = 'table';
-    $empty.style.display = 'none';
-    $footer.style.display = 'flex';
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    $tbody.innerHTML = filteredData.map(d => {
-        const exDate = new Date(d.ex_date);
-        const diff = Math.ceil((exDate - today) / 86400000);
-        
-        // Urgency
-        let urgencyClass, urgencyText;
-        if (diff <= 0) { urgencyClass = 'hot'; urgencyText = 'Heute!'; }
-        else if (diff === 1) { urgencyClass = 'hot'; urgencyText = 'Morgen'; }
-        else if (diff <= 3) { urgencyClass = 'hot'; urgencyText = `${diff} Tage`; }
-        else if (diff <= 7) { urgencyClass = 'warm'; urgencyText = `${diff} Tage`; }
-        else { urgencyClass = 'cool'; urgencyText = `${diff} Tage`; }
-        
-        // Yield styling
-        const yieldClass = d.div_yield >= 1 ? '' : ' low';
-        
-        // Date format
-        const dateStr = exDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        
-        // Initials for icon
-        const initials = d.symbol.substring(0, 2);
-        
+    $scroll.style.display = 'block'; $empty.style.display = 'none'; $footer.style.display = 'flex';
+
+    const totalPages = Math.ceil(filteredData.length / PER_PAGE);
+    if (page > totalPages) page = totalPages;
+    const start = (page - 1) * PER_PAGE;
+    const slice = filteredData.slice(start, start + PER_PAGE);
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    $tbody.innerHTML = slice.map(d => {
+        let urgencyHtml = '<span class="urgency none">–</span>';
+        let dateHtml = '<span class="date-val none">–</span>';
+        if (d.ex_date) {
+            const exDate = new Date(d.ex_date);
+            const diff = Math.ceil((exDate - today) / 86400000);
+            dateHtml = `<span class="date-val">${exDate.toLocaleDateString('de-DE')}</span>`;
+            let uc, ut;
+            if (diff <= 0) { uc = 'hot'; ut = 'Heute!'; }
+            else if (diff === 1) { uc = 'hot'; ut = 'Morgen'; }
+            else if (diff <= 3) { uc = 'hot'; ut = diff + ' Tage'; }
+            else if (diff <= 7) { uc = 'warm'; ut = diff + ' Tage'; }
+            else { uc = 'cool'; ut = diff + ' Tage'; }
+            urgencyHtml = `<span class="urgency ${uc}">${ut}</span>`;
+        }
+        const yc = d.div_yield >= 1 ? '' : ' low';
+        const ini = d.symbol.substring(0, 2);
+        const kgvHtml = d.kgv != null ? `<span class="metric-val">${d.kgv.toFixed(1)}</span>` : '<span class="metric-val na">–</span>';
+        const kuvHtml = d.kuv != null ? `<span class="metric-val">${d.kuv.toFixed(1)}</span>` : '<span class="metric-val na">–</span>';
+        const mcapHtml = d.mcap != null ? `<span class="metric-val">${(d.mcap / 1e9).toFixed(1)} Mrd</span>` : '<span class="metric-val na">–</span>';
+
         return `<tr>
-            <td>
-                <div class="stock-cell">
-                    <div class="stock-icon">${initials}</div>
-                    <div>
-                        <div class="stock-name">${escHtml(d.name)}</div>
-                        <div class="stock-ticker">${d.symbol}</div>
-                    </div>
-                </div>
-            </td>
-            <td><span class="sector-pill">${escHtml(d.sector || '–')}</span></td>
-            <td class="date-val">${dateStr}</td>
-            <td><span class="urgency ${urgencyClass}">${urgencyText}</span></td>
-            <td style="text-align:right"><span class="yield-val${yieldClass}">${d.div_yield.toFixed(2)} %</span></td>
-            <td style="text-align:right"><span class="amount-val">${d.amount.toFixed(2)} ${d.currency}</span></td>
+            <td><div class="stock-cell"><div class="stock-icon">${ini}</div><div><div class="stock-name" title="${esc(d.name)}">${esc(d.name)}</div><div class="stock-ticker">${d.symbol}</div></div></div></td>
+            <td><span class="sector-pill" title="${esc(d.sector)}">${esc(d.sector || '–')}</span></td>
+            <td>${dateHtml}</td>
+            <td>${urgencyHtml}</td>
+            <td style="text-align:right"><span class="yield-val${yc}">${d.div_yield.toFixed(2)} %</span></td>
+            <td style="text-align:right"><span class="amount-val">${d.amount > 0 ? d.amount.toFixed(2) + ' ' + d.currency : '–'}</span></td>
+            <td style="text-align:right" class="col-extra">${kgvHtml}</td>
+            <td style="text-align:right" class="col-extra">${kuvHtml}</td>
+            <td style="text-align:right" class="col-extra">${mcapHtml}</td>
             <td style="text-align:right"><a href="/analyse/${d.symbol}" class="action-link" target="_blank">Analyse</a></td>
         </tr>`;
     }).join('');
-    
-    $footerInfo.textContent = `${filteredData.length} von ${allData.length} Aktien angezeigt`;
+
+    $footerInfo.textContent = `Zeige ${start + 1}–${Math.min(start + PER_PAGE, filteredData.length)} von ${filteredData.length.toLocaleString('de-DE')}`;
+    renderPagination(totalPages);
 }
 
-function escHtml(s) {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function renderPagination(totalPages) {
+    if (totalPages <= 1) { $pagination.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="goPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>‹</button>`;
+    const maxBtns = 7;
+    let startP = Math.max(1, page - 3), endP = Math.min(totalPages, startP + maxBtns - 1);
+    if (endP - startP < maxBtns - 1) startP = Math.max(1, endP - maxBtns + 1);
+    for (let i = startP; i <= endP; i++) {
+        html += `<button class="page-btn${i === page ? ' active' : ''}" onclick="goPage(${i})">${i}</button>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${page + 1})" ${page === totalPages ? 'disabled' : ''}>›</button>`;
+    $pagination.innerHTML = html;
 }
 
-// ── Events ──
+function goPage(p) { page = p; render(); $scroll.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Events
 $search.addEventListener('input', applyFilters);
 $sector.addEventListener('change', applyFilters);
 $yield.addEventListener('change', applyFilters);
+$exDate.addEventListener('change', applyFilters);
+document.querySelectorAll('thead th[data-col]').forEach(th => th.addEventListener('click', () => setSort(th.dataset.col)));
 
-document.querySelectorAll('thead th[data-col]').forEach(th => {
-    th.addEventListener('click', () => setSort(th.dataset.col));
+$toggleExtras.addEventListener('click', () => {
+    showExtras = !showExtras;
+    $toggleExtras.classList.toggle('active', showExtras);
+    document.getElementById('divTable').classList.toggle('show-extras', showExtras);
 });
 
-// ── Init ──
+// Set default sort indicator
+document.querySelector('th[data-col="div_yield"]').classList.add('sorted-desc');
+
 fetchData();
 
-// iFrame Resize
+// iFrame resize
 if (window.parent !== window) {
-    function sendHeight() {
-        window.parent.postMessage({ type: 'setHeight', height: document.documentElement.scrollHeight }, '*');
-    }
+    function sendHeight() { window.parent.postMessage({ type: 'setHeight', height: document.documentElement.scrollHeight }, '*'); }
     window.addEventListener('load', sendHeight);
     new ResizeObserver(sendHeight).observe(document.body);
 }
