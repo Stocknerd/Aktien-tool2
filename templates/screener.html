@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aktien-Screener | Schatzsuche 4.0</title>
+    <meta name="description" content="Finde die besten Aktien aus über 4.000 Werten. Filtere nach KGV, Dividendenrendite, Marge und mehr.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b1120;
+            --surface: rgba(15, 23, 42, 0.95);
+            --card: rgba(30, 41, 59, 0.45);
+            --border: rgba(148, 163, 184, 0.12);
+            --accent: #10b981;
+            --accent-soft: rgba(16, 185, 129, 0.12);
+            --red: #ef4444;
+            --red-soft: rgba(239, 68, 68, 0.12);
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-dim: #64748b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'Inter', -apple-system, sans-serif; line-height: 1.5;
+            {% if is_embedded %} background: transparent !important; {% endif %}
+        }
+        .container { max-width: 1350px; margin: 0 auto; padding: 40px 24px; display: flex; flex-direction: column; gap: 24px; }
+        
+        /* Hero */
+        .hero { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 8px;}
+        .hero-left h1 { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 4px; }
+        .hero-left h1 span { color: var(--accent); }
+        .hero-left p { color: var(--text-secondary); font-size: 0.95rem; }
+        .stat-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+        .stat-chip {
+            background: var(--card); border: 1px solid var(--border); padding: 8px 16px;
+            border-radius: 10px; font-size: 0.85rem; color: var(--text-secondary); backdrop-filter: blur(12px);
+        }
+        .stat-chip strong { color: var(--accent); font-size: 1.3rem; font-weight: 800; margin-right: 6px; }
+
+        /* Layout */
+        .screener-layout { display: grid; grid-template-columns: 300px 1fr; gap: 24px; align-items: start; }
+        @media (max-width: 1024px) { .screener-layout { grid-template-columns: 1fr; } }
+
+        /* Sidebar Filters */
+        .filter-panel {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+            padding: 24px; backdrop-filter: blur(16px); position: sticky; top: 24px;
+        }
+        .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .filter-header h2 { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .reset-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.8rem; font-weight: 600; text-decoration: underline; transition: color 0.2s;}
+        .reset-btn:hover { color: var(--text); }
+
+        .filter-group { margin-bottom: 20px; }
+        .filter-group:last-child { margin-bottom: 0; }
+        .filter-label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; }
+        .filter-val-display { color: var(--accent); font-weight: 800; }
+        
+        .range-slider { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); outline: none; margin-bottom: 8px; }
+        .range-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 10px rgba(16,185,129,0.5); }
+        .range-slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #fff; }
+        
+        .filter-input { width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: white; font-size: 0.85rem; font-family: inherit; transition: border-color 0.2s; }
+        .filter-input:focus { outline: none; border-color: var(--accent); }
+        .filter-input option { background: #1e293b; color: white; }
+
+        /* Search Bar inside Panel */
+        .search-box {
+            width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px 10px 34px; color: white; font-size: 0.85rem; margin-bottom: 24px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: 10px center; background-size: 16px;
+        }
+
+        /* Results Area */
+        .results-panel { display: flex; flex-direction: column; gap: 16px; }
+        
+        .table-wrap {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+            overflow: hidden; backdrop-filter: blur(16px);
+        }
+        .table-scroll { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            background: rgba(0,0,0,0.2); padding: 14px; text-align: left;
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--text-dim); border-bottom: 1px solid var(--border); cursor: pointer;
+            user-select: none; white-space: nowrap; position: sticky; top: 0; z-index: 2;
+        }
+        thead th:hover { color: var(--accent); }
+        thead th.sorted-asc::after { content: ' ▲'; color: var(--accent); font-size: 0.6rem; }
+        thead th.sorted-desc::after { content: ' ▼'; color: var(--accent); font-size: 0.6rem; }
+        
+        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+        tbody tr:hover { background: rgba(255,255,255,0.03); }
+        td { padding: 12px 14px; font-size: 0.85rem; vertical-align: middle; }
+
+        .stock-cell { display: flex; align-items: center; gap: 12px; min-width: 220px; }
+        .stock-icon {
+            width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--accent-soft), rgba(16,185,129,0.02));
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 0.7rem; color: var(--accent); 
+        }
+        .stock-name { font-weight: 700; font-size: 0.85rem; line-height: 1.2; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .stock-ticker { font-size: 0.7rem; color: var(--text-dim); font-weight: 600; margin-top: 2px;}
+        
+        .pill { display: inline-block; background: var(--card); border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+        
+        .val-good { color: var(--accent); font-weight: 700; }
+        .val-bad { color: var(--red); font-weight: 700; }
+        .val-neutral { font-weight: 600; }
+        .val-none { color: var(--text-dim); font-style: italic; font-weight: 400; }
+
+        .action-link {
+            color: var(--accent); text-decoration: none; font-weight: 700; font-size: 0.75rem;
+            padding: 6px 14px; border: 1px solid var(--accent); border-radius: 6px; transition: all 0.2s; white-space: nowrap;
+        }
+        .action-link:hover { background: var(--accent); color: white; }
+
+        /* Pagination */
+        .table-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 18px; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border);
+        }
+        .pagination { display: flex; gap: 4px; }
+        .page-btn {
+            background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+            padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; transition: 0.2s;
+        }
+        .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+        .page-btn.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 700; }
+        .page-btn:disabled { opacity: 0.3; cursor: default; }
+
+        /* Loader */
+        .loader-wrap { text-align: center; padding: 100px 20px; color: var(--text-dim); }
+        .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hero">
+        <div class="hero-left">
+            <h1>Aktien-<span>Screener</span></h1>
+            <p>Finde die perfekten Werte aus über 4.000 Aktien weltweit.</p>
+        </div>
+        <div class="stat-chips">
+            <div class="stat-chip"><strong id="totalCount">–</strong> Aktien</div>
+            <div class="stat-chip"><strong id="filteredCount">–</strong> Treffer</div>
+        </div>
+    </div>
+
+    <div class="screener-layout">
+        <!-- Sidebar -->
+        <div class="filter-panel">
+            <input type="text" class="search-box" id="search" placeholder="Suchen (z.B. Apple, AAPL)...">
+            
+            <div class="filter-header">
+                <h2>📊 Filter</h2>
+                <button class="reset-btn" onclick="resetFilters()">Zurücksetzen</button>
+            </div>
+
+            <div class="filter-group">
+                <div class="filter-label"><span>KGV (Maximal)</span> <span class="filter-val-display" id="kgvVal">50</span></div>
+                <input type="range" class="range-slider" id="kgvFilter" min="1" max="100" value="50">
+            </div>
+
+            <div class="filter-group">
+                <div class="filter-label"><span>Dividendenrendite (Minimal)</span> <span class="filter-val-display" id="divVal">0 %</span></div>
+                <input type="range" class="range-slider" id="divFilter" min="0" max="15" step="0.5" value="0">
+            </div>
+
+            <div class="filter-group">
+                <div class="filter-label"><span>Nettomarge (Minimal)</span> <span class="filter-val-display" id="marginVal">-20 %</span></div>
+                <input type="range" class="range-slider" id="marginFilter" min="-20" max="60" step="1" value="-20">
+            </div>
+            
+            <div class="filter-group">
+                <div class="filter-label"><span>Umsatzwachstum (Minimal)</span> <span class="filter-val-display" id="growthVal">-20 %</span></div>
+                <input type="range" class="range-slider" id="growthFilter" min="-20" max="60" step="1" value="-20">
+            </div>
+
+            <div class="filter-group" style="margin-top: 30px;">
+                <div class="filter-label"><span>Sektor</span></div>
+                <select class="filter-input" id="sectorFilter">
+                    <option value="">Alle Sektoren</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-panel">
+            <div class="table-wrap">
+                <div id="loader" class="loader-wrap"><div class="spinner"></div>Lade Screener-Daten...</div>
+                
+                <div class="table-scroll" id="tableContent" style="display:none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-col="name">Aktie</th>
+                                <th data-col="sector">Sektor</th>
+                                <th data-col="kgv" style="text-align:right">KGV</th>
+                                <th data-col="div_yield" style="text-align:right">Rendite</th>
+                                <th data-col="netto_marge" style="text-align:right">Marge</th>
+                                <th data-col="umsatz_wachstum" style="text-align:right">Wachstum</th>
+                                <th data-col="mcap" style="text-align:right">Mkt. Kap.</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody"></tbody>
+                    </table>
+                </div>
+                
+                <div class="table-footer" id="tableFooter" style="display:none;">
+                    <span style="color: var(--text-dim); font-size: 0.8rem;" id="footerInfo"></span>
+                    <div class="pagination" id="pagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let allData = [], filteredData = [];
+let page = 1; const PER_PAGE = 50;
+let sortCol = 'mcap', sortAsc = false;
+
+// DOM
+const $ = id => document.getElementById(id);
+const ui = {
+    search: $('search'), sector: $('sectorFilter'),
+    kgv: $('kgvFilter'), kgvVal: $('kgvVal'),
+    div: $('divFilter'), divVal: $('divVal'),
+    margin: $('marginFilter'), marginVal: $('marginVal'),
+    growth: $('growthFilter'), growthVal: $('growthVal'),
+    body: $('tbody'), loader: $('loader'), table: $('tableContent'),
+    footer: $('tableFooter'), pgInfo: $('footerInfo'), pgBtns: $('pagination'),
+    totCount: $('totalCount'), filtCount: $('filteredCount')
+};
+
+async function init() {
+    try {
+        const res = await fetch('/api/screener');
+        const data = await res.json();
+        allData = data.stocks;
+        ui.totCount.textContent = allData.length.toLocaleString('de-DE');
+        
+        data.sectors.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = opt.textContent = s;
+            ui.sector.appendChild(opt);
+        });
+
+        setupEvents();
+        applyFilters();
+        
+        ui.loader.style.display = 'none';
+        ui.table.style.display = 'block';
+        ui.footer.style.display = 'flex';
+        
+    } catch(e) {
+        ui.loader.innerHTML = "Fehler beim Laden der Daten.";
+    }
+}
+
+function setupEvents() {
+    ui.search.addEventListener('input', applyFilters);
+    ui.sector.addEventListener('change', applyFilters);
+    
+    ui.kgv.addEventListener('input', e => {
+        let v = e.target.value;
+        ui.kgvVal.textContent = v == 100 ? "Beliebig" : v;
+        applyFilters();
+    });
+    ui.div.addEventListener('input', e => { ui.divVal.textContent = e.target.value + " %"; applyFilters(); });
+    ui.margin.addEventListener('input', e => { ui.marginVal.textContent = e.target.value + " %"; applyFilters(); });
+    ui.growth.addEventListener('input', e => { ui.growthVal.textContent = e.target.value + " %"; applyFilters(); });
+    
+    document.querySelectorAll('th[data-col]').forEach(th => {
+        th.addEventListener('click', () => setSort(th.dataset.col));
+    });
+    // Default sort indicator
+    document.querySelector(`th[data-col="${sortCol}"]`).classList.add('sorted-desc');
+}
+
+function resetFilters() {
+    ui.search.value = '';
+    ui.sector.value = '';
+    ui.kgv.value = 100; ui.kgvVal.textContent = "Beliebig";
+    ui.div.value = 0; ui.divVal.textContent = "0 %";
+    ui.margin.value = -20; ui.marginVal.textContent = "-20 %";
+    ui.growth.value = -20; ui.growthVal.textContent = "-20 %";
+    applyFilters();
+}
+
+function applyFilters() {
+    const q = ui.search.value.toLowerCase().trim();
+    const sec = ui.sector.value;
+    const maxKgv = parseFloat(ui.kgv.value);
+    const minDiv = parseFloat(ui.div.value);
+    const minMargin = parseFloat(ui.margin.value);
+    const minGrowth = parseFloat(ui.growth.value);
+
+    filteredData = allData.filter(d => {
+        if (q && !d.name.toLowerCase().includes(q) && !d.symbol.toLowerCase().includes(q)) return false;
+        if (sec && d.sector !== sec) return false;
+        if (maxKgv < 100 && (d.kgv == null || d.kgv <= 0 || d.kgv > maxKgv)) return false;
+        if (minDiv > 0 && (d.div_yield == null || d.div_yield < minDiv)) return false;
+        if (minMargin > -20 && (d.netto_marge == null || d.netto_marge < minMargin)) return false;
+        if (minGrowth > -20 && (d.umsatz_wachstum == null || d.umsatz_wachstum < minGrowth)) return false;
+        return true;
+    });
+
+    sortData();
+    page = 1;
+    render();
+}
+
+function setSort(col) {
+    if (sortCol === col) { sortAsc = !sortAsc; }
+    else { sortCol = col; sortAsc = (col === 'name' || col === 'sector'); }
+    
+    document.querySelectorAll('th[data-col]').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
+    document.querySelector(`th[data-col="${col}"]`).classList.add(sortAsc ? 'sorted-asc' : 'sorted-desc');
+    
+    sortData();
+    render();
+}
+
+function sortData() {
+    filteredData.sort((a, b) => {
+        let va = a[sortCol] ?? (sortAsc ? 999999 : -999999);
+        let vb = b[sortCol] ?? (sortAsc ? 999999 : -999999);
+        
+        if (typeof va === 'string') {
+            return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        }
+        return sortAsc ? va - vb : vb - va;
+    });
+}
+
+function formatVal(val, suffix='', isGoodFunc=null) {
+    if (val == null) return '<span class="val-none">–</span>';
+    let cls = 'val-neutral';
+    if (isGoodFunc) {
+        if (isGoodFunc(val) === 1) cls = 'val-good';
+        else if (isGoodFunc(val) === -1) cls = 'val-bad';
+    }
+    return `<span class="${cls}">${val.toLocaleString('de-DE', {maximumFractionDigits:1})}${suffix}</span>`;
+}
+
+function render() {
+    ui.filtCount.textContent = filteredData.length.toLocaleString('de-DE');
+    
+    if (!filteredData.length) {
+        ui.body.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 40px; color: var(--text-dim);">Keine Aktien gefunden. Passe die Filter an.</td></tr>';
+        ui.pgBtns.innerHTML = ''; ui.pgInfo.textContent = '';
+        return;
+    }
+
+    const totalPages = Math.ceil(filteredData.length / PER_PAGE);
+    if (page > totalPages) page = totalPages;
+    const start = (page - 1) * PER_PAGE;
+    const slice = filteredData.slice(start, start + PER_PAGE);
+
+    ui.body.innerHTML = slice.map(d => {
+        const ini = d.symbol.substring(0, 2).toUpperCase();
+        const mcap = d.mcap ? (d.mcap / 1e9).toFixed(1) + ' Mrd' : '<span class="val-none">–</span>';
+        
+        return `<tr>
+            <td>
+                <div class="stock-cell">
+                    <div class="stock-icon">${ini}</div>
+                    <div>
+                        <div class="stock-name" title="${d.name}">${d.name}</div>
+                        <div class="stock-ticker">${d.symbol}</div>
+                    </div>
+                </div>
+            </td>
+            <td><span class="pill">${d.sector || '–'}</span></td>
+            <td style="text-align:right">${formatVal(d.kgv, '', v => v>0 && v<15 ? 1 : (v>30 ? -1 : 0))}</td>
+            <td style="text-align:right">${formatVal(d.div_yield, ' %', v => v>3 ? 1 : 0)}</td>
+            <td style="text-align:right">${formatVal(d.netto_marge, ' %', v => v>15 ? 1 : (v<0 ? -1 : 0))}</td>
+            <td style="text-align:right">${formatVal(d.umsatz_wachstum, ' %', v => v>10 ? 1 : (v<0 ? -1 : 0))}</td>
+            <td style="text-align:right; font-weight:600; color:var(--text-secondary);">${mcap}</td>
+            <td style="text-align:right"><a href="/analyse/${d.symbol}" class="action-link" target="_blank">Analyse</a></td>
+        </tr>`;
+    }).join('');
+
+    ui.pgInfo.textContent = `Zeige ${start + 1}–${Math.min(start + PER_PAGE, filteredData.length)} von ${filteredData.length}`;
+    renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+    if (totalPages <= 1) { ui.pgBtns.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="goPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>‹</button>`;
+    
+    let startP = Math.max(1, page - 2);
+    let endP = Math.min(totalPages, startP + 4);
+    if (endP - startP < 4) startP = Math.max(1, endP - 4);
+    
+    for (let i = startP; i <= endP; i++) {
+        html += `<button class="page-btn${i === page ? ' active' : ''}" onclick="goPage(${i})">${i}</button>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${page + 1})" ${page === totalPages ? 'disabled' : ''}>›</button>`;
+    ui.pgBtns.innerHTML = html;
+}
+
+function goPage(p) { 
+    page = p; render(); 
+    document.querySelector('.results-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+init();
+
+// Resize observer for iframe embedding
+if (window.parent !== window) {
+    new ResizeObserver(() => {
+        window.parent.postMessage({ type: 'setHeight', height: document.documentElement.scrollHeight }, '*');
+    }).observe(document.body);
+}
+</script>
+</body>
+</html>

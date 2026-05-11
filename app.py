@@ -177,6 +177,56 @@ def api_dividend_calendar():
     
     return jsonify({'stocks': results, 'sectors': all_sectors, 'total': len(results)})
 
+# ─── Aktien-Screener ─────────────────────────────────────────
+@app.route('/screener')
+def screener_page():
+    is_embedded = request.args.get('embed') == '1'
+    return render_template('screener.html', is_embedded=is_embedded)
+
+@app.route('/api/screener')
+def api_screener():
+    df = core.load_df()
+    
+    import math
+    def safe_float(val, default=None):
+        try:
+            if pd.notna(val):
+                v = float(str(val).replace(',', '.'))
+                if math.isfinite(v):
+                    return round(v, 2)
+        except:
+            pass
+        return default
+
+    results = []
+    # Using specific columns to keep payload small
+    for _, r in df.iterrows():
+        # Only include stocks that have at least some basic data
+        if pd.isna(r.get('Symbol')) or pd.isna(r.get('Security')):
+            continue
+            
+        sector = str(r.get('Sektor', '')) if pd.notna(r.get('Sektor')) else ''
+        region = str(r.get('Region', '')) if pd.notna(r.get('Region')) else ''
+        
+        results.append({
+            'symbol': str(r['Symbol']),
+            'name': str(r['Security']) if pd.notna(r.get('Security')) else str(r['Symbol']),
+            'sector': sector,
+            'region': region,
+            'kgv': safe_float(r.get('KGV')),
+            'div_yield': safe_float(r.get('Dividendenrendite')),
+            'umsatz_wachstum': safe_float(r.get('Umsatzwachstum 3J (erwartet)')),
+            'netto_marge': safe_float(r.get('Nettomarge')),
+            'roe': safe_float(r.get('Eigenkapitalrendite')),
+            'kbv': safe_float(r.get('KBV')),
+            'mcap': safe_float(r.get('Marktkapitalisierung')),
+            'rating': str(r.get('Recommendation Key', '')) if pd.notna(r.get('Recommendation Key')) else ''
+        })
+        
+    all_sectors = sorted(set(s for s in df[df['Sektor'].notna()]['Sektor'].unique() if s))
+    
+    return jsonify({'stocks': results, 'sectors': all_sectors, 'total': len(results)})
+
 @app.route('/analyse/<ticker>')
 @app.route('/<ticker>')
 def stock_landing(ticker):
