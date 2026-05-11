@@ -41,6 +41,30 @@ PAGES = [
             'style="border-radius:14px;display:block;" loading="lazy" title="Aktien Vergleichstool"></iframe>'
             '</div>\n<!-- /wp:html -->'
         )
+    },
+    {
+        "title": "Aktien-Screener",
+        "slug": "screener",
+        "content": (
+            '<!-- wp:paragraph --><p>Nutze unseren kostenlosen Aktien-Screener, um aus über 4.000 Aktien weltweit die perfekten Werte für dein Portfolio zu finden. Filtere nach KGV, Dividendenrendite, Umsatzwachstum und Marge.</p><!-- /wp:paragraph -->'
+            '<!-- wp:html -->\n'
+            '<div style="margin:24px 0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">'
+            f'<iframe src="{TOOL_BASE_URL}/screener?embed=1" width="100%" height="900" frameborder="0" '
+            'style="border-radius:14px;display:block;" loading="lazy" title="Aktien Screener"></iframe>'
+            '</div>\n<!-- /wp:html -->'
+        )
+    },
+    {
+        "title": "P2P Dashboard",
+        "slug": "p2p-dashboard",
+        "content": (
+            '<!-- wp:paragraph --><p>Vergleiche die besten P2P-Plattformen und berechne dein potenzielles passives Einkommen mit unserem Zinseszins-Rechner.</p><!-- /wp:paragraph -->'
+            '<!-- wp:html -->\n'
+            '<div style="margin:24px 0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">'
+            f'<iframe src="{TOOL_BASE_URL}/p2p?embed=1" width="100%" height="1100" frameborder="0" '
+            'style="border-radius:14px;display:block;" loading="lazy" title="P2P Dashboard"></iframe>'
+            '</div>\n<!-- /wp:html -->'
+        )
     }
 ]
 
