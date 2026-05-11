@@ -183,6 +183,45 @@ def screener_page():
     is_embedded = request.args.get('embed') == '1'
     return render_template('screener.html', is_embedded=is_embedded)
 
+# ─── P2P Dashboard ───────────────────────────────────────────
+@app.route('/p2p')
+def p2p_dashboard():
+    is_embedded = request.args.get('embed') == '1'
+    
+    # Static data for P2P platforms (could later be fetched from a CSV or API)
+    platforms = [
+        {
+            "id": "mintos", "name": "Mintos", "yield": 11.5, "bonus": "50€ Startbonus",
+            "logo": "https://assets.mintos.com/webapp/img/mintos-logo-dark-bg.31e96f8.webp",
+            "desc": "Der europäische Marktführer. Riesiges Angebot an Krediten und automatisiertes Investieren.",
+            "features": ["Marktführer", "Autoinvest", "Sekundärmarkt"],
+            "url": "https://www.mintos.com/de/"
+        },
+        {
+            "id": "bondora", "name": "Bondora (Go & Grow)", "yield": 6.75, "bonus": "5€ Startbonus",
+            "logo": "https://bondora.group/wp-content/uploads/2023/11/bondora_logo_black_txt.png",
+            "desc": "Die einfachste P2P-Plattform. Tägliche Zinsgutschrift und hohe Liquidität.",
+            "features": ["Tägliche Zinsen", "Hohe Liquidität", "Sehr einfach"],
+            "url": "https://www.bondora.com/de/"
+        },
+        {
+            "id": "robocash", "name": "Robocash", "yield": 11.0, "bonus": "1% Cashback (30 Tage)",
+            "logo": "https://robo.cash/images/logos/logo.svg",
+            "desc": "Vollautomatisiert. Fokus auf kurzlaufende Konsumkredite mit Buyback-Garantie.",
+            "features": ["100% Autoinvest", "Buyback-Garantie", "Kurze Laufzeiten"],
+            "url": "https://robo.cash/"
+        },
+        {
+            "id": "twino", "name": "Twino", "yield": 10.0, "bonus": "20€ Startbonus",
+            "logo": "https://cdn.brandfetch.io/idvBItVqiS/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1758849062557",
+            "desc": "Etablierter Anbieter aus Lettland mit Fokus auf besicherte Immobilien- und Geschäftskredite.",
+            "features": ["Reguliert", "Immobilien", "Buyback-Garantie"],
+            "url": "https://www.twino.eu/"
+        }
+    ]
+    
+    return render_template('p2p.html', platforms=platforms, is_embedded=is_embedded)
+
 @app.route('/api/screener')
 def api_screener():
     df = core.load_df()

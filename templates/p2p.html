@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Dashboard | Schatzsuche 4.0</title>
+    <meta name="description" content="Vergleiche P2P-Plattformen und berechne deine potenziellen Zinsen.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0b1120;
+            --surface: rgba(15, 23, 42, 0.95);
+            --card: rgba(30, 41, 59, 0.45);
+            --border: rgba(148, 163, 184, 0.12);
+            --accent: #10b981;
+            --accent-soft: rgba(16, 185, 129, 0.12);
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-dim: #64748b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'Inter', -apple-system, sans-serif; line-height: 1.5;
+            {% if is_embedded %} background: transparent !important; {% endif %}
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+        
+        .hero { text-align: center; margin-bottom: 50px; }
+        .hero h1 { font-size: 2.5rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 10px; }
+        .hero h1 span { color: var(--accent); }
+        .hero p { color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+
+        /* Calculator Section */
+        .calculator-card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 24px;
+            padding: 40px; margin-bottom: 40px; backdrop-filter: blur(16px);
+            display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;
+        }
+        @media (max-width: 900px) { .calculator-card { grid-template-columns: 1fr; } }
+        
+        .calc-controls { display: flex; flex-direction: column; gap: 24px; }
+        .input-group label { display: flex; justify-content: space-between; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; }
+        .val-display { color: var(--accent); font-weight: 800; font-size: 1.2rem; }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 3px solid #fff; box-shadow: 0 0 15px rgba(16,185,129,0.5); }
+        
+        .chart-container { height: 300px; position: relative; }
+
+        /* Platform Cards */
+        .platforms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); gap: 24px; }
+        @media (max-width: 600px) { .platforms-grid { grid-template-columns: 1fr; } }
+        
+        .platform-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+            padding: 30px; transition: transform 0.2s, border-color 0.2s;
+            display: flex; flex-direction: column;
+        }
+        .platform-card:hover { transform: translateY(-5px); border-color: var(--accent); background: rgba(30, 41, 59, 0.6); }
+        
+        .p-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .p-logo { height: 40px; max-width: 150px; object-fit: contain; }
+        .p-yield-badge {
+            background: var(--accent-soft); color: var(--accent); font-weight: 900; font-size: 1.4rem;
+            padding: 8px 16px; border-radius: 12px; border: 1px solid rgba(16,185,129,0.3);
+        }
+        
+        .p-desc { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px; flex-grow: 1; }
+        
+        .p-features { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+        .feature-item { font-size: 0.85rem; color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
+        .feature-item::before { content: '✓'; color: var(--accent); font-weight: 900; }
+        
+        .p-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 20px; }
+        .p-bonus { font-size: 0.85rem; font-weight: 700; color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 6px 12px; border-radius: 6px; }
+        .p-cta { background: var(--accent); color: white; text-decoration: none; font-weight: 700; font-size: 0.9rem; padding: 10px 20px; border-radius: 8px; transition: 0.2s; }
+        .p-cta:hover { filter: brightness(1.1); transform: scale(1.05); }
+
+        .calculated-return { margin-top: 15px; font-size: 1.1rem; font-weight: 700; text-align: right; }
+        .calculated-return span { color: var(--accent); font-size: 1.3rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hero">
+        <h1>P2P <span>Dashboard</span></h1>
+        <p>Vergleiche die besten Plattformen für P2P-Kredite und berechne dein passives Einkommen.</p>
+    </div>
+
+    <div class="calculator-card">
+        <div class="calc-controls">
+            <div class="input-group">
+                <label>Einmalanlage <span class="val-display" id="valAmount">10.000 €</span></label>
+                <input type="range" id="sliderAmount" min="500" max="50000" step="500" value="10000">
+            </div>
+            <div class="input-group">
+                <label>Anlagedauer <span class="val-display" id="valYears">5 Jahre</span></label>
+                <input type="range" id="sliderYears" min="1" max="20" step="1" value="5">
+            </div>
+            <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 10px;">
+                * Die Berechnung geht von einer Reinvestition der Zinsen (Zinseszinseffekt) aus. Die angegebenen Renditen sind historische Durchschnitte.
+            </p>
+        </div>
+        <div class="chart-container">
+            <canvas id="yieldChart"></canvas>
+        </div>
+    </div>
+
+    <div class="platforms-grid">
+        {% for p in platforms %}
+        <div class="platform-card" data-yield="{{ p.yield }}" data-name="{{ p.name }}">
+            <div class="p-header">
+                <img src="{{ p.logo }}" alt="{{ p.name }} Logo" class="p-logo">
+                <div class="p-yield-badge">{{ p.yield }} %</div>
+            </div>
+            <p class="p-desc">{{ p.desc }}</p>
+            <div class="p-features">
+                {% for f in p.features %}
+                <div class="feature-item">{{ f }}</div>
+                {% endfor %}
+            </div>
+            <div class="p-footer">
+                <div class="p-bonus">🎁 {{ p.bonus }}</div>
+                <a href="{{ p.url }}" target="_blank" class="p-cta">Zum Anbieter</a>
+            </div>
+            <div class="calculated-return">
+                Ertrag: <span class="calc-res-{{ loop.index0 }}">0 €</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+const platforms = [
+    {% for p in platforms %}
+    { name: "{{ p.name }}", yield: {{ p.yield }} },
+    {% endfor %}
+];
+
+let chart;
+const ctx = document.getElementById('yieldChart').getContext('2d');
+
+function formatEur(val) {
+    return Math.round(val).toLocaleString('de-DE') + ' €';
+}
+
+function updateCalculator() {
+    const amount = parseInt(document.getElementById('sliderAmount').value);
+    const years = parseInt(document.getElementById('sliderYears').value);
+    
+    document.getElementById('valAmount').textContent = formatEur(amount);
+    document.getElementById('valYears').textContent = years + (years === 1 ? ' Jahr' : ' Jahre');
+
+    const labels = platforms.map(p => p.name);
+    const data = platforms.map(p => {
+        // Zinseszins: Endkapital = Startkapital * (1 + p/100)^n
+        const endValue = amount * Math.pow(1 + (p.yield / 100), years);
+        return endValue - amount; // Nur der Gewinn
+    });
+
+    // Update cards
+    const cards = document.querySelectorAll('.platform-card');
+    cards.forEach((card, idx) => {
+        const span = card.querySelector('.calc-res-' + idx);
+        span.textContent = '+' + formatEur(data[idx]);
+    });
+
+    // Update Chart
+    if (chart) {
+        chart.data.datasets[0].data = data;
+        chart.update();
+    } else {
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = 'Inter';
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Reiner Zinsgewinn (€)',
+                    data: data,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '+' + formatEur(context.raw);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { callback: function(value) { return formatEur(value); } }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+}
+
+document.getElementById('sliderAmount').addEventListener('input', updateCalculator);
+document.getElementById('sliderYears').addEventListener('input', updateCalculator);
+
+// Initial calc
+updateCalculator();
+
+// Iframe Resize
+if (window.parent !== window) {
+    new ResizeObserver(() => {
+        window.parent.postMessage({ type: 'setHeight', height: document.documentElement.scrollHeight }, '*');
+    }).observe(document.body);
+}
+</script>
+</body>
+</html>
