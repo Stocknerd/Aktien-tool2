@@ -159,7 +159,7 @@ def api_dividend_calendar():
         
         results.append({
             'symbol': str(r['Symbol']),
-            'name': str(r.get('Security', r['Symbol'])),
+            'name': str(r['Security']) if pd.notna(r.get('Security')) else str(r['Symbol']),
             'ex_date': ex_date,
             'ex_month': ex_month,
             'div_yield': dy,
