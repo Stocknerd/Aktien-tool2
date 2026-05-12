@@ -240,8 +240,8 @@ def api_screener():
     results = []
     # Using specific columns to keep payload small
     for _, r in df.iterrows():
-        # Only include stocks that have at least some basic data
-        if pd.isna(r.get('Symbol')) or pd.isna(r.get('Security')):
+        # Only include stocks that have at least a Symbol
+        if pd.isna(r.get('Symbol')):
             continue
             
         sector = str(r.get('Sektor', '')) if pd.notna(r.get('Sektor')) else ''
