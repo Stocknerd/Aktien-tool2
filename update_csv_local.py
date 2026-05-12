@@ -118,7 +118,7 @@ def map_info(info: Dict) -> Dict:
         "EBIT": info.get("ebit"),
         "Bruttomarge": info.get("grossMargins"),
         "Operative Marge": info.get("operatingMargins"),
-        "Nettomarge": info.get("netMargins"),
+        "Nettomarge": info.get("profitMargins"),
         "Marktkapitalisierung": info.get("marketCap"),
         "Free Cashflow": info.get("freeCashflow"),
         "Operativer Cashflow": info.get("operatingCashflow"),
