@@ -249,6 +249,10 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
     currency = str(row.get('Währung') or row.get('W\u00e4hrung') or 'USD')
 
     logo_path = os.path.join(LOGO_DIR, f"{symb}.png")
+    if not os.path.exists(logo_path) and '.' in symb:
+        base_symb = symb.split('.')[0]
+        logo_path = os.path.join(LOGO_DIR, f"{base_symb}.png")
+        
     logo_h = 130
     logo_max_w = W - 2 * PAD
     y = 35   # Moved up from 60
