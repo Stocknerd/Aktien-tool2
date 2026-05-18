@@ -123,21 +123,23 @@
         body { background: transparent !important; padding: 0 !important; }
         .glass-card { box-shadow: none !important; border: none !important; padding: 10px !important; }
         h1 { display: none; }
-        .nav-actions { display: flex !important; }
+        .nav-actions { display: none !important; }
         {% endif %}
     </style>
 </head>
 <body>
     <div class="container">
+        {% if not is_embedded %}
         <!-- Unified Top Navigation Header -->
         <div class="nav-actions">
             <a href="/" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🏠 Home</a>
-            <a href="/screener{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🎯 Screener</a>
-            <a href="/dividenden-kalender{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📅 Kalender</a>
-            <a href="/compare{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-success btn-sm rounded-pill px-3" style="border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; font-weight:600;">📊 Vergleich</a>
-            <a href="/p2p{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💳 P2P</a>
-            <a href="/dividend-rechner{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💰 Dividenden-Rechner</a>
+            <a href="/screener" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🎯 Screener</a>
+            <a href="/dividenden-kalender" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📅 Kalender</a>
+            <a href="/compare" class="btn btn-outline-success btn-sm rounded-pill px-3" style="border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; font-weight:600;">📊 Vergleich</a>
+            <a href="/p2p" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💳 P2P</a>
+            <a href="/dividend-rechner" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💰 Dividenden-Rechner</a>
         </div>
+        {% endif %}
         
         <div class="glass-card shadow">
             <div class="text-center mb-4">

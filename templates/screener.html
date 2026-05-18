@@ -308,15 +308,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div class="container">
+    {% if not is_embedded %}
     <!-- Premium Top Navigation Action Header -->
     <div class="nav-actions">
-        <a href="/{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">🏠 Home</a>
-        <a href="/screener{% if is_embedded %}?embed=1{% endif %}" class="nav-btn active">🎯 Screener</a>
-        <a href="/dividenden-kalender{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">📅 Kalender</a>
-        <a href="/compare{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">📊 Vergleich</a>
-        <a href="/p2p{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">💳 P2P</a>
-        <a href="/dividend-rechner{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">💰 Dividenden-Rechner</a>
+        <a href="/" class="nav-btn">🏠 Home</a>
+        <a href="/screener" class="nav-btn active">🎯 Screener</a>
+        <a href="/dividenden-kalender" class="nav-btn">📅 Kalender</a>
+        <a href="/compare" class="nav-btn">📊 Vergleich</a>
+        <a href="/p2p" class="nav-btn">💳 P2P</a>
+        <a href="/dividend-rechner" class="nav-btn">💰 Dividenden-Rechner</a>
     </div>
+    {% endif %}
 
     <div class="hero">
         <div class="hero-left">
@@ -881,7 +883,7 @@ function loadPeers(stock) {
                 <span class="peer-name" title="${p.name}">${p.name}</span>
                 <span class="peer-tick">${p.symbol}</span>
             </div>
-            <a href="https://compare.schatzsuche40.de/?t1=${stock.symbol}&t2=${p.symbol}" target="_blank" class="action-link" style="font-size:0.7rem; padding:4px 8px;">
+            <a href="${window.parent !== window ? 'https://schatzsuche40.de/aktien-vergleichstool/' : '/compare'}?t1=${stock.symbol}&t2=${p.symbol}" target="_blank" class="action-link" style="font-size:0.7rem; padding:4px 8px;">
                 Duell ⚡
             </a>
         </div>

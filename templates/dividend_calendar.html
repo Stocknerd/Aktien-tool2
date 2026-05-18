@@ -353,15 +353,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div class="container">
+    {% if not is_embedded %}
     <!-- Premium Top Navigation Action Header -->
     <div class="nav-actions">
-        <a href="/{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">🏠 Home</a>
-        <a href="/screener{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">🎯 Screener</a>
-        <a href="/dividenden-kalender{% if is_embedded %}?embed=1{% endif %}" class="nav-btn active">📅 Kalender</a>
-        <a href="/compare{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">📊 Vergleich</a>
-        <a href="/p2p{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">💳 P2P</a>
-        <a href="/dividend-rechner{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">💰 Dividenden-Rechner</a>
+        <a href="/" class="nav-btn">🏠 Home</a>
+        <a href="/screener" class="nav-btn">🎯 Screener</a>
+        <a href="/dividenden-kalender" class="nav-btn active">📅 Kalender</a>
+        <a href="/compare" class="nav-btn">📊 Vergleich</a>
+        <a href="/p2p" class="nav-btn">💳 P2P</a>
+        <a href="/dividend-rechner" class="nav-btn">💰 Dividenden-Rechner</a>
     </div>
+    {% endif %}
 
     <div class="hero">
         <div class="hero-left">

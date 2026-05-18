@@ -272,7 +272,7 @@ HOMEPAGE_HTML = """<!-- wp:html -->
     </a>
 
     <!-- Tool 2: Aktien-Vergleich -->
-    <a href="https://schatzsuche40.de/vergleich/" class="s40-tool-card">
+    <a href="https://schatzsuche40.de/aktien-vergleichstool/" class="s40-tool-card">
       <span class="s40-tool-icon">&#9878;&#65039;</span>
       <div class="s40-tool-title">Aktien-Vergleich</div>
       <p class="s40-tool-desc">Vergleiche zwei Unternehmen direkt &mdash; Rentabilit&auml;t, Bewertung, Dividende. Wer hat fundamental die Nase vorn? Finde es in Sekunden heraus.</p>
@@ -282,8 +282,21 @@ HOMEPAGE_HTML = """<!-- wp:html -->
       <br>
       <span class="s40-tool-cta">Aktien vergleichen &rarr;</span>
     </a>
-    <!-- Tool 3: Dividenden-Rechner -->
-    <a href="https://schatzsuche40.de/dividend-rechner" class="s40-tool-card">
+
+    <!-- Tool 3: Aktien-Screener -->
+    <a href="https://schatzsuche40.de/screener/" class="s40-tool-card">
+      <span class="s40-tool-icon">&#127919;</span>
+      <div class="s40-tool-title">Aktien-Screener</div>
+      <p class="s40-tool-desc">Filtere Tausende von Aktien nach KGV, Dividendenrendite, Wachstum und Margen. Mit unserem High-Speed Multi-Faktor Filter findest du die besten Perlen.</p>
+      <span class="s40-tool-tag">High-Speed Filter</span>
+      <span class="s40-tool-tag">&#128200; Dividendenrendite</span>
+      <span class="s40-tool-tag">Wachstum</span>
+      <br>
+      <span class="s40-tool-cta">Werte filtern &rarr;</span>
+    </a>
+
+    <!-- Tool 4: Dividenden-Rechner -->
+    <a href="https://schatzsuche40.de/dividend-rechner/" class="s40-tool-card">
       <span class="s40-tool-icon">&#128181;</span>
       <div class="s40-tool-title">Dividenden-Rechner</div>
       <p class="s40-tool-desc">Behalte deine passiven Einkommensstr&ouml;me im Blick. Berechne deine Dividenden-Zahlungen und analysiere deinen monatlichen Cashflow in Sekunden.</p>
@@ -293,7 +306,7 @@ HOMEPAGE_HTML = """<!-- wp:html -->
       <span class="s40-tool-cta">Jetzt berechnen &rarr;</span>
     </a>
 
-    <!-- Tool 4: P2P-Vergleich -->
+    <!-- Tool 5: P2P-Vergleich -->
     <a href="https://schatzsuche40.de/die-besten-plattformen/" class="s40-tool-card">
       <span class="s40-tool-icon">&#128184;</span>
       <div class="s40-tool-title">P2P-Plattformen</div>
@@ -303,7 +316,6 @@ HOMEPAGE_HTML = """<!-- wp:html -->
       <br>
       <span class="s40-tool-cta">Plattformen prüfen &rarr;</span>
     </a>
-
   </div>
 
   <!-- Newsletter / Lead Magnet -->

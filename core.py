@@ -83,6 +83,36 @@ def load_df():
     if not os.path.exists(CSV_FILE): return pd.DataFrame()
     return pd.read_csv(CSV_FILE)
 
+def get_clean_name(row):
+    """
+    Safely extract a clean company name from a row (Series, dict, or similar)
+    prioritizing resolved_name, then Security, then Symbol, and avoiding pandas float 'nan'.
+    """
+    import pandas as pd
+    
+    # Try different name fields
+    for field in ['resolved_name', 'Security', 'Symbol']:
+        val = None
+        if hasattr(row, 'get'):
+            val = row.get(field)
+        else:
+            try:
+                val = row[field]
+            except:
+                pass
+        
+        if pd.notna(val):
+            # Check for pandas/numpy nan, or string nan, or empty string
+            s = str(val).strip()
+            if s and s.lower() not in ['nan', 'null', 'none', '<na>']:
+                # Clean up name a bit if needed (e.g. remove ".DE" or similar if it's a symbol)
+                if field == 'Symbol' and '.' in s:
+                    return s.split('.')[0]
+                return s
+                
+    # Ultimate fallback
+    return "Aktie"
+
 def _font(path: str, size: int, backup):
     try:
         f = ImageFont.truetype(path, size)
@@ -244,7 +274,7 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
 
     # ── 3. Logo ───────────────────────────────────────────────────
     symb   = str(row.get('Symbol') or '')
-    name   = str(row.get('Security') or symb)
+    name   = get_clean_name(row)
     sector = str(row.get('Sektor') or row.get('GICS Sector') or '')
     currency = str(row.get('Währung') or row.get('W\u00e4hrung') or 'USD')
 
@@ -604,8 +634,8 @@ def render_compare(rows: List[pd.Series], metrics: List[str] = None, watermark: 
     draw.text((MID - vs_w // 2, 40), "VS", fill=(255, 255, 255, 200), font=f_vs)
 
     # ── 5. Company Names + Tickers ────────────────────────────────
-    name1 = str(rows[0].get('Security', ''))
-    name2 = str(rows[1].get('Security', ''))
+    name1 = get_clean_name(rows[0])
+    name2 = get_clean_name(rows[1])
     sym1  = str(rows[0].get('Symbol', ''))
     sym2  = str(rows[1].get('Symbol', ''))
 
@@ -921,7 +951,7 @@ def render_blog_header(selected_stocks: List[Dict[str, Any]], title_text: str = 
     COL_W = (W - 4 * PAD) // 3
     for i, stock in enumerate(selected_stocks):
         symbol = str(stock.get('Symbol', 'N/A'))
-        name = str(stock.get('Security', 'N/A'))[:25]
+        name = get_clean_name(stock)[:25]
         
         cx = PAD + i * (COL_W + PAD) + COL_W // 2
         cy_base = 180
@@ -999,7 +1029,7 @@ def render_social_square_header(selected_stocks: List[Dict[str, Any]], title_tex
     
     for i, stock in enumerate(selected_stocks[:3]):
         symbol = str(stock.get('Symbol', 'N/A'))
-        name = str(stock.get('Security', 'N/A'))[:30]
+        name = get_clean_name(stock)[:30]
         
         y1 = START_Y + i * (BOX_H + GAP)
         y2 = y1 + BOX_H

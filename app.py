@@ -39,7 +39,7 @@ def get_ticker_meta(ticker):
                   'Aktien')
         return {
             'symbol': ticker,
-            'name': str(row.iloc[0].get('Langname', row.iloc[0].get('Security', ticker))),
+            'name': core.get_clean_name(row.iloc[0]),
             'sector': str(sector)
         }
     return None
@@ -63,7 +63,7 @@ def get_related_stocks(ticker, limit=6):
     for _, r in related.iterrows():
         res.append({
             'symbol': r['Symbol'],
-            'name': str(r.get('Langname', r.get('Security', r['Symbol'])))
+            'name': core.get_clean_name(r)
         })
     return res
 
@@ -159,7 +159,7 @@ def api_dividend_calendar():
         
         results.append({
             'symbol': str(r['Symbol']),
-            'name': str(r['Security']) if pd.notna(r.get('Security')) else str(r['Symbol']),
+            'name': core.get_clean_name(r),
             'ex_date': ex_date,
             'ex_month': ex_month,
             'div_yield': dy,
@@ -249,7 +249,7 @@ def api_screener():
         
         results.append({
             'symbol': str(r['Symbol']),
-            'name': str(r['Security']) if pd.notna(r.get('Security')) else str(r['Symbol']),
+            'name': core.get_clean_name(r),
             'sector': sector,
             'region': region,
             'kgv': safe_float(r.get('KGV')),
@@ -280,9 +280,11 @@ def stock_landing(ticker):
     row = df[df['Symbol'] == ticker]
     if row.empty:
         # Try to find by name if not found by exact symbol
-        match = df[df['Langname'].str.contains(ticker, case=False, na=False)]
-        if not match.empty:
-            return redirect(url_for('stock_landing', ticker=match.iloc[0]['Symbol']))
+        name_col = 'resolved_name' if 'resolved_name' in df.columns else ('Security' if 'Security' in df.columns else '')
+        if name_col:
+            match = df[df[name_col].str.contains(ticker, case=False, na=False)]
+            if not match.empty:
+                return redirect(url_for('stock_landing', ticker=match.iloc[0]['Symbol']))
         return redirect(url_for('home'))
     
     # Set a flag to trigger auto-analysis in index.html
@@ -295,7 +297,7 @@ def stock_landing(ticker):
     last_update_str = datetime.fromtimestamp(mtime).strftime('%d.%m.%Y %H:%M')
     
     is_embedded = request.args.get('embed') == '1'
-    company_name = str(row.iloc[0].get('Langname', ticker)) # Use Langname for SEO title
+    company_name = core.get_clean_name(row.iloc[0]) # Use clean name for SEO title
 
     return render_template(
         'index.html',
@@ -322,12 +324,13 @@ def search():
     q_norm = normalize(q)
     for _, row in df.iterrows():
         sym = normalize(row.get('Symbol') or '')
-        sec = normalize(row.get('Security') or '')
+        clean_n = core.get_clean_name(row)
+        sec = normalize(clean_n)
         lng = normalize(row.get('Langname') or '')
         if q_norm in sym or q_norm in sec or q_norm in lng:
             candidates.append({
                 'symbol': str(row.get('Symbol', '')), 
-                'name': str(row.get('Security', ''))
+                'name': clean_n
             })
         if len(candidates) >= 15: break
     return jsonify(candidates)
@@ -473,7 +476,7 @@ def display_result(filename):
         df = core.load_df()
         row = df[df['Symbol'] == ticker]
         if not row.empty:
-            company_name = str(row.iloc[0].get('Langname', row.iloc[0].get('Security', ticker)))
+            company_name = core.get_clean_name(row.iloc[0])
             related_stocks = get_related_stocks(ticker)
             
     return render_template(

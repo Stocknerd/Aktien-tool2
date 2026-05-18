@@ -15,18 +15,45 @@ HEADERS = {
     "Content-Type":  "application/json",
 }
 
+def make_iframe_block(slug, title, height):
+    iframe_id = f"iframe-{slug}"
+    url = f"{TOOL_BASE_URL}/?embed=1" if slug == "aktien-tool" else f"{TOOL_BASE_URL}/{slug}?embed=1"
+    if slug == "aktien-vergleichstool":
+        url = f"{TOOL_BASE_URL}/compare?embed=1"
+    
+    return (
+        f'<!-- wp:html -->\n'
+        f'<div style="margin:24px 0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">'
+        f'<iframe id="{iframe_id}" src="{url}" width="100%" height="{height}" frameborder="0" '
+        f'style="border-radius:14px;display:block;" loading="lazy" title="{title}"></iframe>'
+        f'</div>\n'
+        f'<script>\n'
+        f'(function() {{\n'
+        f'    var iframe = document.getElementById("{iframe_id}");\n'
+        f'    if (iframe) {{\n'
+        f'        var parentParams = window.location.search;\n'
+        f'        if (parentParams) {{\n'
+        f'            var currentSrc = iframe.src;\n'
+        f'            if (currentSrc.indexOf("?") !== -1) {{\n'
+        f'                iframe.src = currentSrc + "&" + parentParams.substring(1);\n'
+        f'            }} else {{\n'
+        f'                iframe.src = currentSrc + parentParams;\n'
+        f'            }}\n'
+        f'        }}\n'
+        f'    }}\n'
+        f'}})();\n'
+        f'</script>\n'
+        f'<!-- /wp:html -->'
+    )
+
 PAGES = [
     {
         "title": "Aktien-Analyse Tool",
-        "slug": "aktien-tool",  # Nutze den existierenden Slug
+        "slug": "aktien-tool",
         "content": (
             '<!-- wp:paragraph --><p>Nutze unser professionelles Aktien-Analyse Tool, um Kennzahlen, '
             'Analysten-Ratings und Kursziele in einer übersichtlichen Infografik zu visualisieren.</p><!-- /wp:paragraph -->'
-            '<!-- wp:html -->\n'
-            '<div style="margin:24px 0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">'
-            f'<iframe src="{TOOL_BASE_URL}/?embed=1" width="100%" height="850" frameborder="0" '
-            'style="border-radius:14px;display:block;" loading="lazy" title="Aktienanalyse Tool"></iframe>'
-            '</div>\n<!-- /wp:html -->'
+            + make_iframe_block("aktien-tool", "Aktienanalyse Tool", 850)
         )
     },
     {
@@ -35,11 +62,7 @@ PAGES = [
         "content": (
             '<!-- wp:paragraph --><p>Vergleiche zwei Aktien direkt miteinander. Unser Tool stellt '
             'die wichtigsten Kennzahlen gegenüber und kürt einen Gewinner basierend auf den Fundamentaldaten.</p><!-- /wp:paragraph -->'
-            '<!-- wp:html -->\n'
-            '<div style="margin:24px 0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">'
-            f'<iframe src="{TOOL_BASE_URL}/compare?embed=1" width="100%" height="850" frameborder="0" '
-            'style="border-radius:14px;display:block;" loading="lazy" title="Aktien Vergleichstool"></iframe>'
-            '</div>\n<!-- /wp:html -->'
+            + make_iframe_block("aktien-vergleichstool", "Aktien Vergleichstool", 850)
         )
     },
     {
@@ -47,11 +70,7 @@ PAGES = [
         "slug": "screener",
         "content": (
             '<!-- wp:paragraph --><p>Nutze unseren kostenlosen Aktien-Screener, um aus über 4.000 Aktien weltweit die perfekten Werte für dein Portfolio zu finden. Filtere nach KGV, Dividendenrendite, Umsatzwachstum und Marge.</p><!-- /wp:paragraph -->'
-            '<!-- wp:html -->\n'
-            '<div style="margin:24px 0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">'
-            f'<iframe src="{TOOL_BASE_URL}/screener?embed=1" width="100%" height="900" frameborder="0" '
-            'style="border-radius:14px;display:block;" loading="lazy" title="Aktien Screener"></iframe>'
-            '</div>\n<!-- /wp:html -->'
+            + make_iframe_block("screener", "Aktien Screener", 900)
         )
     },
     {
@@ -59,11 +78,7 @@ PAGES = [
         "slug": "p2p-dashboard",
         "content": (
             '<!-- wp:paragraph --><p>Vergleiche die besten P2P-Plattformen und berechne dein potenzielles passives Einkommen mit unserem Zinseszins-Rechner.</p><!-- /wp:paragraph -->'
-            '<!-- wp:html -->\n'
-            '<div style="margin:24px 0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">'
-            f'<iframe src="{TOOL_BASE_URL}/p2p?embed=1" width="100%" height="1100" frameborder="0" '
-            'style="border-radius:14px;display:block;" loading="lazy" title="P2P Dashboard"></iframe>'
-            '</div>\n<!-- /wp:html -->'
+            + make_iframe_block("p2p", "P2P Dashboard", 1100)
         )
     },
     {
@@ -71,11 +86,7 @@ PAGES = [
         "slug": "dividend-rechner",
         "content": (
             '<!-- wp:paragraph --><p>Simuliere und berechne dein passives Dividenden-Einkommen mit deinen Lieblingsaktien und unserem interaktiven Zinseszins-Rechner.</p><!-- /wp:paragraph -->'
-            '<!-- wp:html -->\n'
-            '<div style="margin:24px 0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">'
-            f'<iframe src="{TOOL_BASE_URL}/dividend-rechner?embed=1" width="100%" height="950" frameborder="0" '
-            'style="border-radius:14px;display:block;" loading="lazy" title="Dividenden Rechner"></iframe>'
-            '</div>\n<!-- /wp:html -->'
+            + make_iframe_block("dividend-rechner", "Dividenden Rechner", 950)
         )
     }
 ]
