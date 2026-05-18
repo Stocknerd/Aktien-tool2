@@ -342,9 +342,9 @@ def update_homepage():
     print("=" * 60)
 
     # Get current page
-    r = requests.get(f"{BASE}/pages/1045?context=edit", headers=HEADERS, timeout=10)
+    r = requests.get(f"{BASE}/pages/191?context=edit", headers=HEADERS, timeout=10)
     if r.status_code != 200:
-        print(f"Could not fetch page 1045: {r.status_code} {r.text[:200]}")
+        print(f"Could not fetch page 191: {r.status_code} {r.text[:200]}")
         return False
 
     page = r.json()
@@ -360,7 +360,7 @@ def update_homepage():
         new_content = HOMEPAGE_HTML + "\n\n" + current
 
     payload = {"content": new_content}
-    r = requests.post(f"{BASE}/pages/1045", headers=HEADERS, json=payload, timeout=20)
+    r = requests.post(f"{BASE}/pages/191", headers=HEADERS, json=payload, timeout=20)
 
     if r.status_code in (200, 201):
         d = r.json()
