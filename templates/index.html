@@ -263,8 +263,9 @@
           <a href="/analyse/{{ stock.symbol }}" class="stock-card-link text-decoration-none">
             <div class="glass-card p-3 text-center h-100 stock-hover-card">
               <div class="mb-2">
-                <img src="https://ui-avatars.com/api/?name={{ stock.symbol }}&background=0d1322&color=10b981" 
-                     class="rounded-circle" style="width: 32px; height: 32px; object-fit: contain; filter: grayscale(0.2); border: 1px solid var(--border);">
+                <img src="/static/logos/{{ stock.symbol }}.png" 
+                     onerror="if(!this.triedBase){this.triedBase=true; this.src='/static/logos/{{ stock.symbol.split(\'.\')[0] }}.png';}else{this.src='https://ui-avatars.com/api/?name={{ stock.symbol }}&background=0d1322&color=10b981';}"
+                     class="rounded-circle" style="width: 32px; height: 32px; object-fit: contain; border: 1px solid var(--border);">
               </div>
               <div class="fw-bold small text-white mb-1">{{ stock.symbol }}</div>
               <div class="text-muted" style="font-size: 0.7rem;">{{ stock.name | truncate(15) }}</div>

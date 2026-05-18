@@ -83,9 +83,17 @@ METRIC_DESC = {
 _df_cache_lock = threading.Lock()
 _CACHED_DF = None
 _CACHED_MTIME = 0.0
+_SEARCH_INDEX = None
+
+def get_search_index():
+    global _SEARCH_INDEX
+    if _SEARCH_INDEX is not None:
+        return _SEARCH_INDEX
+    load_df()
+    return _SEARCH_INDEX or []
 
 def load_df():
-    global _CACHED_DF, _CACHED_MTIME
+    global _CACHED_DF, _CACHED_MTIME, _SEARCH_INDEX
     if not os.path.exists(CSV_FILE):
         return pd.DataFrame()
         
@@ -107,6 +115,28 @@ def load_df():
             df = pd.read_csv(CSV_FILE)
             _CACHED_DF = df
             _CACHED_MTIME = mtime
+            
+            # Rebuild search index
+            new_index = []
+            for _, row in df.iterrows():
+                sym = str(row.get('Symbol') or '').strip()
+                if not sym:
+                    continue
+                clean_n = get_clean_name(row)
+                lng = str(row.get('Langname') or '').strip()
+                
+                # Pre-normalize for instant matching
+                def norm(s):
+                    return s.lower().replace('-', ' ').replace('.', ' ').strip()
+                
+                new_index.append({
+                    'symbol': sym,
+                    'name': clean_n,
+                    'norm_sym': norm(sym),
+                    'norm_name': norm(clean_n),
+                    'norm_lng': norm(lng)
+                })
+            _SEARCH_INDEX = new_index
             return df
         except Exception:
             if _CACHED_DF is not None:

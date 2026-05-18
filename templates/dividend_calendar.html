@@ -705,7 +705,20 @@ function render() {
         const mcapHtml = d.mcap != null ? `<span class="metric-val">${(d.mcap / 1e9).toFixed(1)} Mrd</span>` : '<span class="metric-val na">–</span>';
 
         return `<tr onclick="openDrawer('${d.symbol}')">
-            <td><div class="stock-cell"><div class="stock-icon">${ini}</div><div><div class="stock-name" title="${esc(d.name)}">${esc(d.name)}</div><div class="stock-ticker">${d.symbol}</div></div></div></td>
+            <td>
+                <div class="stock-cell">
+                    <div class="stock-icon">
+                        <img src="/static/logos/${d.symbol}.png" 
+                             onerror="if(!this.triedBase){this.triedBase=true; this.src='/static/logos/' + '${d.symbol}'.split('.')[0] + '.png';}else{this.style.display='none'; this.nextElementSibling.style.display='flex';}"
+                             style="width: 100%; height: 100%; object-fit: contain; border-radius: 6px;">
+                        <span style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; font-size: 0.65rem;">${ini}</span>
+                    </div>
+                    <div>
+                        <div class="stock-name" title="${esc(d.name)}">${esc(d.name)}</div>
+                        <div class="stock-ticker">${d.symbol}</div>
+                    </div>
+                </div>
+            </td>
             <td><span class="sector-pill" title="${esc(d.sector)}">${esc(d.sector || '–')}</span></td>
             <td>${dateHtml}</td>
             <td>${urgencyHtml}</td>
@@ -751,7 +764,13 @@ function openDrawer(ticker) {
     if (!stock) return;
     currentStock = stock;
     
-    ui.drawerIcon.textContent = stock.symbol.substring(0, 2).toUpperCase();
+    const baseSymb = stock.symbol.split('.')[0];
+    ui.drawerIcon.innerHTML = `
+        <img src="/static/logos/${stock.symbol}.png" 
+             onerror="if(!this.triedBase){this.triedBase=true; this.src='/static/logos/${baseSymb}.png';}else{this.style.display='none'; this.nextElementSibling.style.display='flex';}"
+             style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;">
+        <span style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center;">${stock.symbol.substring(0, 2).toUpperCase()}</span>
+    `;
     ui.drawerName.textContent = stock.name;
     ui.drawerTicker.textContent = stock.symbol + " • " + (stock.sector || "Kein Sektor");
     

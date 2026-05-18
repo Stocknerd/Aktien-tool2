@@ -316,21 +316,17 @@ def stock_landing(ticker):
 @app.route('/search')
 def search():
     q = (request.args.get('q') or '').strip().lower()
-    df = core.load_df()
     if not q: return jsonify([])
     candidates = []
     def normalize(s):
         return str(s).lower().replace('-', ' ').replace('.', ' ').strip()
     q_norm = normalize(q)
-    for _, row in df.iterrows():
-        sym = normalize(row.get('Symbol') or '')
-        clean_n = core.get_clean_name(row)
-        sec = normalize(clean_n)
-        lng = normalize(row.get('Langname') or '')
-        if q_norm in sym or q_norm in sec or q_norm in lng:
+    index = core.get_search_index()
+    for item in index:
+        if q_norm in item['norm_sym'] or q_norm in item['norm_name'] or q_norm in item['norm_lng']:
             candidates.append({
-                'symbol': str(row.get('Symbol', '')), 
-                'name': clean_n
+                'symbol': item['symbol'], 
+                'name': item['name']
             })
         if len(candidates) >= 15: break
     return jsonify(candidates)
