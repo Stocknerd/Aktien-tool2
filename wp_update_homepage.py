@@ -341,35 +341,43 @@ def update_homepage():
     print("Homepage Redesign - schatzsuche40.de")
     print("=" * 60)
 
-    # Get current page
-    r = requests.get(f"{BASE}/pages/191?context=edit", headers=HEADERS, timeout=10)
-    if r.status_code != 200:
-        print(f"Could not fetch page 191: {r.status_code} {r.text[:200]}")
-        return False
+    # We update both pages 1045 (Willkommen) and 191 (Schatzsuche 4.0) to ensure consistency
+    target_ids = [1045, 191]
+    success = True
+    
+    for pid in target_ids:
+        print(f"\nProcessing page ID {pid}...")
+        # Get current page
+        r = requests.get(f"{BASE}/pages/{pid}?context=edit", headers=HEADERS, timeout=10)
+        if r.status_code != 200:
+            print(f"Could not fetch page {pid}: {r.status_code} {r.text[:200]}")
+            success = False
+            continue
 
-    page = r.json()
-    current = page.get("content", {}).get("raw", "")
-    print(f"Current homepage content: {len(current)} chars")
+        page = r.json()
+        current = page.get("content", {}).get("raw", "")
+        print(f"Current page content length: {len(current)} chars")
 
-    # Replace existing hero/toolbox block if present, else prepend
-    if "s40-wrapper" in current or "s40-hero" in current:
-        print("Existing premium block found - replacing...")
-        new_content = HOMEPAGE_HTML
-    else:
-        print("Prepending new premium block...")
-        new_content = HOMEPAGE_HTML + "\n\n" + current
+        # Replace existing hero/toolbox block if present, else prepend
+        if "s40-wrapper" in current or "s40-hero" in current:
+            print("Existing premium block found - replacing...")
+            new_content = HOMEPAGE_HTML
+        else:
+            print("Prepending new premium block...")
+            new_content = HOMEPAGE_HTML + "\n\n" + current
 
-    payload = {"content": new_content}
-    r = requests.post(f"{BASE}/pages/191", headers=HEADERS, json=payload, timeout=20)
+        payload = {"content": new_content}
+        r = requests.post(f"{BASE}/pages/{pid}", headers=HEADERS, json=payload, timeout=20)
 
-    if r.status_code in (200, 201):
-        d = r.json()
-        print(f"SUCCESS! Homepage updated.")
-        print(f"View: {d.get('link', 'N/A')}")
-        return True
-    else:
-        print(f"FAILED: {r.status_code} {r.text[:400]}")
-        return False
+        if r.status_code in (200, 201):
+            d = r.json()
+            print(f"SUCCESS! Page {pid} updated.")
+            print(f"View: {d.get('link', 'N/A')}")
+        else:
+            print(f"FAILED for page {pid}: {r.status_code} {r.text[:400]}")
+            success = False
+
+    return success
 
 
 if __name__ == "__main__":
