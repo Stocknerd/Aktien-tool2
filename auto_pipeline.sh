@@ -88,7 +88,7 @@ echo ""
 echo "── Step 4: AWS Deploy ──"
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
     "$AWS_HOST" \
-    "cd /home/ubuntu/aktien-tool2 && bash deploy.sh && sudo systemctl restart compare-app.service" || {
+    "cd /home/ubuntu/aktien-tool2 && bash deploy.sh && sudo systemctl restart aktien-tool.service" || {
     echo "⚠ Deploy fehlgeschlagen"
 }
 

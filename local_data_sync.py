@@ -51,7 +51,7 @@ def main():
     ssh_cmd = [
         "ssh", "-i", ssh_key,
         "ubuntu@3.71.191.12",
-        "cd /home/ubuntu/aktien-tool2 && bash deploy.sh && sudo systemctl restart compare-app.service"
+        "cd /home/ubuntu/aktien-tool2 && bash deploy.sh && sudo systemctl restart aktien-tool.service"
     ]
     res = subprocess.run(ssh_cmd)
     
