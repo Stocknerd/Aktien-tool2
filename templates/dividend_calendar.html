@@ -702,7 +702,8 @@ function render() {
         const ini = d.symbol.substring(0, 2).toUpperCase();
         const kgvHtml = d.kgv != null ? `<span class="metric-val">${d.kgv.toFixed(1)}</span>` : '<span class="metric-val na">–</span>';
         const kuvHtml = d.kuv != null ? `<span class="metric-val">${d.kuv.toFixed(1)}</span>` : '<span class="metric-val na">–</span>';
-        const mcapHtml = d.mcap != null ? `<span class="metric-val">${(d.mcap / 1e9).toFixed(1)} Mrd</span>` : '<span class="metric-val na">–</span>';
+        const mcap_val = d.mcap ? (d.mcap / 1e9) : null;
+        const mcapHtml = mcap_val !== null ? `<span class="metric-val">${mcap_val.toLocaleString('de-DE', {maximumFractionDigits:1})} Mrd ${d.currency || 'USD'}</span>` : '<span class="metric-val na">–</span>';
 
         return `<tr onclick="openDrawer('${d.symbol}')">
             <td>
