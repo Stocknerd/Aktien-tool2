@@ -698,7 +698,8 @@ function render() {
 
     ui.body.innerHTML = slice.map(d => {
         const ini = d.symbol.substring(0, 2).toUpperCase();
-        const mcap = d.mcap ? (d.mcap / 1e9).toFixed(1) + ' Mrd' : '<span class="val-none">–</span>';
+        const mcap_val = d.mcap ? (d.mcap / 1e9) : null;
+        const mcap = mcap_val !== null ? mcap_val.toLocaleString('de-DE', {maximumFractionDigits:1}) + ' Mrd ' + (d.currency || 'USD') : '<span class="val-none">–</span>';
         
         return `<tr onclick="openDrawer('${d.symbol}')">
             <td>

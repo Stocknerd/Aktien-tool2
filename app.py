@@ -237,6 +237,16 @@ def api_screener():
             pass
         return default
 
+    def safe_float_pct(val, default=None):
+        try:
+            if pd.notna(val):
+                v = float(str(val).replace(',', '.'))
+                if math.isfinite(v):
+                    return round(v * 100.0, 2)
+        except:
+            pass
+        return default
+
     results = []
     # Using specific columns to keep payload small
     for _, r in df.iterrows():
@@ -254,12 +264,13 @@ def api_screener():
             'region': region,
             'kgv': safe_float(r.get('KGV')),
             'div_yield': safe_float(r.get('Dividendenrendite')),
-            'umsatz_wachstum': safe_float(r.get('Umsatzwachstum 3J (erwartet)')),
-            'netto_marge': safe_float(r.get('Nettomarge')) if pd.notna(r.get('Nettomarge')) else safe_float(r.get('Operative Marge')),
-            'op_marge': safe_float(r.get('Operative Marge')),
-            'roe': safe_float(r.get('Eigenkapitalrendite')),
+            'umsatz_wachstum': safe_float_pct(r.get('Umsatzwachstum 3J (erwartet)')),
+            'netto_marge': safe_float_pct(r.get('Nettomarge')) if pd.notna(r.get('Nettomarge')) else safe_float_pct(r.get('Operative Marge')),
+            'op_marge': safe_float_pct(r.get('Operative Marge')),
+            'roe': safe_float_pct(r.get('Eigenkapitalrendite')),
             'kbv': safe_float(r.get('KBV')),
             'mcap': safe_float(r.get('Marktkapitalisierung')),
+            'currency': str(r.get('Währung', '')) if pd.notna(r.get('Währung')) else '',
             'rating': str(r.get('Recommendation Key', '')) if pd.notna(r.get('Recommendation Key')) else ''
         })
         

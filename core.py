@@ -217,10 +217,10 @@ def display_value(key: str, row) -> str:
         # Dividendenrendite is stored as a plain decimal % (e.g. 0.4 = 0.4%)
         # Marge / Rendite / Wachstum / Quote stored as fraction (0.35 = 35%) → multiply
         is_div = "dividende" in kl and "rendite" in kl  # Dividendenrendite only
-        is_div_or_yield = "dividende" in kl or "yield" in kl
+        is_div_or_yield = is_div or "yield" in kl
         should_be_percent = any(k in kl for k in [
-            "rendite", "marge", "wachstum", "quote", "dividende", "gewinn", "yield"
-        ])
+            "rendite", "marge", "wachstum", "quote", "gewinn", "yield"
+        ]) or is_div
         if should_be_percent:
             if abs(f_val) < 0.001: return "0.0%"
             if not is_div and abs(f_val) < 5.0 and f_val != 0:
@@ -604,7 +604,7 @@ def _is_low_better(metric_key: str) -> bool:
     mk = metric_key.upper()
     if any(x in mk for x in ["MARGE", "RENDITE", "GROWTH", "WACHSTUM"]):
         return False
-    return any(k in mk for k in ["KGV", "PE", "KUV", "KBV", "SCHULDEN", "PEG", "EV/"])
+    return any(k in mk for k in ["KGV", "PE", "KUV", "KBV", "SCHULDEN", "PEG", "EV/", "VERSCHULDUNG"])
 
 def _compare_values(n1: float, n2: float, low_better: bool) -> Tuple[bool, bool]:
     """
