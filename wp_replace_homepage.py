@@ -85,12 +85,46 @@ NEW_CONTENT = """<!-- wp:html -->
       <span class="s40-tool-cta">Aktien vergleichen &rarr;</span>
     </a>
 
-    <div class="s40-tool-card s40-coming-soon">
+    <a href="https://schatzsuche40.de/screener/" class="s40-tool-card">
+      <span class="s40-tool-icon">&#127919;</span>
+      <div class="s40-tool-title">Aktien-Screener</div>
+      <p class="s40-tool-desc">Filtere Tausende von Aktien nach KGV, Dividendenrendite, Wachstum und Margen. Mit unserem High-Speed Multi-Faktor Filter findest du die besten Perlen.</p>
+      <span class="s40-tool-tag">High-Speed Filter</span>
+      <span class="s40-tool-tag">&#128200; Dividendenrendite</span>
+      <span class="s40-tool-tag">Wachstum</span>
+      <br>
+      <span class="s40-tool-cta">Werte filtern &rarr;</span>
+    </a>
+
+    <a href="https://schatzsuche40.de/dividend-rechner/" class="s40-tool-card">
       <span class="s40-tool-icon">&#128181;</span>
-      <div class="s40-tool-title">Dividenden-Tracker</div>
-      <p class="s40-tool-desc">Behalte deine passiven Einkommensstr&ouml;me im Blick. Plane deine Dividenden &amp; analysiere deinen Cashflow.</p>
-      <span class="s40-tool-tag">&#9200; Coming Soon</span>
-    </div>
+      <div class="s40-tool-title">Dividenden-Rechner</div>
+      <p class="s40-tool-desc">Behalte deine passiven Einkommensstr&ouml;me im Blick. Berechne deine Dividenden-Zahlungen und analysiere deinen monatlichen Cashflow in Sekunden.</p>
+      <span class="s40-tool-tag">&#128200; Cashflow-Check</span>
+      <span class="s40-tool-tag">Monats-Vorschau</span>
+      <br>
+      <span class="s40-tool-cta">Jetzt berechnen &rarr;</span>
+    </a>
+
+    <a href="https://schatzsuche40.de/dividenden-kalender/" class="s40-tool-card">
+      <span class="s40-tool-icon">&#128197;</span>
+      <div class="s40-tool-title">Dividenden-Kalender</div>
+      <p class="s40-tool-desc">Verpasse nie wieder einen Ex-Tag oder Zahltag. Unser interaktiver Kalender listet alle Aussch&uuml;ttungstermine f&uuml;r &uuml;ber 4.000 Aktien weltweit.</p>
+      <span class="s40-tool-tag">Ex-Termine</span>
+      <span class="s40-tool-tag">Zahltage</span>
+      <br>
+      <span class="s40-tool-cta">Kalender &ouml;ffnen &rarr;</span>
+    </a>
+
+    <a href="https://schatzsuche40.de/die-besten-plattformen/" class="s40-tool-card">
+      <span class="s40-tool-icon">&#128184;</span>
+      <div class="s40-tool-title">P2P-Plattformen</div>
+      <p class="s40-tool-desc">Passives Einkommen durch Privatkredite. Wir vergleichen die besten Plattformen wie Mintos und Bondora f&uuml;r dein Portfolio.</p>
+      <span class="s40-tool-tag">&#128200; 10%+ Rendite</span>
+      <span class="s40-tool-tag">Platform-Check</span>
+      <br>
+      <span class="s40-tool-cta">Plattformen pr&uuml;fen &rarr;</span>
+    </a>
   </div>
 </div>
 <!-- /wp:html -->"""
