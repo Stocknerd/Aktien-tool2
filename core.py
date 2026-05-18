@@ -576,21 +576,11 @@ def _is_low_better(metric_key: str) -> bool:
 def _compare_values(n1: float, n2: float, low_better: bool) -> Tuple[bool, bool]:
     """
     Safely compare two numbers.
-    For low_better:
-      - If both are positive: lower is better.
-      - If one is positive and one is negative/zero: the positive one is always better.
-      - If both are negative/zero: the closer to zero (less negative) is better.
-    For high_better:
-      - Higher is better.
+    For low_better: lower is better.
+    For high_better: higher is better.
     """
     if low_better:
-        if n1 > 0 and n2 > 0:
-            return n1 < n2, n2 < n1
-        if n1 > 0 and n2 <= 0:
-            return True, False
-        if n2 > 0 and n1 <= 0:
-            return False, True
-        return n1 > n2, n2 > n1
+        return n1 < n2, n2 < n1
     else:
         return n1 > n2, n2 > n1
 
