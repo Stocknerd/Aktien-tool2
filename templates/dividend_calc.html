@@ -4,199 +4,413 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Dividenden-Rechner | Schatzsuche 4.0</title>
+    <meta name="description" content="Simuliere und berechne dein passives Dividenden-Einkommen mit deinen Lieblingsaktien und unserem Zinseszins-Rechner.">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/dividend.css') }}" rel="stylesheet">
     <style>
         body {
-            background-color: #0f172a;
+            background-color: #090e1a;
             background-image: 
-                radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
             color: white;
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
+            {% if is_embedded %} background: transparent !important; {% endif %}
         }
-        .navbar {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        
+        /* Premium Navigation Bar */
+        .nav-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
         }
-        .search-results {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #1e293b;
-            border-radius: 12px;
-            margin-top: 5px;
-            z-index: 1000;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid rgba(255,255,255,0.1);
-            display: none;
-        }
-        .search-item {
-            padding: 12px 20px;
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary, #94a3b8);
+            border-radius: 50px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 6px 16px;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        .search-item:hover {
-            background: rgba(16, 185, 129, 0.1);
+        .nav-btn:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            color: var(--text, #f8fafc);
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+        .nav-btn.active {
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.08);
+        }
+
+        .navbar {
+            background: rgba(13, 20, 38, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .navbar-brand {
+            font-weight: 900 !important;
+            letter-spacing: -0.02em;
+        }
+        .navbar-brand span {
+            color: #10b981;
+        }
+        /* Custom layout grids for calculator page */
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 30px;
+        }
+        @media (max-width: 992px) {
+            .calculator-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .card-panel {
+            background: rgba(13, 20, 38, 0.55);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 26px;
+            backdrop-filter: blur(16px);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
         }
     </style>
 </head>
 <body>
+    <!-- Chart.js CDN for visual compounding curve -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    {% if not is_embedded %}
     <nav class="navbar navbar-dark mb-4">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/">SCHATZSUCHE 4.0</a>
-            <div class="ms-auto">
-                <a href="/" class="btn btn-outline-light btn-sm rounded-pill">Zurück zum Vergleich</a>
+            <a class="navbar-brand" href="/">SCHATZ<span>SUCHE 4.0</span></a>
+            <div class="ms-auto" style="display: flex; gap: 10px;">
+                <a href="/dividenden-kalender" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border-color: rgba(255,255,255,0.15)">📅 Kalender</a>
+                <a href="/" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border-color: rgba(255,255,255,0.15)">⚡ Aktien-Screener</a>
             </div>
         </div>
     </nav>
+    {% endif %}
 
     <div class="container">
+        {% if not is_embedded %}
+        <!-- Premium Top Navigation Action Header -->
+        <div class="nav-actions">
+            <a href="/{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">🏠 Home</a>
+            <a href="/screener{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">🎯 Screener</a>
+            <a href="/dividenden-kalender{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">📅 Kalender</a>
+            <a href="/compare{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">📊 Vergleich</a>
+            <a href="/p2p{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">💳 P2P</a>
+            <a href="/dividend-rechner{% if is_embedded %}?embed=1{% endif %}" class="nav-btn active">💰 Dividenden-Rechner</a>
+        </div>
+        {% endif %}
+        <!-- Sticky top partner broker funnels -->
+        <div class="broker-banner mb-4">
+            <a href="https://www.financeads.net/tc.php?t=47128C274449894T" target="_blank" class="broker-card">
+                <div class="broker-meta">
+                    <div class="broker-logo">TR</div>
+                    <div>
+                        <div class="broker-name">Trade Republic</div>
+                        <div class="broker-desc">0€ Provision • Sparpläne ab 1€</div>
+                    </div>
+                </div>
+                <span class="broker-cta">Kostenlos eröffnen</span>
+            </a>
+            <a href="https://www.financeads.net/tc.php?t=47128C87024090T" target="_blank" class="broker-card">
+                <div class="broker-meta">
+                    <div class="broker-logo">CD</div>
+                    <div>
+                        <div class="broker-name">Comdirect</div>
+                        <div class="broker-desc">Exzellenter Support • Depot kostenlos</div>
+                    </div>
+                </div>
+                <span class="broker-cta">Depot sichern</span>
+            </a>
+            <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" class="broker-card">
+                <div class="broker-meta">
+                    <div class="broker-logo">CB</div>
+                    <div>
+                        <div class="broker-name">Consorsbank</div>
+                        <div class="broker-desc">50€ Freetrade Prämie</div>
+                    </div>
+                </div>
+                <span class="broker-cta">Prämie abholen</span>
+            </a>
+        </div>
+
         <div class="calc-container">
             <div class="calc-header">
-                <h1>Dividenden-Rechner <small style="font-size: 0.8rem; opacity: 0.5;">v2.1</small></h1>
-                <p class="text-muted">Berechne dein passives Einkommen mit deinen Lieblingsaktien.</p>
+                <h1>Dividenden-<span>Rechner</span></h1>
+                <p class="text-secondary">Simuliere dein passives Einkommen, plane Sparpläne und nutze den Zinseszins-Effekt.</p>
             </div>
 
-            <div class="input-section">
-                <div class="form-group position-relative">
-                    <label for="stockSearch">Aktie suchen</label>
-                    <input type="text" id="stockSearch" placeholder="Name oder Ticker (z.B. Apple)..." autocomplete="off">
-                    <div id="searchResults" class="search-results"></div>
-                    <input type="hidden" id="selectedTicker">
+            <div class="calculator-grid">
+                <!-- Left panel: Inputs and simulation -->
+                <div class="card-panel">
+                    <h3 class="panel-title">⚙ Simulation & Parameter</h3>
+                    
+                    <div class="form-group position-relative">
+                        <label for="stockSearch">Aktie auswählen</label>
+                        <input type="text" id="stockSearch" placeholder="Suche nach Name oder Symbol (z.B. Apple, BMW, AAPL)..." autocomplete="off">
+                        <div id="searchResults" class="search-results"></div>
+                        <input type="hidden" id="selectedTicker">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label for="calcMode">Berechnung nach</label>
+                            <select id="calcMode" class="form-select">
+                                <option value="amount">Investitionsbetrag (€)</option>
+                                <option value="shares">Anzahl Aktienanteile</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="monthlySparplan">Monatlicher Sparplan (€)</label>
+                            <input type="number" id="monthlySparplan" value="100" min="0" step="25">
+                        </div>
+                    </div>
+
+                    <!-- Amount inputs -->
+                    <div class="form-group" id="amountGroup">
+                        <div style="display: flex; justify-content: space-between;">
+                            <label for="investAmount">Investition (€)</label>
+                            <span id="investAmountDisplay" style="color: var(--accent); font-weight: 700;">1.000 €</span>
+                        </div>
+                        <input type="range" id="investAmountSlider" min="100" max="50000" step="500" value="1000" class="range-slider">
+                        <input type="number" id="investAmount" value="1000" min="0" step="100" style="display:none;">
+                    </div>
+
+                    <!-- Shares inputs -->
+                    <div class="form-group" id="sharesGroup" style="display: none;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <label for="investShares">Aktienanteile</label>
+                            <span id="investSharesDisplay" style="color: var(--accent); font-weight: 700;">10</span>
+                        </div>
+                        <input type="range" id="investSharesSlider" min="1" max="1000" step="5" value="10" class="range-slider">
+                        <input type="number" id="investShares" value="10" min="0" step="1" style="display:none;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between;">
+                            <label for="monthlySparplanSlider">Sparplan Regler</label>
+                            <span id="monthlySparplanDisplay" style="color: var(--blue); font-weight: 700;">100 €</span>
+                        </div>
+                        <input type="range" id="monthlySparplanSlider" min="0" max="2000" step="25" value="100" class="range-slider">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="calcMode">Berechnungsmodus</label>
-                    <select id="calcMode" class="form-select bg-dark text-white border-secondary mb-2">
-                        <option value="amount">Investitionsbetrag (€)</option>
-                        <option value="shares">Anzahl der Anteile</option>
-                    </select>
-                </div>
-                <div class="form-group" id="amountGroup">
-                    <label for="investAmount">Investitionsbetrag (€)</label>
-                    <input type="number" id="investAmount" value="1000" step="100" min="0">
-                </div>
-                <div class="form-group" id="sharesGroup" style="display: none;">
-                    <label for="investShares">Anzahl der Anteile</label>
-                    <input type="number" id="investShares" value="10" step="1" min="0">
+
+                <!-- Right panel: Live calculations & Compounding Chart -->
+                <div class="card-panel" style="justify-content: space-between;">
+                    <div>
+                        <h3 class="panel-title">📊 Berechnete Erträge</h3>
+                        <div id="resultsPlaceholder" style="text-align: center; padding: 40px 10px; color: var(--text-dim);">
+                            <p style="font-style: italic; font-size: 0.95rem;">Wähle eine Aktie aus, um die Berechnungen zu starten.</p>
+                        </div>
+                        <div id="results" class="results-grid" style="display: none;">
+                            <div class="result-card">
+                                <span class="label">Jährliche Dividende</span>
+                                <span id="annualDiv" class="value">0,00 €</span>
+                            </div>
+                            <div class="result-card">
+                                <span class="label">Monatlich (Ø)</span>
+                                <span id="monthlyDiv" class="value monthly">0,00 €</span>
+                            </div>
+                            <div class="result-card" id="cardShares">
+                                <span class="label">Aktienanteile</span>
+                                <span id="shareCount" class="value shares">0</span>
+                            </div>
+                            <div class="result-card" id="cardAmount" style="display: none;">
+                                <span class="label">Investitionswert</span>
+                                <span id="amountVal" class="value">0,00 €</span>
+                            </div>
+                            <div class="result-card">
+                                <span class="label">Aktienkurs</span>
+                                <span id="sharePrice" style="color: white;" class="value">0,00 €</span>
+                            </div>
+                            <div class="result-card">
+                                <span class="label">Dividendenrendite</span>
+                                <span id="divYield" class="value text-info">0,0 %</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compounding trajectory canvas -->
+                    <div id="chartContainer" style="display: none; height: 180px; width: 100%; margin-top: 15px;">
+                        <canvas id="projectionChart"></canvas>
+                    </div>
                 </div>
             </div>
 
-            <div id="results" class="results-grid" style="display: none;">
-                <div class="result-card">
-                    <span class="label">Jährliche Dividende</span>
-                    <span id="annualDiv" class="value">0,00 €</span>
-                </div>
-                <div class="result-card">
-                    <span class="label">Monatlich (Ø)</span>
-                    <span id="monthlyDiv" class="value monthly">0,00 €</span>
-                </div>
-                <div class="result-card" id="cardShares">
-                    <span class="label">Aktienanteile</span>
-                    <span id="shareCount" class="value shares">0</span>
-                </div>
-                <div class="result-card" id="cardAmount" style="display: none;">
-                    <span class="label">Investitionswert</span>
-                    <span id="amountVal" class="value">0,00 €</span>
-                </div>
-                <div class="result-card">
-                    <span class="label">Rendite</span>
-                    <span id="divYield" class="value text-info">0,0 %</span>
-                </div>
+            <!-- Footer: Peer Stocks comparison (funnels) & copy link -->
+            <div id="peersSection" class="card-panel mt-4" style="display: none;">
+                <h3 class="panel-title">⚡ Sektor Peer-Vergleich</h3>
+                <div class="row g-3" id="peersList"></div>
             </div>
 
             <div class="share-section" id="shareBox" style="display: none;">
-                <p class="text-muted small">Teile dieses Ergebnis oder speichere es für später:</p>
-                <button class="btn-share" id="copyBtn">Link kopieren</button>
+                <p class="text-secondary small">Teile diese Dividenden-Simulation oder sichere dir den Link für dein Portfolio:</p>
+                <button class="btn-share" id="copyBtn">Link kopieren 📋</button>
             </div>
         </div>
     </div>
 
     <script>
-        const stockSearch = document.getElementById('stockSearch');
-        const searchResults = document.getElementById('searchResults');
-        const selectedTicker = document.getElementById('selectedTicker');
-        const investAmount = document.getElementById('investAmount');
-        const results = document.getElementById('results');
-        const shareBox = document.getElementById('shareBox');
-
+        const $ = id => document.getElementById(id);
+        
+        let allStocks = [];
+        let selectedStockObj = null;
+        let chartInstance = null;
         let debounceTimer;
 
-        stockSearch.addEventListener('input', (e) => {
-            clearTimeout(debounceTimer);
-            const query = e.target.value.trim();
-            if (query.length < 2) {
-                searchResults.style.display = 'none';
+        // Cache all database stocks on load for instant client side search & peers extraction
+        async function loadDatabase() {
+            try {
+                const res = await fetch('/api/dividenden-kalender');
+                const data = await res.json();
+                allStocks = data.stocks || [];
+                
+                // Read URL Parameters if any
+                handleUrlParams();
+            } catch (e) {
+                console.error("Could not load stocks database locally.", e);
+            }
+        }
+
+        // Auto-complete suggestion box
+        $('stockSearch').addEventListener('input', (e) => {
+            const query = e.target.value.trim().toLowerCase();
+            const resultsBox = $('searchResults');
+            resultsBox.innerHTML = '';
+            
+            if (query.length < 1) {
+                resultsBox.style.display = 'none';
                 return;
             }
 
-            debounceTimer = setTimeout(() => {
-                fetch(`/search?q=${encodeURIComponent(query)}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        searchResults.innerHTML = '';
-                        if (data.length > 0) {
-                            data.forEach(item => {
-                                const div = document.createElement('div');
-                                div.className = 'search-item';
-                                div.innerHTML = `<strong>${item.symbol}</strong> - ${item.name}`;
-                                div.onclick = () => selectStock(item);
-                                searchResults.appendChild(div);
-                            });
-                            searchResults.style.display = 'block';
-                        } else {
-                            searchResults.style.display = 'none';
-                        }
-                    });
-            }, 300);
+            // Find matching stocks from local cached memory (Instant)
+            const matches = allStocks.filter(s => 
+                s.name.toLowerCase().includes(query) || 
+                s.symbol.toLowerCase().includes(query)
+            ).slice(0, 10);
+
+            if (matches.length > 0) {
+                matches.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'search-item';
+                    div.innerHTML = `<strong>${item.symbol}</strong> - ${item.name} <span class="float-end text-success">${item.div_yield.toFixed(2)}%</span>`;
+                    div.onclick = () => {
+                        selectStock(item);
+                        resultsBox.style.display = 'none';
+                    };
+                    resultsBox.appendChild(div);
+                });
+                resultsBox.style.display = 'block';
+            } else {
+                resultsBox.style.display = 'none';
+            }
         });
 
         function selectStock(item) {
-            stockSearch.value = item.name;
-            selectedTicker.value = item.symbol;
-            searchResults.style.display = 'none';
+            selectedStockObj = item;
+            $('stockSearch').value = item.name;
+            $('selectedTicker').value = item.symbol;
+            
+            // Render calculations
             calculate();
+            
+            // Render similar sector peers
+            loadPeers(item);
         }
 
-        const calcMode = document.getElementById('calcMode');
-        const amountGroup = document.getElementById('amountGroup');
-        const sharesGroup = document.getElementById('sharesGroup');
-        const investShares = document.getElementById('investShares');
-        const cardShares = document.getElementById('cardShares');
-        const cardAmount = document.getElementById('cardAmount');
-
-        calcMode.addEventListener('change', () => {
-            if (calcMode.value === 'amount') {
-                amountGroup.style.display = 'block';
-                sharesGroup.style.display = 'none';
-                cardShares.style.display = 'block';
-                cardAmount.style.display = 'none';
+        // Toggle computation modes
+        $('calcMode').addEventListener('change', () => {
+            const mode = $('calcMode').value;
+            if (mode === 'amount') {
+                $('amountGroup').style.display = 'block';
+                $('sharesGroup').style.display = 'none';
+                $('cardShares').style.display = 'block';
+                $('cardAmount').style.display = 'none';
             } else {
-                amountGroup.style.display = 'none';
-                sharesGroup.style.display = 'block';
-                cardShares.style.display = 'none';
-                cardAmount.style.display = 'block';
+                $('amountGroup').style.display = 'none';
+                $('sharesGroup').style.display = 'block';
+                $('cardShares').style.display = 'none';
+                $('cardAmount').style.display = 'block';
             }
             calculate();
         });
 
-        investAmount.addEventListener('input', calculate);
-        investShares.addEventListener('input', calculate);
+        // Sliders & Inputs dynamic synchronization
+        $('investAmountSlider').addEventListener('input', e => {
+            $('investAmount').value = e.target.value;
+            $('investAmountDisplay').textContent = parseInt(e.target.value).toLocaleString('de-DE') + " €";
+            calculate();
+        });
+        $('investAmount').addEventListener('input', e => {
+            $('investAmountSlider').value = e.target.value;
+            $('investAmountDisplay').textContent = parseInt(e.target.value).toLocaleString('de-DE') + " €";
+            calculate();
+        });
+
+        $('investSharesSlider').addEventListener('input', e => {
+            $('investShares').value = e.target.value;
+            $('investSharesDisplay').textContent = parseInt(e.target.value).toLocaleString('de-DE');
+            calculate();
+        });
+        $('investShares').addEventListener('input', e => {
+            $('investSharesSlider').value = e.target.value;
+            $('investSharesDisplay').textContent = parseInt(e.target.value).toLocaleString('de-DE');
+            calculate();
+        });
+
+        $('monthlySparplanSlider').addEventListener('input', e => {
+            $('monthlySparplan').value = e.target.value;
+            $('monthlySparplanDisplay').textContent = parseInt(e.target.value).toLocaleString('de-DE') + " €";
+            calculate();
+        });
+        $('monthlySparplan').addEventListener('input', e => {
+            $('monthlySparplanSlider').value = e.target.value;
+            $('monthlySparplanDisplay').textContent = parseInt(e.target.value).toLocaleString('de-DE') + " €";
+            calculate();
+        });
 
         function calculate() {
-            const ticker = selectedTicker.value;
+            const ticker = $('selectedTicker').value;
             if (!ticker) return;
 
+            const mode = $('calcMode').value;
+            const amount = $('investAmount').value;
+            const shares = $('investShares').value;
+            
             let url = `/api/calculate-dividend?ticker=${ticker}`;
-            if (calcMode.value === 'amount') {
-                url += `&amount=${investAmount.value}`;
+            if (mode === 'amount') {
+                url += `&amount=${amount}`;
             } else {
-                url += `&shares=${investShares.value}`;
+                url += `&shares=${shares}`;
             }
 
             fetch(url)
@@ -204,50 +418,188 @@
                 .then(data => {
                     if (data.error) return;
                     
-                    document.getElementById('annualDiv').innerText = data.annual.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-                    document.getElementById('monthlyDiv').innerText = data.monthly.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-                    document.getElementById('shareCount').innerText = data.shares.toFixed(2);
-                    document.getElementById('amountVal').innerText = data.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-                    document.getElementById('divYield').innerText = data.yield + ' %';
+                    $('annualDiv').innerText = data.annual.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+                    $('monthlyDiv').innerText = data.monthly.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+                    $('shareCount').innerText = data.shares.toFixed(2);
+                    $('amountVal').innerText = data.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+                    $('sharePrice').innerText = data.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+                    $('divYield').innerText = data.yield + ' %';
                     
-                    results.style.display = 'grid';
-                    shareBox.style.display = 'block';
+                    // Toggle visibility
+                    $('resultsPlaceholder').style.display = 'none';
+                    $('results').style.display = 'grid';
+                    $('shareBox').style.display = 'block';
+                    $('chartContainer').style.display = 'block';
+
+                    // Update sliders values just in case
+                    if (mode === 'amount') {
+                        $('investSharesSlider').value = Math.round(data.shares);
+                        $('investSharesDisplay').textContent = Math.round(data.shares).toLocaleString('de-DE');
+                        $('investShares').value = Math.round(data.shares);
+                    } else {
+                        $('investAmountSlider').value = Math.round(data.amount);
+                        $('investAmountDisplay').textContent = Math.round(data.amount).toLocaleString('de-DE') + " €";
+                        $('investAmount').value = Math.round(data.amount);
+                    }
+
+                    // Render compounding chart simulation
+                    renderCompoundingChart(data.amount, data.yield);
                 });
         }
 
-        document.getElementById('copyBtn').onclick = () => {
+        // Custom Zinseszins projection with reinvested dividends & monthly plans
+        function renderCompoundingChart(initialCapital, annualYieldPercent) {
+            const monthlySparplan = parseFloat($('monthlySparplan').value) || 0;
+            const yieldRate = annualYieldPercent / 100.0;
+            
+            // Assume 7% share price appreciation + reinvested dividends
+            const growthRate = 0.07; 
+            
+            let balance = initialCapital;
+            let years = Array.from({length: 11}, (_, i) => i);
+            let balances = [initialCapital];
+
+            for (let y = 1; y <= 10; y++) {
+                // Compound quarterly
+                for (let q = 0; q < 4; q++) {
+                    balance += (monthlySparplan * 3);
+                    balance *= (1 + (growthRate + yieldRate) / 4);
+                }
+                balances.push(Math.round(balance));
+            }
+
+            const ctx = $('projectionChart').getContext('2d');
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: years.map(y => `${y} J.`),
+                    datasets: [{
+                        label: 'Simulierter Depotwert (€)',
+                        data: balances,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#131c30',
+                            titleColor: '#94a3b8',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(255,255,255,0.06)',
+                            borderWidth: 1,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#475569', font: { size: 9 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.02)' },
+                            ticks: { color: '#475569', font: { size: 9 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Real-time sector peer matches pointing back to comparison duels
+        function loadPeers(stock) {
+            const container = $('peersSection');
+            const list = $('peersList');
+            list.innerHTML = '';
+
+            if (!stock.sector) {
+                container.style.display = 'none';
+                return;
+            }
+
+            // Match sector peers
+            const peers = allStocks
+                .filter(s => s.sector === stock.sector && s.symbol !== stock.symbol)
+                .slice(0, 3);
+
+            if (peers.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            peers.forEach(p => {
+                const col = document.createElement('div');
+                col.className = 'col-md-4';
+                col.innerHTML = `
+                    <div class="peer-item">
+                        <div class="peer-meta">
+                            <span class="peer-name" title="${p.name}">${p.name}</span>
+                            <span class="peer-tick">${p.symbol} • Yield: ${p.div_yield.toFixed(2)}%</span>
+                        </div>
+                        <a href="https://compare.schatzsuche40.de/?t1=${stock.symbol}&t2=${p.symbol}" target="_blank" class="peer-action">
+                            Duell ⚡
+                        </a>
+                    </div>
+                `;
+                list.appendChild(col);
+            });
+
+            container.style.display = 'block';
+        }
+
+        // Copy simulation links
+        $('copyBtn').onclick = () => {
             const url = new URL(window.location.href);
-            url.searchParams.set('ticker', selectedTicker.value);
-            url.searchParams.set('amount', investAmount.value);
+            url.searchParams.set('ticker', $('selectedTicker').value);
+            url.searchParams.set('amount', $('investAmount').value);
+            
             navigator.clipboard.writeText(url.toString()).then(() => {
-                const btn = document.getElementById('copyBtn');
-                const oldText = btn.innerText;
-                btn.innerText = 'Kopiert!';
-                btn.style.background = '#059669';
+                const btn = $('copyBtn');
+                btn.innerText = 'Erfolgreich kopiert! 💥';
+                btn.style.background = '#10b981';
+                btn.style.color = '#fff';
                 setTimeout(() => {
-                    btn.innerText = oldText;
-                    btn.style.background = '#10b981';
+                    btn.innerText = 'Link kopieren 📋';
+                    btn.style.background = 'var(--accent-soft)';
+                    btn.style.color = 'var(--accent)';
                 }, 2000);
             });
         };
 
-        // Initial check for URL params
-        window.onload = () => {
+        // Parse query params to load automatically
+        function handleUrlParams() {
             const params = new URLSearchParams(window.location.search);
             if (params.has('ticker')) {
-                selectedTicker.value = params.get('ticker');
-                investAmount.value = params.get('amount') || 1000;
-                // Fetch info for the ticker to show name
-                fetch(`/search?q=${params.get('ticker')}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.length > 0) {
-                            stockSearch.value = data[0].name;
-                            calculate();
-                        }
-                    });
+                const symbol = params.get('ticker').toUpperCase();
+                const matched = allStocks.find(s => s.symbol === symbol);
+                if (matched) {
+                    const amount = parseInt(params.get('amount')) || 1000;
+                    $('investAmountSlider').value = amount;
+                    $('investAmount').value = amount;
+                    $('investAmountDisplay').textContent = amount.toLocaleString('de-DE') + " €";
+                    selectStock(matched);
+                }
             }
-        };
+        }
+
+        // Close search results suggestions on click outside
+        document.addEventListener('click', e => {
+            if (e.target.id !== 'stockSearch') {
+                $('searchResults').style.display = 'none';
+            }
+        });
+
+        loadDatabase();
     </script>
 </body>
 </html>

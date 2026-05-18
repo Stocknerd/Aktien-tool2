@@ -8,121 +8,284 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0b1120;
-            --surface: rgba(15, 23, 42, 0.95);
-            --card: rgba(30, 41, 59, 0.45);
-            --border: rgba(148, 163, 184, 0.12);
+            --bg: #090e1a;
+            --surface: rgba(13, 20, 38, 0.85);
+            --card: rgba(22, 33, 62, 0.45);
+            --border: rgba(148, 163, 184, 0.08);
+            --border-glow: rgba(16, 185, 129, 0.2);
             --accent: #10b981;
-            --accent-soft: rgba(16, 185, 129, 0.12);
+            --accent-glow: rgba(16, 185, 129, 0.35);
+            --accent-soft: rgba(16, 185, 129, 0.08);
+            --blue: #3b82f6;
+            --blue-soft: rgba(59, 130, 246, 0.1);
             --red: #ef4444;
-            --red-soft: rgba(239, 68, 68, 0.12);
-            --text: #f1f5f9;
+            --red-soft: rgba(239, 68, 68, 0.1);
+            --text: #f8fafc;
             --text-secondary: #94a3b8;
-            --text-dim: #64748b;
+            --text-dim: #475569;
+            --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: var(--bg); color: var(--text);
             font-family: 'Inter', -apple-system, sans-serif; line-height: 1.5;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.06) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.06) 0px, transparent 50%);
+            min-height: 100vh;
             {% if is_embedded %} background: transparent !important; {% endif %}
         }
-        .container { max-width: 100%; margin: 0 auto; padding: 40px 24px; display: flex; flex-direction: column; gap: 24px; }
+        
+        /* Premium Navigation Bar */
+        .nav-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            border-radius: 50px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 6px 16px;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .nav-btn:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            color: var(--text);
+            transform: translateY(-1px);
+        }
+        .nav-btn.active {
+            border-color: rgba(16, 185, 129, 0.3);
+            color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 30px 24px; display: flex; flex-direction: column; gap: 20px; }
         
         /* Hero */
-        .hero { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 8px;}
-        .hero-left h1 { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 4px; }
+        .hero { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 4px;}
+        .hero-left h1 { font-size: 2.4rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 4px; }
         .hero-left h1 span { color: var(--accent); }
         .hero-left p { color: var(--text-secondary); font-size: 0.95rem; }
-        .stat-chips { display: flex; gap: 10px; flex-wrap: wrap; }
-        .stat-chip {
-            background: var(--card); border: 1px solid var(--border); padding: 8px 16px;
-            border-radius: 10px; font-size: 0.85rem; color: var(--text-secondary); backdrop-filter: blur(12px);
+        
+        /* Broker Comparison Banner */
+        .broker-banner {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 8px;
         }
-        .stat-chip strong { color: var(--accent); font-size: 1.3rem; font-weight: 800; margin-right: 6px; }
+        .broker-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(16px);
+            box-shadow: var(--shadow);
+        }
+        .broker-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px -5px rgba(16, 185, 129, 0.15);
+        }
+        .broker-meta { display: flex; align-items: center; gap: 14px; }
+        .broker-logo {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.1rem;
+            color: var(--accent);
+            border: 1px solid var(--border);
+        }
+        .broker-name { font-weight: 800; font-size: 0.92rem; color: var(--text); }
+        .broker-desc { font-size: 0.76rem; color: var(--text-secondary); margin-top: 1px; }
+        .broker-cta {
+            background: var(--accent-soft);
+            color: var(--accent);
+            border: 1px solid rgba(16,185,129,0.3);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .broker-card:hover .broker-cta {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
 
         /* Layout */
-        .screener-layout { display: grid; grid-template-columns: 300px 1fr; gap: 24px; align-items: start; }
+        .screener-layout { display: grid; grid-template-columns: 290px 1fr; gap: 20px; align-items: start; }
         @media (max-width: 1024px) { .screener-layout { grid-template-columns: 1fr; } }
 
         /* Sidebar Filters */
         .filter-panel {
-            background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-            padding: 24px; backdrop-filter: blur(16px); position: sticky; top: 24px;
+            background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+            padding: 20px; backdrop-filter: blur(16px); position: sticky; top: 20px;
+            box-shadow: var(--shadow);
         }
-        .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .filter-header h2 { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .filter-header h2 { font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
         .reset-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.8rem; font-weight: 600; text-decoration: underline; transition: color 0.2s;}
         .reset-btn:hover { color: var(--text); }
 
-        .filter-group { margin-bottom: 20px; }
+        .filter-group { margin-bottom: 16px; }
         .filter-group:last-child { margin-bottom: 0; }
-        .filter-label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; }
+        .filter-label { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
         .filter-val-display { color: var(--accent); font-weight: 800; }
         
-        .range-slider { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); outline: none; margin-bottom: 8px; }
-        .range-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 10px rgba(16,185,129,0.5); }
-        .range-slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #fff; }
+        .range-slider { -webkit-appearance: none; width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.06); outline: none; margin-bottom: 6px; }
+        .range-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 10px rgba(16,185,129,0.4); }
+        .range-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #fff; }
         
-        .filter-input { width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: white; font-size: 0.85rem; font-family: inherit; transition: border-color 0.2s; }
+        .filter-input { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: white; font-size: 0.8rem; font-family: inherit; transition: border-color 0.2s; }
         .filter-input:focus { outline: none; border-color: var(--accent); }
-        .filter-input option { background: #1e293b; color: white; }
+        .filter-input option { background: #0f172a; color: white; }
 
         /* Search Bar inside Panel */
         .search-box {
-            width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px 10px 34px; color: white; font-size: 0.85rem; margin-bottom: 24px;
+            width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px 8px 34px; color: white; font-size: 0.8rem; margin-bottom: 18px;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat; background-position: 10px center; background-size: 16px;
+            background-repeat: no-repeat; background-position: 10px center; background-size: 14px;
         }
 
         .results-panel { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
         
         .table-wrap {
-            background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-            overflow: hidden; backdrop-filter: blur(16px);
+            background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+            overflow: hidden; backdrop-filter: blur(16px); box-shadow: var(--shadow);
         }
         .table-scroll { overflow-x: auto; width: 100%; }
-        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1250px; }
         thead th {
-            background: rgba(0,0,0,0.2); padding: 14px; text-align: left;
-            font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+            background: rgba(0,0,0,0.15); padding: 12px 14px; text-align: left;
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
             color: var(--text-dim); border-bottom: 1px solid var(--border); cursor: pointer;
             user-select: none; white-space: nowrap; position: sticky; top: 0; z-index: 2;
         }
         thead th:hover { color: var(--accent); }
-        thead th.sorted-asc::after { content: ' ▲'; color: var(--accent); font-size: 0.6rem; }
-        thead th.sorted-desc::after { content: ' ▼'; color: var(--accent); font-size: 0.6rem; }
+        thead th.sorted-asc::after { content: ' ▲'; color: var(--accent); font-size: 0.55rem; }
+        thead th.sorted-desc::after { content: ' ▼'; color: var(--accent); font-size: 0.55rem; }
         
-        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
-        tbody tr:hover { background: rgba(255,255,255,0.03); }
-        td { padding: 12px 14px; font-size: 0.85rem; vertical-align: middle; }
+        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; cursor: pointer; }
+        tbody tr:hover { background: rgba(255,255,255,0.02); }
+        td { padding: 10px 14px; font-size: 0.82rem; vertical-align: middle; }
 
-        .stock-cell { display: flex; align-items: center; gap: 12px; min-width: 220px; }
+        .stock-cell { display: flex; align-items: center; gap: 10px; min-width: 220px; }
         .stock-icon {
-            width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
-            background: linear-gradient(135deg, var(--accent-soft), rgba(16,185,129,0.02));
+            width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--accent-soft), rgba(16,185,129,0.01));
             display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 0.7rem; color: var(--accent); 
+            font-weight: 900; font-size: 0.65rem; color: var(--accent); border: 1px solid var(--border);
         }
-        .stock-name { font-weight: 700; font-size: 0.85rem; line-height: 1.2; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .stock-ticker { font-size: 0.7rem; color: var(--text-dim); font-weight: 600; margin-top: 2px;}
+        .stock-name { font-weight: 700; font-size: 0.82rem; line-height: 1.2; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+        .stock-ticker { font-size: 0.68rem; color: var(--text-secondary); font-weight: 600; margin-top: 1px;}
         
-        .pill { display: inline-block; background: var(--card); border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+        .pill { display: inline-block; background: var(--card); border: 1px solid var(--border); padding: 2px 7px; border-radius: 5px; font-size: 0.68rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
         
-        .val-good { color: var(--accent); font-weight: 700; }
-        .val-bad { color: var(--red); font-weight: 700; }
-        .val-neutral { font-weight: 600; }
+        .val-good { color: var(--accent); font-weight: 800; }
+        .val-bad { color: var(--red); font-weight: 800; }
+        .val-neutral { font-weight: 600; color: var(--text); }
         .val-none { color: var(--text-dim); font-style: italic; font-weight: 400; }
 
         .action-link {
-            color: var(--accent); text-decoration: none; font-weight: 700; font-size: 0.75rem;
-            padding: 6px 14px; border: 1px solid var(--accent); border-radius: 6px; transition: all 0.2s; white-space: nowrap;
+            color: var(--accent); text-decoration: none; font-weight: 700; font-size: 0.72rem;
+            padding: 5px 10px; border: 1px solid var(--accent); border-radius: 6px; transition: all 0.15s; white-space: nowrap;
+            display: inline-block;
         }
         .action-link:hover { background: var(--accent); color: white; }
+        .action-link.tr-btn {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        .action-link.tr-btn:hover {
+            opacity: 0.9;
+        }
 
+        /* Slide Drawer */
+        .drawer {
+            position: fixed; top: 0; right: -420px; width: 420px; height: 100vh;
+            background: #0d1322; border-left: 1px solid var(--border);
+            box-shadow: -15px 0 45px rgba(0,0,0,0.65); z-index: 1050;
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column; color: var(--text);
+            backdrop-filter: blur(20px);
+        }
+        .drawer.open { right: 0; }
+        .drawer-header {
+            padding: 24px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .drawer-close {
+            background: none; border: none; color: var(--text-secondary);
+            font-size: 1.3rem; cursor: pointer; transition: color 0.15s;
+        }
+        .drawer-close:hover { color: white; }
+        .drawer-body {
+            padding: 24px; overflow-y: auto; flex: 1;
+            display: flex; flex-direction: column; gap: 24px;
+        }
+        .drawer-section-title {
+            font-size: 0.9rem; font-weight: 800; letter-spacing: 0.05em;
+            text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+        }
+        
+        .sim-card {
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+            border-radius: 12px; padding: 18px;
+        }
+        .sim-slider-row { margin-bottom: 14px; }
+        .sim-slider-row:last-child { margin-bottom: 0; }
+        .sim-slider-label {
+            display: flex; justify-content: space-between; font-size: 0.8rem;
+            color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;
+        }
+        .sim-results {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px;
+        }
+        .sim-res-item {
+            background: rgba(0,0,0,0.2); border: 1px solid var(--border);
+            padding: 10px; border-radius: 8px; text-align: center;
+        }
+        .sim-res-lbl { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 2px; }
+        .sim-res-val { font-size: 1.1rem; font-weight: 800; }
+        
+        .peer-item {
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .peer-meta { display: flex; flex-direction: column; }
+        .peer-name { font-weight: 700; font-size: 0.8rem; color: var(--text); }
+        .peer-tick { font-size: 0.68rem; color: var(--text-secondary); font-weight: 600; }
+        
         /* Pagination */
         .table-footer {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 14px 18px; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border);
+            padding: 12px 18px; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border);
         }
         .pagination { display: flex; gap: 4px; }
         .page-btn {
@@ -137,19 +300,67 @@
         .loader-wrap { text-align: center; padding: 100px 20px; color: var(--text-dim); }
         .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; margin: 0 auto 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
     </style>
 </head>
 <body>
+<!-- Add Chart.js CDN for interactive visual graph -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <div class="container">
+    <!-- Premium Top Navigation Action Header -->
+    <div class="nav-actions">
+        <a href="/{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">🏠 Home</a>
+        <a href="/screener{% if is_embedded %}?embed=1{% endif %}" class="nav-btn active">🎯 Screener</a>
+        <a href="/dividenden-kalender{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">📅 Kalender</a>
+        <a href="/compare{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">📊 Vergleich</a>
+        <a href="/p2p{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">💳 P2P</a>
+        <a href="/dividend-rechner{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">💰 Dividenden-Rechner</a>
+    </div>
+
     <div class="hero">
         <div class="hero-left">
             <h1>Aktien-<span>Screener</span></h1>
             <p>Finde die perfekten Werte aus über 4.000 Aktien weltweit.</p>
         </div>
-        <div class="stat-chips">
-            <div class="stat-chip"><strong id="totalCount">–</strong> Aktien</div>
-            <div class="stat-chip"><strong id="filteredCount">–</strong> Treffer</div>
+        <div class="stat-chips" style="display: flex; gap: 10px;">
+            <div class="stat-chip" style="background: var(--card); border: 1px solid var(--border); padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; color: var(--text-secondary); backdrop-filter: blur(12px);"><strong id="totalCount" style="color: var(--accent); font-size: 1.3rem; font-weight: 800; margin-right: 6px;">–</strong> Aktien</div>
+            <div class="stat-chip" style="background: var(--card); border: 1px solid var(--border); padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; color: var(--text-secondary); backdrop-filter: blur(12px);"><strong id="filteredCount" style="color: var(--accent); font-size: 1.3rem; font-weight: 800; margin-right: 6px;">–</strong> Treffer</div>
         </div>
+    </div>
+
+    <!-- Sticky top broker referral banner (Funnels) -->
+    <div class="broker-banner">
+        <a href="https://www.financeads.net/tc.php?t=47128C274449894T" target="_blank" class="broker-card">
+            <div class="broker-meta">
+                <div class="broker-logo">TR</div>
+                <div>
+                    <div class="broker-name">Trade Republic</div>
+                    <div class="broker-desc">0€ Provision • Sparpläne ab 1€</div>
+                </div>
+            </div>
+            <span class="broker-cta">Kostenlos eröffnen</span>
+        </a>
+        <a href="https://www.financeads.net/tc.php?t=47128C87024090T" target="_blank" class="broker-card">
+            <div class="broker-meta">
+                <div class="broker-logo">CD</div>
+                <div>
+                    <div class="broker-name">Comdirect</div>
+                    <div class="broker-desc">Top Service • Kostenloses Depot</div>
+                </div>
+            </div>
+            <span class="broker-cta">Depot sichern</span>
+        </a>
+        <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" class="broker-card">
+            <div class="broker-meta">
+                <div class="broker-logo">CB</div>
+                <div>
+                    <div class="broker-name">Consorsbank</div>
+                    <div class="broker-desc">50€ Prämie • Premium Broker</div>
+                </div>
+            </div>
+            <span class="broker-cta">50€ Bonus holen</span>
+        </a>
     </div>
 
     <div class="screener-layout">
@@ -210,6 +421,7 @@
                                 <th data-col="kbv" style="text-align:right">KBV</th>
                                 <th data-col="mcap" style="text-align:right">Mkt. Kap.</th>
                                 <th data-col="rating" style="text-align:center">Rating</th>
+                                <th style="text-align:center">Depot-Sparplan</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -226,10 +438,97 @@
     </div>
 </div>
 
+<!-- Slide out Aktien finder detail drawer -->
+<div id="detailDrawer" class="drawer">
+    <div class="drawer-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="stock-icon" id="drawerIcon" style="width: 40px; height: 40px; font-size: 0.8rem;">–</div>
+            <div>
+                <h3 id="drawerName" style="font-size: 1.05rem; font-weight: 800; line-height: 1.2;">Apple Inc.</h3>
+                <div id="drawerTicker" style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; margin-top: 2px;">AAPL</div>
+            </div>
+        </div>
+        <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    
+    <div class="drawer-body">
+        <!-- Live compounding calculator -->
+        <div>
+            <h4 class="drawer-section-title">📈 Dividenden Simulator</h4>
+            <div class="sim-card">
+                <div class="sim-slider-row">
+                    <div class="sim-slider-label">
+                        <span>Einmalige Anlage</span>
+                        <span id="onceSimVal" class="filter-val-display">1.000 €</span>
+                    </div>
+                    <input type="range" id="onceSimSlider" min="0" max="50000" step="500" value="1000" class="range-slider">
+                </div>
+                <div class="sim-slider-row">
+                    <div class="sim-slider-label">
+                        <span>Monatlicher Sparplan</span>
+                        <span id="monthlySimVal" class="filter-val-display">100 €</span>
+                    </div>
+                    <input type="range" id="monthlySimSlider" min="0" max="2000" step="25" value="100" class="range-slider">
+                </div>
+                
+                <div class="sim-results">
+                    <div class="sim-res-item">
+                        <span class="sim-res-lbl">Wert nach 10J</span>
+                        <span id="simResTotal" class="val-good sim-res-val">15.420 €</span>
+                    </div>
+                    <div class="sim-res-item">
+                        <span class="sim-res-lbl">Ø Div./Monat (10J)</span>
+                        <span id="simResDiv" style="color: var(--blue);" class="sim-res-val">48 €</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="height: 160px; margin-top: 18px; width: 100%;">
+                <canvas id="projectionChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Broker conversion funnels in the drawer -->
+        <div>
+            <h4 class="drawer-section-title">🛒 Broker Sparplan Deal</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <a href="https://www.financeads.net/tc.php?t=47128C274449894T" target="_blank" class="broker-card" style="padding: 12px 16px;">
+                    <div class="broker-meta">
+                        <div class="broker-logo" style="width:34px; height:34px; font-size:0.8rem;">TR</div>
+                        <div>
+                            <div class="broker-name" style="font-size:0.82rem;">Trade Republic</div>
+                            <div class="broker-desc" style="font-size:0.68rem;">0€ Order • Sparplan ab 1€</div>
+                        </div>
+                    </div>
+                    <span class="broker-cta" style="font-size: 0.72rem; padding: 4px 10px;">Sparplan anlegen</span>
+                </a>
+                <a href="https://www.financeads.net/tc.php?t=47128C87024090T" target="_blank" class="broker-card" style="padding: 12px 16px;">
+                    <div class="broker-meta">
+                        <div class="broker-logo" style="width:34px; height:34px; font-size:0.8rem;">CD</div>
+                        <div>
+                            <div class="broker-name" style="font-size:0.82rem;">Comdirect</div>
+                            <div class="broker-desc" style="font-size:0.68rem;">100% verlässlich • Top Depot</div>
+                        </div>
+                    </div>
+                    <span class="broker-cta" style="font-size: 0.72rem; padding: 4px 10px;">Depot eröffnen</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Cross tool peer comparison -->
+        <div>
+            <h4 class="drawer-section-title">⚡ Sektor Duell-Vergleich</h4>
+            <div id="drawerPeersList"></div>
+        </div>
+    </div>
+</div>
+
 <script>
 let allData = [], filteredData = [];
 let page = 1; const PER_PAGE = 50;
 let sortCol = 'mcap', sortAsc = false;
+let currentStock = null;
+let projectionChartInstance = null;
 
 // DOM
 const $ = id => document.getElementById(id);
@@ -241,7 +540,20 @@ const ui = {
     growth: $('growthFilter'), growthVal: $('growthVal'),
     body: $('tbody'), loader: $('loader'), table: $('tableContent'),
     footer: $('tableFooter'), pgInfo: $('footerInfo'), pgBtns: $('pagination'),
-    totCount: $('totalCount'), filtCount: $('filteredCount')
+    totCount: $('totalCount'), filtCount: $('filteredCount'),
+    
+    // Drawer elements
+    drawer: $('detailDrawer'),
+    drawerIcon: $('drawerIcon'),
+    drawerName: $('drawerName'),
+    drawerTicker: $('drawerTicker'),
+    onceSlider: $('onceSimSlider'),
+    onceVal: $('onceSimVal'),
+    monthlySlider: $('monthlySimSlider'),
+    monthlyVal: $('monthlySimVal'),
+    simResTotal: $('simResTotal'),
+    simResDiv: $('simResDiv'),
+    peersList: $('drawerPeersList')
 };
 
 async function init() {
@@ -282,8 +594,21 @@ function setupEvents() {
     ui.margin.addEventListener('input', e => { ui.marginVal.textContent = e.target.value + " %"; applyFilters(); });
     ui.growth.addEventListener('input', e => { ui.growthVal.textContent = e.target.value + " %"; applyFilters(); });
     
+    // Drawer Sliders
+    ui.onceSlider.addEventListener('input', e => {
+        ui.onceVal.textContent = parseFloat(e.target.value).toLocaleString('de-DE') + " €";
+        updateSimulation();
+    });
+    ui.monthlySlider.addEventListener('input', e => {
+        ui.monthlyVal.textContent = parseFloat(e.target.value).toLocaleString('de-DE') + " €";
+        updateSimulation();
+    });
+
     document.querySelectorAll('th[data-col]').forEach(th => {
-        th.addEventListener('click', () => setSort(th.dataset.col));
+        th.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setSort(th.dataset.col);
+        });
     });
     // Default sort indicator
     document.querySelector(`th[data-col="${sortCol}"]`).classList.add('sorted-desc');
@@ -359,7 +684,7 @@ function render() {
     ui.filtCount.textContent = filteredData.length.toLocaleString('de-DE');
     
     if (!filteredData.length) {
-        ui.body.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 40px; color: var(--text-dim);">Keine Aktien gefunden. Passe die Filter an.</td></tr>';
+        ui.body.innerHTML = '<tr><td colspan="12" style="text-align:center; padding: 40px; color: var(--text-dim);">Keine Aktien gefunden. Passe die Filter an.</td></tr>';
         ui.pgBtns.innerHTML = ''; ui.pgInfo.textContent = '';
         return;
     }
@@ -373,7 +698,7 @@ function render() {
         const ini = d.symbol.substring(0, 2).toUpperCase();
         const mcap = d.mcap ? (d.mcap / 1e9).toFixed(1) + ' Mrd' : '<span class="val-none">–</span>';
         
-        return `<tr>
+        return `<tr onclick="openDrawer('${d.symbol}')">
             <td>
                 <div class="stock-cell">
                     <div class="stock-icon">${ini}</div>
@@ -393,7 +718,12 @@ function render() {
             <td style="text-align:right">${formatVal(d.kbv, '', v => v>0 && v<3 ? 1 : (v>10 ? -1 : 0))}</td>
             <td style="text-align:right; font-weight:600; color:var(--text-secondary);">${mcap}</td>
             <td style="text-align:center">${d.rating ? '<span class="pill">' + d.rating + '</span>' : '<span class="val-none">–</span>'}</td>
-            <td style="text-align:right"><a href="/analyse/${d.symbol}" class="action-link" target="_blank">Analyse</a></td>
+            <td style="text-align:center" onclick="event.stopPropagation();">
+                <a href="https://www.financeads.net/tc.php?t=47128C274449894T" target="_blank" class="action-link tr-btn">Sparplan</a>
+            </td>
+            <td style="text-align:right" onclick="event.stopPropagation();">
+                <a href="/analyse/${d.symbol}" class="action-link" target="_blank">Analyse</a>
+            </td>
         </tr>`;
     }).join('');
 
@@ -403,16 +733,16 @@ function render() {
 
 function renderPagination(totalPages) {
     if (totalPages <= 1) { ui.pgBtns.innerHTML = ''; return; }
-    let html = `<button class="page-btn" onclick="goPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>‹</button>`;
+    let html = `<button class="page-btn" onclick="event.stopPropagation(); goPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>‹</button>`;
     
     let startP = Math.max(1, page - 2);
     let endP = Math.min(totalPages, startP + 4);
     if (endP - startP < 4) startP = Math.max(1, endP - 4);
     
     for (let i = startP; i <= endP; i++) {
-        html += `<button class="page-btn${i === page ? ' active' : ''}" onclick="goPage(${i})">${i}</button>`;
+        html += `<button class="page-btn${i === page ? ' active' : ''}" onclick="event.stopPropagation(); goPage(${i})">${i}</button>`;
     }
-    html += `<button class="page-btn" onclick="goPage(${page + 1})" ${page === totalPages ? 'disabled' : ''}>›</button>`;
+    html += `<button class="page-btn" onclick="event.stopPropagation(); goPage(${page + 1})" ${page === totalPages ? 'disabled' : ''}>›</button>`;
     ui.pgBtns.innerHTML = html;
 }
 
@@ -420,6 +750,152 @@ function goPage(p) {
     page = p; render(); 
     document.querySelector('.results-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+// Side Drawer Operations
+function openDrawer(ticker) {
+    const stock = allData.find(d => d.symbol === ticker);
+    if (!stock) return;
+    currentStock = stock;
+    
+    ui.drawerIcon.textContent = stock.symbol.substring(0, 2).toUpperCase();
+    ui.drawerName.textContent = stock.name;
+    ui.drawerTicker.textContent = stock.symbol + " • " + (stock.sector || "Kein Sektor");
+    
+    // Load simulation
+    updateSimulation();
+    
+    // Load sector peers
+    loadPeers(stock);
+    
+    // Slide Open
+    ui.drawer.classList.add('open');
+}
+
+function closeDrawer() {
+    ui.drawer.classList.remove('open');
+    currentStock = null;
+}
+
+function updateSimulation() {
+    if (!currentStock) return;
+    
+    const once = parseFloat(ui.onceSlider.value);
+    const monthly = parseFloat(ui.monthlySlider.value);
+    const divYield = (currentStock.div_yield || 0) / 100.0;
+    
+    // Mock simulation: assume 7% annual share price growth and payout reinvestment
+    const growthRate = 0.07;
+    let balance = once;
+    let years = Array.from({length: 11}, (_, i) => i);
+    let balances = [once];
+    let monthlyDividends = [0];
+    
+    for(let y = 1; y <= 10; y++) {
+        // Compound quarterly
+        for(let q = 0; q < 4; q++) {
+            balance += (monthly * 3);
+            balance *= (1 + (growthRate + divYield) / 4);
+        }
+        balances.push(Math.round(balance));
+    }
+    
+    const finalBalance = balances[10];
+    const finalMonthlyDiv = Math.round((finalBalance * divYield) / 12);
+    
+    ui.simResTotal.textContent = finalBalance.toLocaleString('de-DE') + " €";
+    ui.simResDiv.textContent = finalMonthlyDiv.toLocaleString('de-DE') + " €";
+    
+    renderChart(years, balances);
+}
+
+function renderChart(labels, dataPoints) {
+    const ctx = $('projectionChart').getContext('2d');
+    
+    if (projectionChartInstance) {
+        projectionChartInstance.destroy();
+    }
+    
+    projectionChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels.map(y => `${y} J.`),
+            datasets: [{
+                label: 'Simulierter Depotwert (€)',
+                data: dataPoints,
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.35,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    titleColor: '#94a3b8',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(255,255,255,0.08)',
+                    borderWidth: 1,
+                    displayColors: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#475569', font: { size: 9 } }
+                },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.03)' },
+                    ticks: { color: '#475569', font: { size: 9 } }
+                }
+            }
+        }
+    });
+}
+
+function loadPeers(stock) {
+    if (!stock || !stock.sector) {
+        ui.peersList.innerHTML = '<span style="color: var(--text-dim); font-size:0.8rem; font-style:italic;">Keine Peers gefunden.</span>';
+        return;
+    }
+    
+    // Find stocks in same sector, excluding active one, top 3 by market cap (mcap)
+    const peers = allData
+        .filter(d => d.sector === stock.sector && d.symbol !== stock.symbol)
+        .sort((a,b) => (b.mcap || 0) - (a.mcap || 0))
+        .slice(0, 3);
+        
+    if (!peers.length) {
+        ui.peersList.innerHTML = '<span style="color: var(--text-dim); font-size:0.8rem; font-style:italic;">Keine Peers gefunden.</span>';
+        return;
+    }
+    
+    ui.peersList.innerHTML = peers.map(p => `
+        <div class="peer-item">
+            <div class="peer-meta">
+                <span class="peer-name" title="${p.name}">${p.name}</span>
+                <span class="peer-tick">${p.symbol}</span>
+            </div>
+            <a href="https://compare.schatzsuche40.de/?t1=${stock.symbol}&t2=${p.symbol}" target="_blank" class="action-link" style="font-size:0.7rem; padding:4px 8px;">
+                Duell ⚡
+            </a>
+        </div>
+    `).join('');
+}
+
+// Global click handler to close drawer when clicking outside
+document.addEventListener('click', e => {
+    if (ui.drawer && ui.drawer.classList.contains('open') && !ui.drawer.contains(e.target)) {
+        // Ensure we don't close immediately upon clicking a table row
+        const row = e.target.closest('tbody tr');
+        if (!row) closeDrawer();
+    }
+});
 
 init();
 

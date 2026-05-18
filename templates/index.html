@@ -15,32 +15,52 @@
   <meta property="og:image" content="{{ url_for('static', filename='img/og_preview.png', _external=True) }}">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/dividend.css') }}" rel="stylesheet">
+  
+  <!-- Chart.js CDN for visual compounding curve -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.7);
+      --bg: #090e1a;
+      --surface: rgba(13, 20, 38, 0.85);
+      --card: rgba(22, 33, 62, 0.45);
+      --border: rgba(148, 163, 184, 0.08);
+      --border-glow: rgba(16, 185, 129, 0.2);
       --accent: #10b981;
-      --accent-hover: #059669;
+      --accent-glow: rgba(16, 185, 129, 0.35);
+      --accent-soft: rgba(16, 185, 129, 0.08);
+      --blue: #3b82f6;
+      --blue-glow: rgba(59, 130, 246, 0.35);
+      --text: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-dim: #475569;
+      --shadow: 0 20px 40px rgba(0, 0, 0, 0.65);
     }
 
     body {
       background-color: var(--bg);
       background-image: 
-        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
-      color: white;
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.04) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.04) 0px, transparent 50%);
+      color: var(--text);
       font-family: 'Inter', sans-serif;
       min-height: 100vh;
     }
 
     .glass-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.3s;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.1);
     }
 
     #suggestions {
@@ -48,19 +68,25 @@
       max-height: 220px;
       overflow-y: auto;
       z-index: 1050;
-      background: #1e293b;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #0d1322;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0;
     }
 
     #suggestions li {
       background: transparent;
       color: white;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: background 0.15s;
     }
 
     #suggestions li:hover {
-      background: rgba(255, 255, 255, 0.05);
-      cursor: pointer;
+      background: var(--accent-soft);
+      color: var(--accent);
     }
 
     .btn-primary {
@@ -69,36 +95,38 @@
       font-weight: 700;
       padding: 14px;
       border-radius: 10px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
     }
 
     .btn-primary:hover {
-      background-color: var(--accent-hover);
+      background-color: #059669;
       transform: translateY(-2px);
-      box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 10px 15px rgba(16, 185, 129, 0.4);
     }
 
     .form-control, .form-select {
-      background-color: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background-color: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border);
       color: white;
       border-radius: 10px;
       padding: 12px;
+      transition: border-color 0.2s;
     }
 
     .form-control:focus, .form-select:focus {
-      background-color: rgba(15, 23, 42, 0.8);
+      background-color: rgba(0, 0, 0, 0.4);
       border-color: var(--accent);
       color: white;
-      box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+      box-shadow: 0 0 0 0.25rem var(--accent-soft);
     }
 
     .form-label {
-      font-weight: 600;
-      color: #94a3b8;
-      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
       margin-bottom: 8px;
+      letter-spacing: 0.05em;
     }
 
     /* Loader */
@@ -129,8 +157,8 @@
     }
 
     .loading-text {
-      font-weight: 700;
-      font-size: 1.5rem;
+      font-weight: 900;
+      font-size: 1.6rem;
       background: linear-gradient(to right, #10b981, #3b82f6);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -142,19 +170,51 @@
     .glass-card { box-shadow: none !important; }
     .nav-actions { display: flex !important; margin-bottom: 20px; }
     {% endif %}
-    .nav-actions { display: none; gap: 10px; justify-content: center; }
+    .nav-actions { display: none; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
     .stock-hover-card {
-      transition: all 0.3s ease;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
+      border-radius: 12px;
     }
     .stock-hover-card:hover {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.03);
       border-color: var(--accent);
-      transform: translateY(-5px);
+      transform: translateY(-4px);
     }
     .stock-card-link:hover .stock-hover-card {
-      box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.2);
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.1);
+    }
+    
+    /* Layout grid overrides for the inline calculator */
+    .calculator-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 24px;
+    }
+    @media (max-width: 992px) {
+      .calculator-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card-panel {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .panel-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
     }
   </style>
 </head>
@@ -166,40 +226,45 @@
     <div class="text-muted mt-3">Schatzsuche 4.0 Pro Tool</div>
   </div>
 
-    <div class="container {% if not is_embedded %}py-5{% else %}py-2{% endif %}">
+  <div class="container {% if not is_embedded %}py-5{% else %}py-2{% endif %}">
     
-    <div class="nav-actions">
-        <a href="/" class="btn btn-outline-light btn-sm rounded-pill" style="border: 1px solid rgba(255,255,255,0.1);">🏠 Home</a>
-        <a href="/screener{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill" style="border: 1px solid rgba(255,255,255,0.1);">🎯 Screener</a>
-        <a href="/compare{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill" style="border: 1px solid rgba(255,255,255,0.1);">📊 Vergleich</a>
-        <a href="/p2p{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill" style="border: 1px solid rgba(255,255,255,0.1);">💳 P2P</a>
-        <a href="/dividend-rechner{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-success btn-sm rounded-pill" style="border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981;">💰 Dividenden-Rechner</a>
+    <!-- Premium Top Navigation Action Header -->
+    <div class="nav-actions mb-4">
+        <a href="/" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🏠 Home</a>
+        <a href="/screener{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🎯 Screener</a>
+        <a href="/dividenden-kalender{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📅 Kalender</a>
+        <a href="/compare{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📊 Vergleich</a>
+        <a href="/p2p{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💳 P2P</a>
+        <a href="/dividend-rechner{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-success btn-sm rounded-pill px-3" style="border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; font-weight:600;">💰 Dividenden-Rechner</a>
     </div>
 
     {% if not is_embedded %}
     <div class="hero-section text-center py-5">
-      <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #fff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Professionelle Aktienanalysen</h1>
-      <p class="lead text-muted mx-auto mb-4" style="max-width: 700px;">Generiere hochauflösende Infografiken mit KI-gestützten Insights für deine Social Media Kanäle oder deinen Blog.</p>
+      <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #fff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight:900; letter-spacing:-0.02em;">Professionelle Aktienanalysen</h1>
+      <p class="lead text-muted mx-auto mb-4" style="max-width: 700px; font-weight:500;">Generiere hochauflösende Infografiken mit KI-gestützten Insights für deine Social Media Kanäle oder deinen Blog.</p>
+      
+      <!-- Unified Hero Navigation Action Grid -->
       <div class="d-flex justify-content-center gap-3 flex-wrap mb-5">
           <a href="/screener" class="btn btn-primary px-4 rounded-pill">🎯 Aktien-Screener</a>
+          <a href="/dividenden-kalender" class="btn btn-outline-warning px-4 rounded-pill" style="border-color: rgba(245, 158, 11, 0.4); color: #f59e0b;">📅 Dividenden-Kalender</a>
           <a href="/compare" class="btn btn-outline-info px-4 rounded-pill">📊 Aktien vergleichen</a>
           <a href="/dividend-rechner" class="btn btn-outline-success px-4 rounded-pill">💰 Dividenden-Rechner</a>
-          <a href="/p2p" class="btn btn-outline-light px-4 rounded-pill">💳 P2P-Dashboard</a>
+          <a href="/p2p" class="btn btn-outline-light px-4 rounded-pill" style="border-color: rgba(255,255,255,0.15)">💳 P2P-Dashboard</a>
       </div>
     </div>
     {% endif %}
 
     {% if not is_embedded and top_stocks and not ticker %}
     <div class="top-stocks-section mb-5">
-      <h5 class="text-uppercase tracking-wider mb-4 text-center" style="color: #64748b; font-size: 0.8rem; letter-spacing: 0.1em;">Beliebte Analysen</h5>
+      <h5 class="text-uppercase tracking-wider mb-4 text-center" style="color: #64748b; font-size: 0.8rem; letter-spacing: 0.1em; font-weight:800;">Beliebte Analysen</h5>
       <div class="row row-cols-2 row-cols-md-4 g-3 justify-content-center">
         {% for stock in top_stocks %}
         <div class="col">
           <a href="/analyse/{{ stock.symbol }}" class="stock-card-link text-decoration-none">
             <div class="glass-card p-3 text-center h-100 stock-hover-card">
               <div class="mb-2">
-                <img src="https://ui-avatars.com/api/?name={{ stock.symbol }}&background=1e293b&color=10b981" 
-                     class="rounded-circle" style="width: 32px; height: 32px; object-fit: contain; filter: grayscale(0.2);">
+                <img src="https://ui-avatars.com/api/?name={{ stock.symbol }}&background=0d1322&color=10b981" 
+                     class="rounded-circle" style="width: 32px; height: 32px; object-fit: contain; filter: grayscale(0.2); border: 1px solid var(--border);">
               </div>
               <div class="fw-bold small text-white mb-1">{{ stock.symbol }}</div>
               <div class="text-muted" style="font-size: 0.7rem;">{{ stock.name | truncate(15) }}</div>
@@ -211,192 +276,166 @@
     </div>
     {% endif %}
 
-    <!-- ─── Dividend Calculator Section ─── -->
+    <!-- ─── Premium Upgraded Inline Dividend Calculator Section ─── -->
     {% if not is_embedded %}
     <div class="calc-container mb-5">
         <div class="calc-header">
-            <h1>Dividenden-Rechner <small style="font-size: 0.8rem; opacity: 0.5;">v2.1</small></h1>
-            <p class="text-muted">Berechne dein passives Einkommen mit deinen Lieblingsaktien.</p>
+            <h1>Dividenden-<span>Rechner</span></h1>
+            <p class="text-secondary">Simuliere dein passives Einkommen, plane Sparpläne und nutze den Zinseszins-Effekt.</p>
         </div>
 
-        <div class="input-section">
-            <div class="form-group position-relative">
-                <label for="divStockSearch">Aktie suchen</label>
-                <input type="text" id="divStockSearch" placeholder="Name oder Ticker (z.B. Apple)..." autocomplete="off" value="{% if ticker %}{{ company_name or ticker }}{% endif %}">
-                <ul id="divSuggestions" class="search-results" style="display:none;"></ul>
-                <input type="hidden" id="divSelectedTicker" value="{{ ticker if ticker else '' }}">
+        <!-- Sticky top partner broker widgets inside landing page section -->
+        <div class="broker-banner mb-4">
+            <a href="https://www.financeads.net/tc.php?t=47128C274449894T" target="_blank" class="broker-card">
+                <div class="broker-meta">
+                    <div class="broker-logo">TR</div>
+                    <div>
+                        <div class="broker-name">Trade Republic</div>
+                        <div class="broker-desc">0€ Provision • Sparpläne ab 1€</div>
+                    </div>
+                </div>
+                <span class="broker-cta">Kostenlos eröffnen</span>
+            </a>
+            <a href="https://www.financeads.net/tc.php?t=47128C87024090T" target="_blank" class="broker-card">
+                <div class="broker-meta">
+                    <div class="broker-logo">CD</div>
+                    <div>
+                        <div class="broker-name">Comdirect</div>
+                        <div class="broker-desc">Top Service • Depot kostenfrei</div>
+                    </div>
+                </div>
+                <span class="broker-cta">Depot sichern</span>
+            </a>
+            <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" class="broker-card">
+                <div class="broker-meta">
+                    <div class="broker-logo">CB</div>
+                    <div>
+                        <div class="broker-name">Consorsbank</div>
+                        <div class="broker-desc">50€ Premium Freetrade Bonus</div>
+                    </div>
+                </div>
+                <span class="broker-cta">Prämie abholen</span>
+            </a>
+        </div>
+
+        <div class="calculator-grid">
+            <!-- Left panel: Inputs and simulation -->
+            <div class="card-panel">
+                <h3 class="panel-title">⚙ Simulation & Parameter</h3>
+                
+                <div class="form-group position-relative">
+                    <label for="divStockSearch">Aktie auswählen</label>
+                    <input type="text" id="divStockSearch" placeholder="Suche nach Name oder Symbol (z.B. Apple, BMW, AAPL)..." autocomplete="off" value="{% if ticker %}{{ company_name or ticker }}{% endif %}">
+                    <div id="divSuggestions" class="search-results"></div>
+                    <input type="hidden" id="divSelectedTicker" value="{{ ticker if ticker else '' }}">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="divCalcMode">Berechnung nach</label>
+                        <select id="divCalcMode" class="form-select">
+                            <option value="amount">Investitionsbetrag (€)</option>
+                            <option value="shares">Anzahl Aktienanteile</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="monthlySparplan">Monatlicher Sparplan (€)</label>
+                        <input type="number" id="monthlySparplan" value="100" min="0" step="25">
+                    </div>
+                </div>
+
+                <!-- Amount inputs -->
+                <div class="form-group" id="divAmountGroup">
+                    <div style="display: flex; justify-content: space-between;">
+                        <label for="divAmount">Investition (€)</label>
+                        <span id="divAmountDisplay" style="color: var(--accent); font-weight: 700;">1.000 €</span>
+                    </div>
+                    <input type="range" id="divAmountSlider" min="100" max="50000" step="500" value="1000" class="range-slider">
+                    <input type="number" id="divAmount" value="1000" min="0" step="100" style="display:none;">
+                </div>
+
+                <!-- Shares inputs -->
+                <div class="form-group" id="divSharesGroup" style="display: none;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <label for="divShares">Aktienanteile</label>
+                        <span id="divSharesDisplay" style="color: var(--accent); font-weight: 700;">10</span>
+                    </div>
+                    <input type="range" id="divSharesSlider" min="1" max="1000" step="5" value="10" class="range-slider">
+                    <input type="number" id="divShares" value="10" min="0" step="1" style="display:none;">
+                </div>
+                
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between;">
+                        <label for="monthlySparplanSlider">Sparplan Regler</label>
+                        <span id="monthlySparplanDisplay" style="color: var(--blue); font-weight: 700;">100 €</span>
+                    </div>
+                    <input type="range" id="monthlySparplanSlider" min="0" max="2000" step="25" value="100" class="range-slider">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="divCalcMode">Berechnungsmodus</label>
-                <select id="divCalcMode" class="form-select bg-dark text-white border-secondary mb-2">
-                    <option value="amount">Investitionsbetrag (€)</option>
-                    <option value="shares">Anzahl der Anteile</option>
-                </select>
-            </div>
-            <div class="form-group" id="divAmountGroup">
-                <label for="divAmount">Investitionsbetrag (€)</label>
-                <input type="number" id="divAmount" value="1000" step="100" min="0">
-            </div>
-            <div class="form-group" id="divSharesGroup" style="display: none;">
-                <label for="divShares">Anzahl der Anteile</label>
-                <input type="number" id="divShares" value="10" step="1" min="0">
+
+            <!-- Right panel: Live calculations & Compounding Chart -->
+            <div class="card-panel" style="justify-content: space-between;">
+                <div>
+                    <h3 class="panel-title">📊 Berechnete Erträge</h3>
+                    <div id="divResultsPlaceholder" style="text-align: center; padding: 40px 10px; color: var(--text-dim);">
+                        <p style="font-style: italic; font-size: 0.95rem;">Wähle eine Aktie aus, um die Berechnungen zu starten.</p>
+                    </div>
+                    <div id="divResults" class="results-grid" style="display: none;">
+                        <div class="result-card">
+                            <span class="label">Jährliche Dividende</span>
+                            <span id="resAnnual" class="value">0,00 €</span>
+                        </div>
+                        <div class="result-card">
+                            <span class="label">Monatlich (Ø)</span>
+                            <span id="resMonthly" class="value monthly">0,00 €</span>
+                        </div>
+                        <div class="result-card" id="resCardShares">
+                            <span class="label">Aktienanteile</span>
+                            <span id="resShares" class="value shares">0</span>
+                        </div>
+                        <div class="result-card" id="resCardAmount" style="display: none;">
+                            <span class="label">Investitionswert</span>
+                            <span id="resAmountVal" class="value">0,00 €</span>
+                        </div>
+                        <div class="result-card">
+                            <span class="label">Aktienkurs</span>
+                            <span id="sharePrice" style="color: white;" class="value">0,00 €</span>
+                        </div>
+                        <div class="result-card">
+                            <span class="label">Dividendenrendite</span>
+                            <span id="divYield" class="value text-info">0,0 %</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compounding trajectory canvas -->
+                <div id="chartContainer" style="display: none; height: 180px; width: 100%; margin-top: 15px;">
+                    <canvas id="projectionChart"></canvas>
+                </div>
             </div>
         </div>
 
-        <div id="divResults" class="results-grid" style="display: none;">
-            <div class="result-card">
-                <span class="label">Jährliche Dividende</span>
-                <span id="resAnnual" class="value">0,00 €</span>
-            </div>
-            <div class="result-card">
-                <span class="label">Monatlich (Ø)</span>
-                <span id="resMonthly" class="value monthly">0,00 €</span>
-            </div>
-            <div class="result-card" id="resCardShares">
-                <span class="label">Aktienanteile</span>
-                <span id="resShares" class="value shares">0</span>
-            </div>
-            <div class="result-card" id="resCardAmount" style="display: none;">
-                <span class="label">Investitionswert</span>
-                <span id="resAmountVal" class="value">0,00 €</span>
-            </div>
-            <div class="result-card">
-                <span class="label">Rendite</span>
-                <span id="resYield" class="value text-info">0,0 %</span>
-            </div>
+        <!-- Footer: Peer Stocks comparison (funnels) & copy link -->
+        <div id="peersSection" class="card-panel mt-4" style="display: none;">
+            <h3 class="panel-title">⚡ Sektor Peer-Vergleich</h3>
+            <div class="row g-3" id="peersList"></div>
         </div>
 
-        <!-- Broker CTA -->
-        <div id="brokerCta" class="mt-4 p-4 rounded-3 text-center" style="display:none; background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.3);">
-            <p class="mb-2 text-muted small">Passiv Einkommen aufbauen mit einem Sparplan:</p>
-            <h5 class="fw-bold mb-3">Diese Aktie ist als Sparplan verfügbar bei Trade Republic</h5>
-            <a href="https://trade.re/p/schatzsuche" target="_blank" class="btn btn-success px-4 rounded-pill fw-bold">Konto eröffnen & Bonus sichern*</a>
-            <p class="mt-2" style="font-size: 0.6rem; opacity: 0.5;">*Affiliate Link. Investieren birgt Risiken.</p>
+        <div class="share-section" id="shareBox" style="display: none;">
+            <p class="text-secondary small">Teile diese Dividenden-Simulation oder sichere dir den Link für dein Portfolio:</p>
+            <button class="btn-share" id="copyBtn">Link kopieren 📋</button>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const dSearch = document.getElementById('divStockSearch');
-            const dSugg = document.getElementById('divSuggestions');
-            const dTicker = document.getElementById('divSelectedTicker');
-            const dAmount = document.getElementById('divAmount');
-            const dRes = document.getElementById('divResults');
-
-            let debounceTimer;
-
-            dSearch.addEventListener('input', async e => {
-                clearTimeout(debounceTimer);
-                const q = e.target.value.trim();
-                if (q.length < 2) { dSugg.style.display = 'none'; return; }
-                
-                debounceTimer = setTimeout(async () => {
-                    const r = await fetch(`/search?q=${encodeURIComponent(q)}`);
-                    const data = r.ok ? await r.json() : [];
-                    if (!data.length) { dSugg.style.display = 'none'; return; }
-                    
-                    dSugg.innerHTML = data.map(o => `<div class='search-item' data-sym='${o.symbol}'><strong>${o.symbol}</strong> - ${o.name}</div>`).join('');
-                    dSugg.style.display = 'block';
-                }, 300);
-            });
-
-            dSugg.addEventListener('click', e => {
-                const item = e.target.closest('.search-item');
-                if (!item) return;
-                dSearch.value = item.innerText;
-                dTicker.value = item.dataset.sym;
-                dSugg.style.display = 'none';
-                runDivCalc();
-            });
-
-            const dCalcMode = document.getElementById('divCalcMode');
-            const dAmountGroup = document.getElementById('divAmountGroup');
-            const dSharesGroup = document.getElementById('divSharesGroup');
-            const dShares = document.getElementById('divShares');
-            const resCardShares = document.getElementById('resCardShares');
-            const resCardAmount = document.getElementById('resCardAmount');
-
-            dCalcMode.addEventListener('change', () => {
-                if (dCalcMode.value === 'amount') {
-                    dAmountGroup.style.display = 'block';
-                    dSharesGroup.style.display = 'none';
-                    resCardShares.style.display = 'block';
-                    resCardAmount.style.display = 'none';
-                } else {
-                    dAmountGroup.style.display = 'none';
-                    dSharesGroup.style.display = 'block';
-                    resCardShares.style.display = 'none';
-                    resCardAmount.style.display = 'block';
-                }
-                runDivCalc();
-            });
-
-            dAmount.addEventListener('input', runDivCalc);
-            dShares.addEventListener('input', runDivCalc);
-
-            async function runDivCalc() {
-                const t = dTicker.value;
-                if (!t) return;
-
-                let url = `/api/calculate-dividend?ticker=${t}`;
-                if (dCalcMode.value === 'amount') {
-                    url += `&amount=${dAmount.value}`;
-                } else {
-                    url += `&shares=${dShares.value}`;
-                }
-
-                const r = await fetch(url);
-                const data = await r.json();
-                if (data.error) return;
-
-                document.getElementById('resAnnual').innerText = data.annual.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-                document.getElementById('resMonthly').innerText = data.monthly.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-                document.getElementById('resShares').innerText = data.shares.toFixed(2);
-                document.getElementById('resAmountVal').innerText = data.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-                document.getElementById('resYield').innerText = data.yield + ' %';
-                dRes.style.display = 'grid';
-                document.getElementById('brokerCta').style.display = 'block';
-            }
-
-            if (dTicker.value) {
-                runDivCalc();
-            }
-        });
-    </script>
-    <style>
-        .search-results {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #1e293b;
-            border-radius: 12px;
-            margin-top: 5px;
-            z-index: 1000;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .search-item {
-            padding: 12px 20px;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            color: white;
-        }
-        .search-item:hover {
-            background: rgba(16, 185, 129, 0.1);
-        }
-    </style>
     {% endif %}
 
     <div class="text-center mb-4 d-flex justify-content-center align-items-center gap-3">
       {% if ticker %}
-      <a href="/" class="btn btn-outline-light btn-sm px-3 rounded-pill" style="border: 1px solid rgba(255,255,255,0.2);">← Neue Suche</a>
+      <a href="/" class="btn btn-outline-light btn-sm px-3 rounded-pill" style="border: 1px solid rgba(255,255,255,0.2); font-weight:600;">← Neue Suche</a>
       {% endif %}
       {% if is_stale %}
-      <span class="badge rounded-pill bg-danger px-3 py-2">Datenstand: {{ last_update_str }} (Veraltet!)</span>
+      <span class="badge rounded-pill bg-danger px-3 py-2" style="font-weight:700;">Datenstand: {{ last_update_str }} (Veraltet!)</span>
       {% else %}
-      <span class="badge rounded-pill bg-success px-3 py-2" style="background-color:rgba(16, 185, 129, 0.2) !important; color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">Datenstand: {{ last_update_str }}</span>
+      <span class="badge rounded-pill bg-success px-3 py-2" style="background-color:rgba(16, 185, 129, 0.15) !important; color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); font-weight:700;">Datenstand: {{ last_update_str }}</span>
       {% endif %}
     </div>
 
@@ -605,32 +644,362 @@
       });
     }
 
-    // ─── Autocomplete ────────────────────────────────────────────
+    // ─── Autocomplete and Local Stocks Memory Cache ────────────────
+    let allStocks = [];
+    let selectedStockObj = null;
+    let chartInstance = null;
+
+    async function loadDatabase() {
+      try {
+        const res = await fetch('/api/dividenden-kalender');
+        const data = await res.json();
+        allStocks = data.stocks || [];
+        
+        // Handle incoming ticker search params if any
+        handleUrlParams();
+      } catch (e) {
+        console.error("Could not preload stocks array client side.", e);
+      }
+    }
+
+    // 1. Primary "stock-search" Autocomplete (Image generator form)
     const search = document.getElementById('stock-search');
     const ticker = document.getElementById('ticker');
     const sugg = document.getElementById('suggestions');
-    async function fetchMatches(q) {
-      if (!q) return [];
-      const r = await fetch(`/search?q=${encodeURIComponent(q)}`);
-      return r.ok ? await r.json() : [];
-    }
-    search.addEventListener('input', async e => {
-      const q = e.target.value.trim();
+
+    search.addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      sugg.innerHTML = '';
       if (!q) { sugg.style.display = 'none'; return; }
-      const d = await fetchMatches(q);
-      if (!d.length) { sugg.style.display = 'none'; return; }
-      sugg.innerHTML = d.map(o => `<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name}</li>`).join('');
-      sugg.style.display = 'block';
+      
+      const matches = allStocks.filter(s => 
+        s.symbol.toLowerCase().includes(q) || 
+        s.name.toLowerCase().includes(q)
+      ).slice(0, 10);
+
+      if (matches.length > 0) {
+        sugg.innerHTML = matches.map(o => `<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name}</li>`).join('');
+        sugg.style.display = 'block';
+      } else {
+        sugg.style.display = 'none';
+      }
     });
+
     sugg.addEventListener('click', e => {
       const li = e.target.closest('li[data-sym]');
       if (!li) return;
       search.value = ticker.value = li.dataset.sym;
       sugg.style.display = 'none';
     });
+
     document.addEventListener('click', e => {
       if (!search.contains(e.target) && !sugg.contains(e.target)) sugg.style.display = 'none';
     });
+
+    // 2. Inline Dividend Calculator Autocomplete search suggestions
+    const dSearch = document.getElementById('divStockSearch');
+    const dSugg = document.getElementById('divSuggestions');
+    const dTicker = document.getElementById('divSelectedTicker');
+
+    dSearch.addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      dSugg.innerHTML = '';
+      if (!q) { dSugg.style.display = 'none'; return; }
+
+      const matches = allStocks.filter(s => 
+        s.symbol.toLowerCase().includes(q) || 
+        s.name.toLowerCase().includes(q)
+      ).slice(0, 8);
+
+      if (matches.length > 0) {
+        dSugg.innerHTML = matches.map(o => `<div class='search-item' data-sym='${o.symbol}'><strong>${o.symbol}</strong> - ${o.name} <span class="float-end text-success">${o.div_yield.toFixed(2)}%</span></div>`).join('');
+        dSugg.style.display = 'block';
+      } else {
+        dSugg.style.display = 'none';
+      }
+    });
+
+    dSugg.addEventListener('click', e => {
+      const item = e.target.closest('.search-item');
+      if (!item) return;
+      
+      const symbol = item.dataset.sym;
+      const matched = allStocks.find(s => s.symbol === symbol);
+      if (matched) {
+        selectStock(matched);
+      }
+      dSugg.style.display = 'none';
+    });
+
+    document.addEventListener('click', e => {
+      if (e.target.id !== 'divStockSearch') {
+        dSugg.style.display = 'none';
+      }
+    });
+
+    function selectStock(item) {
+      selectedStockObj = item;
+      dSearch.value = item.name;
+      dTicker.value = item.symbol;
+      
+      // Calculate
+      calculate();
+      
+      // Load sector duels peers
+      loadPeers(item);
+    }
+
+    // Toggle calculator modes
+    const dCalcMode = document.getElementById('divCalcMode');
+    const dAmountGroup = document.getElementById('divAmountGroup');
+    const dSharesGroup = document.getElementById('divSharesGroup');
+    const dAmount = document.getElementById('divAmount');
+    const dShares = document.getElementById('divShares');
+    const resCardShares = document.getElementById('resCardShares');
+    const resCardAmount = document.getElementById('resCardAmount');
+
+    dCalcMode.addEventListener('change', () => {
+      if (dCalcMode.value === 'amount') {
+        dAmountGroup.style.display = 'block';
+        dSharesGroup.style.display = 'none';
+        resCardShares.style.display = 'block';
+        resCardAmount.style.display = 'none';
+      } else {
+        dAmountGroup.style.display = 'none';
+        dSharesGroup.style.display = 'block';
+        resCardShares.style.display = 'none';
+        resCardAmount.style.display = 'block';
+      }
+      calculate();
+    });
+
+    // Sliders & Numerical inputs synchronization
+    const dAmountSlider = document.getElementById('divAmountSlider');
+    const dAmountDisp = document.getElementById('divAmountDisplay');
+    dAmountSlider.addEventListener('input', e => {
+      dAmount.value = e.target.value;
+      dAmountDisp.textContent = parseInt(e.target.value).toLocaleString('de-DE') + " €";
+      calculate();
+    });
+    dAmount.addEventListener('input', e => {
+      dAmountSlider.value = e.target.value;
+      dAmountDisp.textContent = parseInt(e.target.value).toLocaleString('de-DE') + " €";
+      calculate();
+    });
+
+    const dSharesSlider = document.getElementById('divSharesSlider');
+    const dSharesDisp = document.getElementById('divSharesDisplay');
+    dSharesSlider.addEventListener('input', e => {
+      dShares.value = e.target.value;
+      dSharesDisp.textContent = parseInt(e.target.value).toLocaleString('de-DE');
+      calculate();
+    });
+    dShares.addEventListener('input', e => {
+      dSharesSlider.value = e.target.value;
+      dSharesDisp.textContent = parseInt(e.target.value).toLocaleString('de-DE');
+      calculate();
+    });
+
+    const mSparplan = document.getElementById('monthlySparplan');
+    const mSparplanSlider = document.getElementById('monthlySparplanSlider');
+    const mSparplanDisp = document.getElementById('monthlySparplanDisplay');
+    mSparplanSlider.addEventListener('input', e => {
+      mSparplan.value = e.target.value;
+      mSparplanDisp.textContent = parseInt(e.target.value).toLocaleString('de-DE') + " €";
+      calculate();
+    });
+    mSparplan.addEventListener('input', e => {
+      mSparplanSlider.value = e.target.value;
+      mSparplanDisp.textContent = parseInt(e.target.value).toLocaleString('de-DE') + " €";
+      calculate();
+    });
+
+    async function calculate() {
+      const t = dTicker.value;
+      if (!t) return;
+
+      let url = `/api/calculate-dividend?ticker=${t}`;
+      if (dCalcMode.value === 'amount') {
+        url += `&amount=${dAmount.value}`;
+      } else {
+        url += `&shares=${dShares.value}`;
+      }
+
+      try {
+        const r = await fetch(url);
+        const data = await r.json();
+        if (data.error) return;
+
+        document.getElementById('resAnnual').innerText = data.annual.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+        document.getElementById('resMonthly').innerText = data.monthly.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+        document.getElementById('resShares').innerText = data.shares.toFixed(2);
+        document.getElementById('resAmountVal').innerText = data.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+        document.getElementById('sharePrice').innerText = data.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+        document.getElementById('divYield').innerText = data.yield + ' %';
+        
+        // Sync sliders on calculations
+        if (dCalcMode.value === 'amount') {
+          dSharesSlider.value = Math.round(data.shares);
+          dSharesDisp.textContent = Math.round(data.shares).toLocaleString('de-DE');
+          dShares.value = Math.round(data.shares);
+        } else {
+          dAmountSlider.value = Math.round(data.amount);
+          dAmountDisp.textContent = Math.round(data.amount).toLocaleString('de-DE') + " €";
+          dAmount.value = Math.round(data.amount);
+        }
+
+        // Display results block & chart
+        document.getElementById('divResultsPlaceholder').style.display = 'none';
+        document.getElementById('divResults').style.display = 'grid';
+        document.getElementById('shareBox').style.display = 'block';
+        document.getElementById('chartContainer').style.display = 'block';
+
+        // Draw compound line projection
+        renderCompoundingChart(data.amount, data.yield);
+      } catch (err) {
+        console.error("Error calculating dividend payout.", err);
+      }
+    }
+
+    // Chart.js Compound projection rendering
+    function renderCompoundingChart(initialCapital, annualYieldPercent) {
+      const monthlySparplan = parseFloat(mSparplan.value) || 0;
+      const yieldRate = annualYieldPercent / 100.0;
+      const growthRate = 0.07; // 7% annual share appreciation
+
+      let balance = initialCapital;
+      let years = Array.from({length: 11}, (_, i) => i);
+      let balances = [initialCapital];
+
+      for (let y = 1; y <= 10; y++) {
+        for (let q = 0; q < 4; q++) {
+          balance += (monthlySparplan * 3);
+          balance *= (1 + (growthRate + yieldRate) / 4);
+        }
+        balances.push(Math.round(balance));
+      }
+
+      const ctx = document.getElementById('projectionChart').getContext('2d');
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: years.map(y => `${y} J.`),
+          datasets: [{
+            label: 'Depotwert (€)',
+            data: balances,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#131c30',
+              titleColor: '#94a3b8',
+              bodyColor: '#fff',
+              borderColor: 'rgba(255,255,255,0.06)',
+              borderWidth: 1,
+              displayColors: false
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#475569', font: { size: 9 } }
+            },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.02)' },
+              ticks: { color: '#475569', font: { size: 9 } }
+            }
+          }
+        }
+      });
+    }
+
+    // Client-side sector peers extraction pointing back to compare duels
+    function loadPeers(stock) {
+      const container = document.getElementById('peersSection');
+      const list = document.getElementById('peersList');
+      list.innerHTML = '';
+
+      if (!stock.sector) {
+        container.style.display = 'none';
+        return;
+      }
+
+      const peers = allStocks
+        .filter(s => s.sector === stock.sector && s.symbol !== stock.symbol)
+        .slice(0, 3);
+
+      if (peers.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      peers.forEach(p => {
+        const col = document.createElement('div');
+        col.className = 'col-md-4';
+        col.innerHTML = `
+          <div class="peer-item">
+            <div class="peer-meta">
+              <span class="peer-name" title="${p.name}">${p.name}</span>
+              <span class="peer-tick">${p.symbol} • Yield: ${p.div_yield.toFixed(2)}%</span>
+            </div>
+            <a href="https://compare.schatzsuche40.de/?t1=${stock.symbol}&t2=${p.symbol}" target="_blank" class="peer-action">
+              Duell ⚡
+            </a>
+          </div>
+        `;
+        list.appendChild(col);
+      });
+
+      container.style.display = 'block';
+    }
+
+    // Copying links to simulation
+    document.getElementById('copyBtn').onclick = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('ticker', dTicker.value);
+      url.searchParams.set('amount', dAmount.value);
+      
+      navigator.clipboard.writeText(url.toString()).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.innerText = 'Erfolgreich kopiert! 💥';
+        btn.style.background = '#10b981';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+          btn.innerText = 'Link kopieren 📋';
+          btn.style.background = 'var(--accent-soft)';
+          btn.style.color = 'var(--accent)';
+        }, 2000);
+      });
+    };
+
+    function handleUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('ticker')) {
+        const symbol = params.get('ticker').toUpperCase();
+        const matched = allStocks.find(s => s.symbol === symbol);
+        if (matched) {
+          const amount = parseInt(params.get('amount')) || 1000;
+          dAmountSlider.value = amount;
+          dAmount.value = amount;
+          dAmountDisp.textContent = amount.toLocaleString('de-DE') + " €";
+          selectStock(matched);
+        }
+      }
+    }
 
     // ─── Checkbox-Limit ─────────────────────────────────────────
     const MAX = 8;
@@ -660,7 +1029,8 @@
       });
       el.addEventListener('click', e => e.stopPropagation());
     });
-    // ─── iFrame Resizing (Phase 5) ─────────────────────────────
+
+    // ─── iFrame Resizing ────────────────────────────────────────
     if (isEmbedded) {
       function sendHeight() {
         const height = document.body.scrollHeight;
@@ -671,23 +1041,25 @@
       const observer = new MutationObserver(sendHeight);
       observer.observe(document.body, { attributes: true, childList: true, subtree: true });
     }
+
     // ─── Auto-Analysis for Landing Pages ──────────────────────
     {% if ticker %}
     window.addEventListener('DOMContentLoaded', () => {
         const form = document.querySelector('form[action="{{ url_for("generate_image") }}"]');
         const tickerInput = document.getElementById('ticker');
         if (tickerInput && tickerInput.value) {
-            // Show loader immediately
             const loader = document.getElementById('loader-overlay');
             if (loader) loader.style.display = 'flex';
-            // Short delay to allow UI to render
             setTimeout(() => form.submit(), 600);
         }
     });
     {% endif %}
+
+    // Run database preload
+    loadDatabase();
   </script>
 
-  <!-- Bug-Reporting Widget (Phase 9.1) -->
+  <!-- Bug-Reporting Widget -->
   <div id="bugReportWidget" style="position:fixed; bottom:20px; right:20px; z-index:9999; font-family:sans-serif;">
     <button id="bugOpenBtn" style="background:#ef4444; color:white; border:none; border-radius:50px; padding:10px 18px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-weight:700; font-size:14px; transition:0.2s; display:flex; align-items:center; gap:8px;">
       <span>🚨</span> Fehler melden

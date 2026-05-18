@@ -335,7 +335,8 @@ def search():
 # ─── Dividend Calculator ────────────────────────────────────────
 @app.route('/dividend-rechner')
 def dividend_rechner():
-    return render_template('dividend_calc.html')
+    is_embedded = request.args.get('embed') == '1'
+    return render_template('dividend_calc.html', is_embedded=is_embedded)
 
 @app.route('/api/calculate-dividend')
 def calculate_dividend():

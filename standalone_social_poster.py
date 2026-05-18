@@ -58,14 +58,38 @@ def run_daily_poster():
     
     if is_comparison:
         print("Würfel entscheidet: BÖRSEN-DUELL (Vergleich)")
-        candidates = top_100.sample(n=2).to_dict('records')
-        row_a = candidates[0]
-        row_b = candidates[1]
         
-        sym_a, name_a = str(row_a.get('Symbol')), str(row_a.get('Security'))
+        # 1. First stock (A) from the top 100
+        row_a_series = top_100.sample(n=1).iloc[0]
+        sym_a = str(row_a_series.get('Symbol'))
+        name_a = str(row_a_series.get('Security'))
+        sect_a = row_a_series.get('Sektor')
+        
+        # 2. Second stock (B) from the same sector
+        # Try to find a peer in the top 100 first to maintain high quality duels
+        peers_top = top_100[(top_100['Sektor'] == sect_a) & (top_100['Symbol'] != sym_a)]
+        
+        if not peers_top.empty:
+            row_b_series = peers_top.sample(n=1).iloc[0]
+            print(f"Peer für {sym_a} aus Top 100 Sektor '{sect_a}' gewählt.")
+        else:
+            # Fallback 1: Search the entire CSV for peers with a valid KGV
+            df_full = pd.read_csv(CSV_FILE)
+            peers_all = df_full[(df_full['Sektor'] == sect_a) & (df_full['Symbol'] != sym_a) & df_full['KGV'].notna()]
+            if not peers_all.empty:
+                row_b_series = peers_all.sample(n=1).iloc[0]
+                print(f"Peer für {sym_a} aus gesamten Sektor '{sect_a}' gewählt (nicht in Top 100).")
+            else:
+                # Fallback 2: Absolutely no peer in the sector, fallback to a random top 100 stock
+                fallback_peers = top_100[top_100['Symbol'] != sym_a]
+                row_b_series = fallback_peers.sample(n=1).iloc[0]
+                print(f"Keine Peers gefunden für Sektor '{sect_a}'. Fallback auf zufällige Top 100 Aktie.")
+                
+        row_a = row_a_series.to_dict()
+        row_b = row_b_series.to_dict()
+        
         sym_b, name_b = str(row_b.get('Symbol')), str(row_b.get('Security'))
-        
-        print(f"Gewählt: {name_a} ({sym_a}) vs {name_b} ({sym_b})")
+        print(f"Gewählt (Sektor: {sect_a}): {name_a} ({sym_a}) vs {name_b} ({sym_b})")
         
         # KI Vergleich
         fin_a = extract_financial_data(row_a)
@@ -80,6 +104,12 @@ def run_daily_poster():
         names = f"{name_a} vs {name_b}"
         symbols = f"{sym_a} vs {sym_b}"
         fin_texts = f"{name_a}: {fin_a}\n{name_b}: {fin_b}"
+        
+        comment_text = (
+            "👉 Vergleiche selbst deine Lieblingsaktien in unserem interaktiven Vergleichstool:\n"
+            "https://compare.schatzsuche40.de/\n\n"
+            "Analysiere über 4.000 Aktien im Screener auf schatzsuche40.de! 📈"
+        )
         
         out_filename = f"comparison_{sym_a}_{sym_b}.png"
         
@@ -98,6 +128,12 @@ def run_daily_poster():
         names = name
         symbols = sym
         fin_texts = str(fin)
+        
+        comment_text = (
+            "👉 Analysiere diese Aktie interaktiv in unserem Aktien-Screener:\n"
+            "https://tool.schatzsuche40.de/\n\n"
+            "Dividenden-Termine findest du im Kalender auf schatzsuche40.de! 💰"
+        )
         
         out_filename = f"single_{sym}.png"
 
@@ -155,7 +191,7 @@ def run_daily_poster():
 
     url_link = "https://schatzsuche40.de"
     
-    run_social_sync(symbols, caption, public_path, blog_url=url_link, wp_img_url=wp_img_url, title=names)
+    run_social_sync(symbols, caption, public_path, blog_url=url_link, wp_img_url=wp_img_url, title=names, comment_text=comment_text)
     
     print("✅ Täglicher Post erfolgreich abgesetzt!")
 

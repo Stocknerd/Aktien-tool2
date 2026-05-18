@@ -65,6 +65,18 @@ PAGES = [
             'style="border-radius:14px;display:block;" loading="lazy" title="P2P Dashboard"></iframe>'
             '</div>\n<!-- /wp:html -->'
         )
+    },
+    {
+        "title": "Dividenden-Rechner",
+        "slug": "dividend-rechner",
+        "content": (
+            '<!-- wp:paragraph --><p>Simuliere und berechne dein passives Dividenden-Einkommen mit deinen Lieblingsaktien und unserem interaktiven Zinseszins-Rechner.</p><!-- /wp:paragraph -->'
+            '<!-- wp:html -->\n'
+            '<div style="margin:24px 0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">'
+            f'<iframe src="{TOOL_BASE_URL}/dividend-rechner?embed=1" width="100%" height="950" frameborder="0" '
+            'style="border-radius:14px;display:block;" loading="lazy" title="Dividenden Rechner"></iframe>'
+            '</div>\n<!-- /wp:html -->'
+        )
     }
 ]
 

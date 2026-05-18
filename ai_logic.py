@@ -132,20 +132,20 @@ def get_ai_excerpt(title, content):
 
 def generate_blog_header_image(stock_names):
     """
-    Generates a premium landscape blog header image using DALL-E 3.
+    Generates a premium landscape blog header image using gpt-image-1.5.
     """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key: return None
     
     stocks_str = ", ".join(stock_names)
-    prompt = f"A high-quality, professional 16:9 landscape cinematic header image for a financial news blog about the stock market. Abstract, modern, clean lines, financial district at sunrise, glowing trend lines, professional aesthetic, 8k resolution, elegant lighting. No text in the image. Topic related to: {stocks_str}."
+    prompt = f"A high-quality, professional 3:2 landscape cinematic header image for a financial news blog about the stock market. Abstract, modern, clean lines, financial district at sunrise, glowing trend lines, professional aesthetic, 8k resolution, elegant lighting. No text in the image. Topic related to: {stocks_str}."
     
     try:
         client = OpenAI(api_key=api_key)
         response = client.images.generate(
-            model="dall-e-3",
+            model="gpt-image-1.5",
             prompt=prompt,
-            size="1792x1024",
+            size="1536x1024",
             quality="standard",
             n=1,
         )
@@ -155,7 +155,7 @@ def generate_blog_header_image(stock_names):
              img = Image.open(io.BytesIO(img_response.content))
              return img
     except Exception as e:
-        print(f"Error generating DALL-E image: {e}")
+        print(f"Error generating gpt-image-1.5 image: {e}")
     return None
 
 def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b):
@@ -177,7 +177,7 @@ def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b
     Aktie B: {name_b} ({symbol_b})
     Kennzahlen B: {json.dumps(data_b, indent=2)}
     
-    Ziehe ein prägnantes Fazit (max. 4-5 Sätze). Welche Aktie wirkt attraktiver? 
+    Ziehe ein extrem kurzes, prägnantes Fazit (maximal 150 bis 180 Zeichen bzw. 1-2 sehr kurze Sätze). Welche Aktie wirkt attraktiver? 
     Antworte direkt mit dem Vergleichstext, ohne Einleitung. Nutze deutsche Sprache.
     """
 
@@ -185,11 +185,16 @@ def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b
         response = client.chat.completions.create(
             model="gpt-5.4-mini",  # Using gpt-5.4-mini for efficient comparisons
             messages=[{"role": "user", "content": prompt}],
-            max_completion_tokens=400
+            max_completion_tokens=150
         )
         ans = response.choices[0].message.content.strip()
         if not ans or len(ans) < 20:
-             return f"Basierend auf den Daten zeigen sowohl {symbol_a} als auch {symbol_b} solide Profile, wobei ihre individuellen Stärken in unterschiedlichen Kennzahlen liegen."
+             return f"Basierend auf den Daten zeigen sowohl {symbol_a} als auch {symbol_b} solide Profile."
+        
+        # Enforce hard length limit of 180 characters to prevent visual overflow on comparison card
+        if len(ans) > 180:
+            ans = ans[:177] + "..."
+            
         return ans
     except Exception as e:
         print(f"OpenAI Error Comparison {symbol_a} vs {symbol_b}: {e}")

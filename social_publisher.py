@@ -49,7 +49,31 @@ def post_to_x(caption, image_path):
         print(f"[ERR] X-Posting fehlgeschlagen: {e}")
         return False
 
-def post_to_facebook_page(message, image_path=None, link_url=None):
+def post_comment(post_id, comment_text):
+    """Postet einen Kommentar unter einen Facebook- oder Instagram-Post."""
+    PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
+    if not PAGE_TOKEN or not post_id:
+        return False
+        
+    try:
+        url = f"https://graph.facebook.com/v20.0/{post_id}/comments"
+        params = {
+            "message": comment_text,
+            "access_token": PAGE_TOKEN
+        }
+        r = requests.post(url, params=params)
+        data = r.json()
+        if "id" in data:
+            print(f"[OK] Kommentar erfolgreich unter Post {post_id} gepostet (ID: {data['id']}).")
+            return True
+        else:
+            print(f"[ERR] Kommentar posting fehlgeschlagen unter {post_id}: {data}")
+            return False
+    except Exception as e:
+        print(f"[ERR] Kommentar-Fehler fuer Post {post_id}: {e}")
+        return False
+
+def post_to_facebook_page(message, image_path=None, link_url=None, comment_text=None):
     """
     Postet auf die Facebook-Unternehmensseite (Schatzsuche 4.0).
     Nutzt den never-expiring PAGE_TOKEN.
@@ -82,6 +106,8 @@ def post_to_facebook_page(message, image_path=None, link_url=None):
         data = r.json()
         if "id" in data:
             print(f"[OK] Facebook: Post erfolgreich (Photo ID: {data['id']}).")
+            if comment_text:
+                post_comment(data['id'], comment_text)
             return True
         else:
             print(f"[ERR] Facebook Fehlermeldung: {data}")
@@ -91,7 +117,7 @@ def post_to_facebook_page(message, image_path=None, link_url=None):
         print(f"[ERR] Facebook-Posting fehlgeschlagen: {e}")
         return False
 
-def post_to_instagram_feed(caption, image_path, wp_img_url=None, link_url=None):
+def post_to_instagram_feed(caption, image_path, wp_img_url=None, link_url=None, comment_text=None):
     """Postet ein Bild auf den Instagram Business Feed (Offizielle API)."""
     PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
     if not (META_INSTA_ID and PAGE_TOKEN):
@@ -147,6 +173,9 @@ def post_to_instagram_feed(caption, image_path, wp_img_url=None, link_url=None):
             
             if "id" in data_pub:
                 print(f"[OK] Instagram: Post erfolgreich veröffentlicht (Media ID: {data_pub['id']}).")
+                if comment_text:
+                    time.sleep(2)  # Kurze Pause, damit die Media ID bei Meta registriert ist
+                    post_comment(data_pub['id'], comment_text)
                 return True
             elif data_pub.get('error', {}).get('code') == 9007:
                 print(f"[WAIT] Instagram Bild verarbeitet noch... (Versuch {attempt+1}/{max_retries})")
@@ -217,7 +246,7 @@ def post_to_pinterest(title, description, image_path, link_url=None):
         print(f"[ERR] Pinterest-Posting fehlgeschlagen: {e}")
         return False
 
-def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None, title=None):
+def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None, title=None, comment_text=None):
     """Hier erfolgt der koordinierte Social-Media-Push."""
     print(f"Bündele Social-Media-Push für {symbol}...")
     
@@ -225,10 +254,10 @@ def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None,
     post_to_x(caption, image_path)
     
     # 2. Facebook (Offizielle API)
-    post_to_facebook_page(caption, image_path, link_url=blog_url)
+    post_to_facebook_page(caption, image_path, link_url=blog_url, comment_text=comment_text)
     
     # 3. Instagram (Offizielle API)
-    post_to_instagram_feed(caption, image_path, wp_img_url=wp_img_url, link_url=blog_url)
+    post_to_instagram_feed(caption, image_path, wp_img_url=wp_img_url, link_url=blog_url, comment_text=comment_text)
     
     # 4. Pinterest (Offizielle API)
     # Pinterest requires a strict title. Fallback to symbol if not provided.

@@ -283,7 +283,7 @@ HOMEPAGE_HTML = """<!-- wp:html -->
       <span class="s40-tool-cta">Aktien vergleichen &rarr;</span>
     </a>
     <!-- Tool 3: Dividenden-Rechner -->
-    <a href="https://compare.schatzsuche40.de/dividend-rechner" class="s40-tool-card">
+    <a href="https://schatzsuche40.de/dividend-rechner" class="s40-tool-card">
       <span class="s40-tool-icon">&#128181;</span>
       <div class="s40-tool-title">Dividenden-Rechner</div>
       <p class="s40-tool-desc">Behalte deine passiven Einkommensstr&ouml;me im Blick. Berechne deine Dividenden-Zahlungen und analysiere deinen monatlichen Cashflow in Sekunden.</p>
