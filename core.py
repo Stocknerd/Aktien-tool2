@@ -5,6 +5,7 @@ import time
 import json
 import re
 import math
+import threading
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from typing import List, Dict, Any, Optional, Tuple
@@ -79,9 +80,38 @@ METRIC_DESC = {
 }
 
 # ───────────────────────── Shared Logic ─────────────────────────
+_df_cache_lock = threading.Lock()
+_CACHED_DF = None
+_CACHED_MTIME = 0.0
+
 def load_df():
-    if not os.path.exists(CSV_FILE): return pd.DataFrame()
-    return pd.read_csv(CSV_FILE)
+    global _CACHED_DF, _CACHED_MTIME
+    if not os.path.exists(CSV_FILE):
+        return pd.DataFrame()
+        
+    try:
+        mtime = os.path.getmtime(CSV_FILE)
+    except OSError:
+        mtime = 0.0
+        
+    # Read lock-free first for speed
+    if _CACHED_DF is not None and mtime == _CACHED_MTIME:
+        return _CACHED_DF
+        
+    with _df_cache_lock:
+        # Double check inside lock
+        if _CACHED_DF is not None and mtime == _CACHED_MTIME:
+            return _CACHED_DF
+            
+        try:
+            df = pd.read_csv(CSV_FILE)
+            _CACHED_DF = df
+            _CACHED_MTIME = mtime
+            return df
+        except Exception:
+            if _CACHED_DF is not None:
+                return _CACHED_DF
+            return pd.DataFrame()
 
 def get_clean_name(row):
     """
@@ -157,6 +187,7 @@ def display_value(key: str, row) -> str:
         # Dividendenrendite is stored as a plain decimal % (e.g. 0.4 = 0.4%)
         # Marge / Rendite / Wachstum / Quote stored as fraction (0.35 = 35%) → multiply
         is_div = "dividende" in kl and "rendite" in kl  # Dividendenrendite only
+        is_div_or_yield = "dividende" in kl or "yield" in kl
         should_be_percent = any(k in kl for k in [
             "rendite", "marge", "wachstum", "quote", "dividende", "gewinn", "yield"
         ])
@@ -164,7 +195,7 @@ def display_value(key: str, row) -> str:
             if abs(f_val) < 0.001: return "0.0%"
             if not is_div and abs(f_val) < 5.0 and f_val != 0:
                 f_val *= 100  # fraction → percent
-            sign = "+" if f_val > 0 else ""
+            sign = "+" if f_val > 0 and not is_div_or_yield else ""
             return f"{sign}{f_val:.1f}%"
         if abs(f_val) > 1_000_000_000: return f"{f_val/1e9:.1f} Mrd"
         if abs(f_val) > 1_000_000: return f"{f_val/1e6:.1f} Mio"
@@ -542,6 +573,27 @@ def _parse_num(s: str):
 def _is_low_better(metric_key: str) -> bool:
     return any(k in metric_key.upper() for k in ["KGV", "PE", "KUV", "KBV", "SCHULDEN", "PEG", "EV/"])
 
+def _compare_values(n1: float, n2: float, low_better: bool) -> Tuple[bool, bool]:
+    """
+    Safely compare two numbers.
+    For low_better:
+      - If both are positive: lower is better.
+      - If one is positive and one is negative/zero: the positive one is always better.
+      - If both are negative/zero: the closer to zero (less negative) is better.
+    For high_better:
+      - Higher is better.
+    """
+    if low_better:
+        if n1 > 0 and n2 > 0:
+            return n1 < n2, n2 < n1
+        if n1 > 0 and n2 <= 0:
+            return True, False
+        if n2 > 0 and n1 <= 0:
+            return False, True
+        return n1 > n2, n2 > n1
+    else:
+        return n1 > n2, n2 > n1
+
 def render_compare(rows: List[pd.Series], metrics: List[str] = None, watermark: str = "",
                    bg_path: str = None, fetch_analyst: bool = False, ai_verdict: str = "") -> Image.Image:
     """Render a premium side-by-side stock comparison card (1080×1350)."""
@@ -685,10 +737,9 @@ def render_compare(rows: List[pd.Series], metrics: List[str] = None, watermark: 
 
         if n1 is not None and n2 is not None and n1 != n2:
             low_better = _is_low_better(m)
-            w1 = (n1 < n2 and n1 > 0) if low_better else (n1 > n2)
-            w2 = not w1
-            col1 = WIN_COL if w1 else LOSE_COL
-            col2 = WIN_COL if w2 else LOSE_COL
+            w1, w2 = _compare_values(n1, n2, low_better)
+            col1 = WIN_COL if w1 else (LOSE_COL if w2 else WHITE)
+            col2 = WIN_COL if w2 else (LOSE_COL if w1 else WHITE)
             if w1:   score1 += 1
             elif w2: score2 += 1
 
