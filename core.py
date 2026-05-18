@@ -571,7 +571,10 @@ def _parse_num(s: str):
     except: return None
 
 def _is_low_better(metric_key: str) -> bool:
-    return any(k in metric_key.upper() for k in ["KGV", "PE", "KUV", "KBV", "SCHULDEN", "PEG", "EV/"])
+    mk = metric_key.upper()
+    if any(x in mk for x in ["MARGE", "RENDITE", "GROWTH", "WACHSTUM"]):
+        return False
+    return any(k in mk for k in ["KGV", "PE", "KUV", "KBV", "SCHULDEN", "PEG", "EV/"])
 
 def _compare_values(n1: float, n2: float, low_better: bool) -> Tuple[bool, bool]:
     """
