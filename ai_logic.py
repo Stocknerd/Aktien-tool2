@@ -132,30 +132,45 @@ def get_ai_excerpt(title, content):
 
 def generate_blog_header_image(stock_names):
     """
-    Generates a premium landscape blog header image using gpt-image-1.5.
+    Generates a premium landscape blog header image using DALL-E.
     """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key: return None
     
     stocks_str = ", ".join(stock_names)
-    prompt = f"A high-quality, professional 3:2 landscape cinematic header image for a financial news blog about the stock market. Abstract, modern, clean lines, financial district at sunrise, glowing trend lines, professional aesthetic, 8k resolution, elegant lighting. No text in the image. Topic related to: {stocks_str}."
+    prompt = f"A high-quality, professional 3:2 landscape cinematic header image for a financial news blog about the stock market. Abstract, modern, clean lines, financial district at sunrise, glowing trend lines, professional aesthetic, elegant lighting. No text in the image. Topic related to: {stocks_str}."
     
     try:
         client = OpenAI(api_key=api_key)
-        response = client.images.generate(
-            model="gpt-image-1.5",
-            prompt=prompt,
-            size="1536x1024",
-            quality="standard",
-            n=1,
-        )
-        image_url = response.data[0].url
-        img_response = requests.get(image_url)
-        if img_response.status_code == 200:
-             img = Image.open(io.BytesIO(img_response.content))
-             return img
+        # Try DALL-E 3 first (1024x1024 or standard landscape)
+        try:
+            response = client.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size="1024x1024",
+                quality="standard",
+                n=1,
+            )
+            image_url = response.data[0].url
+            img_response = requests.get(image_url)
+            if img_response.status_code == 200:
+                 img = Image.open(io.BytesIO(img_response.content))
+                 return img
+        except Exception as e3:
+            print(f"DALL-E 3 failed: {e3}. Trying DALL-E 2 fallback...")
+            response = client.images.generate(
+                model="dall-e-2",
+                prompt=prompt,
+                size="1024x1024",
+                n=1,
+            )
+            image_url = response.data[0].url
+            img_response = requests.get(image_url)
+            if img_response.status_code == 200:
+                 img = Image.open(io.BytesIO(img_response.content))
+                 return img
     except Exception as e:
-        print(f"Error generating gpt-image-1.5 image: {e}")
+        print(f"Error generating DALL-E image: {e}")
     return None
 
 def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b):

@@ -398,13 +398,32 @@ def generate_blog_post():
             public_path_sq = os.path.join(public_dir, "blog_header_sq.png")
             social_img.save(public_path_sq)
             
-            header_url = None
-            if header_response and header_response.status_code == 201:
-                header_url = header_response.json().get('source_url')
+            # Upload the square social header image to WordPress to get a secure HTTPS URL for Meta
+            print("Lade quadratisches Social-Media-Header-Bild in WordPress hoch...")
+            social_img_byte_arr = io.BytesIO()
+            social_img.save(social_img_byte_arr, format='PNG')
+            social_img_bytes = social_img_byte_arr.getvalue()
+            
+            sq_wp_img_url = None
+            try:
+                sq_media_response = requests.post(
+                    WP_MEDIA_URL,
+                    auth=HTTPBasicAuth(WP_USER, WP_PASS),
+                    data=social_img_bytes,
+                    headers={
+                        'Content-Type': 'image/png',
+                        'Content-Disposition': 'attachment; filename="blog_header_sq.png"'
+                    }
+                )
+                if sq_media_response.status_code == 201:
+                    sq_wp_img_url = sq_media_response.json().get('source_url', '')
+                    print(f"[OK] Quadratisches Header-Bild hochgeladen: {sq_wp_img_url}")
+                else:
+                    print(f"[ERR] Quadratisches Header-Bild Upload fehlgeschlagen: {sq_media_response.status_code}")
+            except Exception as upload_err:
+                print(f"[ERR] WordPress Asset Upload gescheitert: {upload_err}")
                 
-            run_social_sync("MARKET-UPDATE", social_caption, public_path_sq, blog_url=blog_url, wp_img_url=None, title=title) # Pass wp_img_url=None to force local path for now or upload square one too
-            
-            
+            run_social_sync("MARKET-UPDATE", social_caption, public_path_sq, blog_url=blog_url, wp_img_url=sq_wp_img_url, title=title)
         except Exception as e:
             print(f"Fehler bei Social-Push (Artikel-Ebene): {e}")
     else:
