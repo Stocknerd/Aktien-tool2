@@ -901,48 +901,7 @@ def render_compare(rows: List[pd.Series], metrics: List[str], ai_verdict: str = 
     y_bar_a = draw_analyst_bar(img, draw, center_a, y_bar, bar_w, rows[0], f_lbl_small, f_val_small)
     y_bar_b = draw_analyst_bar(img, draw, center_b, y_bar, bar_w, rows[1], f_lbl_small, f_val_small)
 
-    # AI Verdict Box (New)
-    if ai_verdict and ai_verdict.strip():
-        av_pad = 40
-        av_w = img.width - 2*PAD
-        f_av = _font(FONT_REG_PATH, 22, ImageFont.load_default())
-        f_av_bld = _font(FONT_BLD_PATH, 24, ImageFont.load_default())
-        
-        # Calculate text wrapping (using helper from core if needed, but we redefine here for autonomy)
-        def wrap_text(text, font, max_w):
-            words = text.split(' ')
-            lines, curr = [], []
-            for w in words:
-                test = ' '.join(curr + [w])
-                if draw.textlength(test, font=font) <= max_w: curr.append(w)
-                else:
-                    if curr: lines.append(' '.join(curr))
-                    curr = [w]
-            if curr: lines.append(' '.join(curr))
-            return lines
-
-        av_text = ai_verdict.strip()
-        av_lines = wrap_text(av_text, f_av, av_w - 80)
-        av_box_h = 75 + len(av_lines) * 28
-        
-        # Placing it between analyst bars and footer
-        av_y = max(y_bar_a, y_bar_b) + int(img.height * 0.015)
-        
-        # Container
-        _rounded_rect(img, (PAD, av_y, img.width - PAD, av_y + av_box_h), radius=15, fill=(10, 35, 25, 240))
-        _rounded_rect(img, (PAD, av_y, img.width - PAD, av_y + av_box_h), radius=15, outline=(17, 146, 74, 200), width=3)
-        
-        ai_label = "KI-DUELL-FAZIT"
-        al_w = int(draw.textlength(ai_label, font=f_av_bld))
-        draw.text(((img.width - al_w) // 2, av_y + 12), ai_label, fill=WHITE, font=f_av_bld)
-        
-        for li, line in enumerate(av_lines):
-            lw = int(draw.textlength(line, font=f_av_bld))
-            draw.text(((img.width - lw) // 2, av_y + 54 + li * 28), line, fill=WHITE, font=f_av_bld)
-            
-        y_final_anchor = av_y + av_box_h
-    else:
-        y_final_anchor = max(y_bar_a, y_bar_b)
+    y_final_anchor = max(y_bar_a, y_bar_b)
 
     # Footer – mit CSV-Abfragedatum je Aktie
     date_a = fmt_de_date_from_row(rows[0])
@@ -1381,13 +1340,68 @@ RESULT_HTML = """
   .share{background:rgba(255,255,255,.07);color:#fff;border:1px solid rgba(255,255,255,.15);transition:.2s;}
   .share:hover{background:rgba(255,255,255,.15);}
   .back{background:rgba(255,255,255,.07);color:#e9eef6;border:1px solid rgba(255,255,255,.12);}
+  .ai-box{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:15px;padding:32px;margin-top:32px;max-width:800px;text-align:left;line-height:1.6;}
+  .ai-title{color:#10b981;font-weight:800;margin-bottom:12px;font-size:1.2rem;display:flex;align-items:center;gap:10px;}
+  .ai-content{color:#e9eef6;font-size:1.05rem;}
+  .broker-box{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:20px;margin-top:32px;max-width:600px;text-align:left;}
+  .broker-title{color:#10b981;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .broker-list{display:flex;flex-direction:column;gap:12px;}
+  .broker-item{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.03);padding:12px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.05);}
+  .broker-name{font-weight:700;font-size:.95rem;}
+  .broker-desc{font-size:.8rem;color:#94a3b8;}
+  .broker-btn{background:#10b981;color:#fff;padding:6px 14px;border-radius:6px;font-size:.85rem;text-decoration:none;font-weight:700;}
+  .tip-box{margin-top:15px;font-size:.85rem;color:#94a3b8;border-top:1px solid rgba(255,255,255,0.05);padding-top:10px;line-height:1.4;}
 </style>
 </head><body>
 <img src="/static/generated/{{ fname }}">
+
+{% if ai_verdict %}
+<div class="ai-box">
+  <div class="ai-title"><span>🤖</span> KI-Duell-Fazit</div>
+  <div class="ai-content">{{ ai_verdict }}</div>
+</div>
+{% endif %}
 <div class="actions">
   <a class="btn dl" href="/download/{{ fname }}" download>⬇ PNG herunterladen</a>
   <button class="btn share" onclick="copyShare()">🔗 Link teilen</button>
   <a class="btn back" href="/">← Neuer Vergleich</a>
+</div>
+
+<div class="broker-box">
+  <div class="broker-title"><span>🚀</span> Broker-Empfehlung</div>
+  <div class="broker-list">
+    <div class="broker-item">
+      <div>
+        <div class="broker-name">Scalable Capital</div>
+        <div class="broker-desc">Testsieger & über 10.000 Aktien</div>
+      </div>
+      <a href="https://www.financeads.net/tc.php?t=47128C142835927T" class="broker-btn" target="_blank">Konto öffnen</a>
+    </div>
+    <div class="broker-item">
+      <div>
+        <div class="broker-name">Trade Republic</div>
+        <div class="broker-desc">4% Zinsen p.a. & 1€ pro Trade</div>
+      </div>
+      <a href="https://www.financeads.net/tc.php?t=47128C274449894T" class="broker-btn" target="_blank">Depot sichern</a>
+    </div>
+    <div class="broker-item">
+      <div>
+        <div class="broker-name">Consorsbank</div>
+        <div class="broker-desc">Automatische Wiederanlage</div>
+      </div>
+      <a href="https://www.financeads.net/tc.php?t=47128C15212339T" class="broker-btn" target="_blank">Zum Broker</a>
+    </div>
+    <div class="broker-item">
+      <div>
+        <div class="broker-name">CapTrader</div>
+        <div class="broker-desc">Profi-Plattform & US-Optionen</div>
+      </div>
+      <a href="https://www.financeads.net/tc.php?t=47128C46917042T" class="broker-btn" target="_blank">Depot öffnen</a>
+    </div>
+  </div>
+  <div class="tip-box">
+    <strong>💡 Dividenden-Pro-Tipp:</strong> Bei der <strong>Consorsbank</strong> kannst du jetzt eine automatische Wiederanlage der Dividenden auch bei Einzelaktien einstellen – ideal für den Zinseszinseffekt!
+  </div>
 </div>
 <script>
 function copyShare() {
@@ -1531,7 +1545,7 @@ def generate_compare():
 
     saas_logic.log_usage(token, "compare")
 
-    return render_template_string(RESULT_HTML, fname=fname, t1=t1, t2=t2, m_param=m_param)
+    return render_template_string(RESULT_HTML, fname=fname, t1=t1, t2=t2, m_param=m_param, ai_verdict=ai_verdict)
 
 @app.route('/download/<path:filename>')
 def download_image(filename):

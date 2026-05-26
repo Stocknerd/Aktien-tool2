@@ -25,7 +25,7 @@ def make_iframe_block(slug, title, height):
         f'<!-- wp:html -->\n'
         f'<div style="margin:24px 0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">'
         f'<iframe id="{iframe_id}" src="{url}" width="100%" height="{height}" frameborder="0" '
-        f'style="border-radius:14px;display:block;" loading="lazy" title="{title}"></iframe>'
+        f'style="border-radius:14px;display:block;min-height:450px;transition:height 0.2s ease;" loading="lazy" title="{title}"></iframe>'
         f'</div>\n'
         f'<script>\n'
         f'(function() {{\n'
@@ -41,6 +41,14 @@ def make_iframe_block(slug, title, height):
         f'            }}\n'
         f'        }}\n'
         f'    }}\n'
+        f'    window.addEventListener("message", function(e) {{\n'
+        f'        if (e.data && e.data.type === "setHeight" && e.data.height) {{\n'
+        f'            var ifr = document.getElementById("{iframe_id}");\n'
+        f'            if (ifr) {{\n'
+        f'                ifr.style.height = e.data.height + "px";\n'
+        f'            }}\n'
+        f'        }}\n'
+        f'    }});\n'
         f'}})();\n'
         f'</script>\n'
         f'<!-- /wp:html -->'
@@ -53,7 +61,7 @@ PAGES = [
         "content": (
             '<!-- wp:paragraph --><p>Nutze unser professionelles Aktien-Analyse Tool, um Kennzahlen, '
             'Analysten-Ratings und Kursziele in einer übersichtlichen Infografik zu visualisieren.</p><!-- /wp:paragraph -->'
-            + make_iframe_block("aktien-tool", "Aktienanalyse Tool", 850)
+            + make_iframe_block("aktien-tool", "Aktienanalyse Tool", 950)
         )
     },
     {
@@ -62,7 +70,7 @@ PAGES = [
         "content": (
             '<!-- wp:paragraph --><p>Vergleiche zwei Aktien direkt miteinander. Unser Tool stellt '
             'die wichtigsten Kennzahlen gegenüber und kürt einen Gewinner basierend auf den Fundamentaldaten.</p><!-- /wp:paragraph -->'
-            + make_iframe_block("aktien-vergleichstool", "Aktien Vergleichstool", 850)
+            + make_iframe_block("aktien-vergleichstool", "Aktien Vergleichstool", 1800)
         )
     },
     {
@@ -70,7 +78,7 @@ PAGES = [
         "slug": "screener",
         "content": (
             '<!-- wp:paragraph --><p>Nutze unseren kostenlosen Aktien-Screener, um aus über 4.000 Aktien weltweit die perfekten Werte für dein Portfolio zu finden. Filtere nach KGV, Dividendenrendite, Umsatzwachstum und Marge.</p><!-- /wp:paragraph -->'
-            + make_iframe_block("screener", "Aktien Screener", 900)
+            + make_iframe_block("screener", "Aktien Screener", 1100)
         )
     },
     {

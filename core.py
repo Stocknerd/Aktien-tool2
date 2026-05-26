@@ -528,44 +528,8 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
 
             y = bby + 44
 
-    # ── 6.5 AI Verdict Section (New) ──────────────────────────────
-    if ai_verdict and ai_verdict.strip():
-        av_pad = 40
-        av_w = W - 2*PAD
-        
-        # Determine optimal font size
-        av_font_size = 24
-        f_av_bld = _font(FONT_BLD_PATH, av_font_size, ImageFont.load_default())
-        
-        av_text = ai_verdict.strip()
-        av_lines = wrap_title(draw, av_text, f_av_bld, av_w - 80)
-        
-        # Shrink font if too many lines (to avoid box overflow)
-        if len(av_lines) > 5:
-            av_font_size = 20
-            f_av_bld = _font(FONT_BLD_PATH, av_font_size, ImageFont.load_default())
-            av_lines = wrap_title(draw, av_text, f_av_bld, av_w - 80)
-        
-        line_h = av_font_size + 6
-        av_box_h = 60 + len(av_lines) * line_h
-        
-        av_y = y + 5
-        # Draw AI Branding / Box
-        draw.rounded_rectangle([PAD, av_y, W - PAD, av_y + av_box_h], radius=15, fill=(10, 35, 25, 240))
-        draw.rounded_rectangle([PAD, av_y, W - PAD, av_y + av_box_h], radius=15, outline=(16, 185, 129, 200), width=3)
-        
-        # Icon/Label (Centered)
-        ai_label = "KI-BEWERTUNG"
-        f_label = _font(FONT_BLD_PATH, 24, ImageFont.load_default())
-        al_w = int(draw.textlength(ai_label, font=f_label))
-        draw.text(((W - al_w) // 2, av_y + 12), ai_label, fill=WHITE, font=f_label)
-        
-        for li, line in enumerate(av_lines):
-            lw = int(draw.textlength(line, font=f_av_bld))
-            draw.text(((W - lw) // 2, av_y + 50 + li * line_h), line, fill=WHITE, font=f_av_bld)
-            
-        y = av_y + av_box_h + 20
         panel_bottom = y
+
     # Place ABOVE the background logo strip (which starts ~280px from bottom)
     abfrage = str(row.get('Abfragedatum') or row.get('last_update') or '')
     try:

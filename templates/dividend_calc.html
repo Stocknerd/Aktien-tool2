@@ -99,6 +99,21 @@
             border-bottom: 1px solid var(--border);
             padding-bottom: 8px;
         }
+        .broker-promo {
+            margin-top: 40px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+        .broker-promo h5 { font-size: 1.1rem; margin-bottom: 15px; color: #10b981; }
+        .broker-btn-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        .btn-broker { padding: 8px 18px; border-radius: 50px; font-weight: 700; font-size: 0.85rem; text-decoration: none; transition: 0.2s; }
+        .btn-scalable { background: #000; color: white; border: 1px solid #333; }
+        .btn-tr { background: #000; color: white; border: 1px solid #333; }
+        .btn-consors { background: #1e3a8a; color: white; }
+        .btn-broker:hover { opacity: 0.8; transform: translateY(-2px); color: white; }
     </style>
 </head>
 <body>
@@ -275,6 +290,20 @@
             <div class="share-section" id="shareBox" style="display: none;">
                 <p class="text-secondary small">Teile diese Dividenden-Simulation oder sichere dir den Link für dein Portfolio:</p>
                 <button class="btn-share" id="copyBtn">Link kopieren 📋</button>
+            </div>
+
+            <div class="broker-promo">
+                <h5>Optimal für dein Dividenden-Depot</h5>
+                <p class="text-muted small mb-3">Eröffne dein Depot beim passenden Broker und profitiere von Sparplänen oder Zinsen:</p>
+                <div class="broker-btn-group">
+                    <a href="https://www.financeads.net/tc.php?t=47128C142835927T" target="_blank" class="btn-broker btn-scalable">Scalable Capital*</a>
+                    <a href="https://trade.re/p/schatzsuche" target="_blank" class="btn-broker btn-tr">Trade Republic*</a>
+                    <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" class="btn-broker btn-consors">Consorsbank</a>
+                </div>
+                <div class="text-muted" style="font-size: 0.8rem;">
+                    <strong>Tipp:</strong> Die Consorsbank bietet jetzt <strong>automatische Wiederanlage</strong> von Dividenden!
+                </div>
+                <p class="mt-3 mb-0" style="font-size: 0.6rem; opacity: 0.4;">*Affiliate Links. Keine Anlageberatung.</p>
             </div>
         </div>
     </div>

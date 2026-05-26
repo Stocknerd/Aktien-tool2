@@ -25,6 +25,7 @@ from typing import Dict, Iterable, List, Tuple
 
 import numpy as np
 import pandas as pd
+import requests
 import yfinance as yf
 
 # --------------------------------------------------
@@ -139,13 +140,43 @@ def map_info(info: Dict) -> Dict:
     }
 
 
+def get_session():
+    """Erstellt eine requests-Session mit einem realistischen User-Agent."""
+    session = requests.Session()
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"
+    ]
+    session.headers.update({
+        'User-Agent': random.choice(user_agents),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+    })
+    return session
+
+_SESSIONS = {} # Pro Thread eine Session
+
 def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: float = BACKOFF_START) -> Dict:
+    # Session pro Thread holen oder erstellen
+    from threading import current_thread
+    tid = current_thread().name
+    if tid not in _SESSIONS:
+        _SESSIONS[tid] = get_session()
+    session = _SESSIONS[tid]
+    
     last_err: Exception | None = None
     for attempt in range(1, max_tries + 1):
         try:
             # pro Ticker etwas Jitter
             time.sleep(random.uniform(*PER_TICKER_JITTER))
-            info = yf.Ticker(ticker).info  # schnelle Lösung über .info
+            
+            # yf.Ticker mit Session nutzen
+            t_obj = yf.Ticker(ticker, session=session)
+            info = t_obj.info  # schnelle Lösung über .info
             
             # G1: Speichern als rohes JSON für Data-Lake / RAG
             try:

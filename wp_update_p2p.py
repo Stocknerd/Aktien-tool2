@@ -178,6 +178,15 @@ P2P_HTML = f"""<!-- wp:html -->
     <h5 class="fw-bold mb-2" style="color: #ef4444;">🚨 Wichtiger Risikohinweis</h5>
     <p class="mb-0 small" style="color: #94a3b8;">P2P-Investments sind mit Risiken verbunden. Es handelt sich um unbesicherte (oder nur durch Garantien besicherte) Kredite. Es besteht das Risiko eines Totalverlustes. Streue dein Kapital daher immer auf verschiedene Plattformen und Tausende Einzelkredite.</p>
   </div>
+
+  <div class="mt-5 text-center p-4 rounded-4" style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.3);">
+    <h5 class="fw-bold mb-3" style="color: #fff;">Lieber in Aktien investieren?</h5>
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;">
+        <a href="https://www.financeads.net/tc.php?t=47128C142835927T" target="_blank" style="background: #10b981; color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 700;">Scalable Capital*</a>
+        <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" style="background: #1e3a8a; color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 700;">Consorsbank (Reinvest)</a>
+    </div>
+    <p style="margin-top: 15px; font-size: 0.85rem; color: #94a3b8;"><strong>💡 Tipp:</strong> Bei der <strong>Consorsbank</strong> kannst du Dividenden jetzt vollautomatisch reinvestieren!</p>
+  </div>
 </div>
 
 <p style="font-size: 0.8rem; opacity: 0.6; text-align: center; margin: 40px 0;">

@@ -442,8 +442,13 @@ def generate_image():
         for m in selected:
             fin_data[m] = core.display_value(m, row.iloc[0])
         ai_verdict = ai_logic.get_ai_verdict(ticker, row.iloc[0].get('Langname', ticker), fin_data)
+        from flask import session
+        session['ai_verdict'] = ai_verdict
+    else:
+        from flask import session
+        session.pop('ai_verdict', None)
 
-    img = core.render_stock_card(row.iloc[0], selected, layout_mode, watermark, bg_path=bg_path, ai_verdict=ai_verdict)
+    img = core.render_stock_card(row.iloc[0], selected, layout_mode, watermark, bg_path=bg_path)
     
     filename = f"{ticker}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
     path = os.path.join(core.OUT_DIR, filename)
@@ -486,14 +491,19 @@ def display_result(filename):
             company_name = core.get_clean_name(row.iloc[0])
             related_stocks = get_related_stocks(ticker)
             
+    from flask import session
+    ai_verdict = session.get('ai_verdict', "")
+            
     return render_template(
         'display_result.html', 
-        filename=filename, 
-        is_embedded=is_embedded,
+        filename=filename,
         ticker=ticker,
         company_name=company_name,
-        related_stocks=related_stocks
+        related_stocks=related_stocks,
+        ai_verdict=ai_verdict,
+        is_embedded=is_embedded
     )
+
 
 @app.route('/download/<path:filename>')
 def download_image(filename):

@@ -277,9 +277,139 @@
     </div>
     {% endif %}
 
+    <div class="text-center mb-4 d-flex justify-content-center align-items-center gap-3">
+      {% if ticker %}
+      <a href="/" class="btn btn-outline-light btn-sm px-3 rounded-pill" style="border: 1px solid rgba(255,255,255,0.2); font-weight:600;">← Neue Suche</a>
+      {% endif %}
+      {% if is_stale %}
+      <span class="badge rounded-pill bg-danger px-3 py-2" style="font-weight:700;">Datenstand: {{ last_update_str }} (Veraltet!)</span>
+      {% else %}
+      <span class="badge rounded-pill bg-success px-3 py-2" style="background-color:rgba(16, 185, 129, 0.15) !important; color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); font-weight:700;">Datenstand: {{ last_update_str }}</span>
+      {% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="mx-auto" style="max-width:640px;">
+      {% for category, message in messages %}
+      <div class="alert alert-{{ category }} glass-card text-white border-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <form class="glass-card p-4 mx-auto shadow" style="max-width:640px" method="post"
+      action="{{ url_for('generate_image') }}" id="mainForm" data-is-embedded="{{ '1' if is_embedded else '0' }}"
+      data-defaults='{{ default_metrics | tojson }}' data-descriptions='{{ metric_descriptions | tojson }}'>
+      
+      <input type="hidden" name="is_embedded" value="{{ '1' if is_embedded else '0' }}">
+
+      <!-- Suche / Ticker -->
+      <div class="mb-4 position-relative">
+        <label for="stock-search" class="form-label text-uppercase tracking-wider">Aktie suchen</label>
+        <input id="stock-search" type="text" class="form-control" placeholder="z.B. Apple, Microsoft, NVIDIA..." autocomplete="off">
+        <ul id="suggestions" class="list-group position-absolute top-100 start-0 w-100 shadow-lg mt-1"></ul>
+      </div>
+
+      <div class="mb-4">
+        <label for="ticker" class="form-label text-uppercase tracking-wider">Ticker Symbol</label>
+        <input id="ticker" name="ticker" class="form-control fw-bold" value="{{ ticker if ticker else '' }}" required placeholder="Ticker eingeben">
+      </div>
+
+      <div class="row">
+        <!-- Layout Template -->
+        <div class="col-md-6 mb-4">
+          <label for="layout" class="form-label text-uppercase tracking-wider">Design Layout</label>
+          <select id="layout" name="layout" class="form-select">
+            <option value="default" selected>Standard (Hell)</option>
+            <option value="dark">Dark Mode (Dunkel)</option>
+          </select>
+        </div>
+
+        <div class="col-md-6 mb-4">
+          <label for="bg_upload" class="form-label text-uppercase tracking-wider">Hintergrundbild</label>
+          <input type="file" id="bg_upload" accept="image/png, image/jpeg, image/webp" class="form-control">
+          <input type="hidden" name="bg_path" id="bg_path" value="">
+          <div id="bg-preview" class="mt-2 text-success small fw-bold" style="display:none;">Bereit! ✅</div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label text-uppercase tracking-wider">Optionen</label>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-check form-switch p-0 d-flex align-items-center mb-2">
+              <input class="form-check-input ms-0 me-2" type="checkbox" name="ai_insight" value="1" id="ai_insight_chk" checked>
+              <label class="form-check-label fw-bold" for="ai_insight_chk" style="color: #10b981;">✦ KI-Insights (Gemini)</label>
+            </div>
+            <small class="text-muted d-block" style="font-size: 0.75rem; margin-top: -5px; margin-left: 36px;">Automatische KI-Analyse & Fazit hinzufügen.</small>
+          </div>
+          <div class="col-md-6">
+            <input name="watermark" class="form-control form-control-sm" placeholder="Dein Wasserzeichen (optional)" style="height: 38px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Kennzahlen -->
+      <label class="form-label d-flex justify-content-between align-items-center">
+        Kennzahlen (max 8)
+        <small id="metric-counter" class="text-muted">0 / 8</small>
+      </label>
+
+      <!-- Default-Kennzahlen -->
+      <div class="row row-cols-2 g-2 mb-2">
+        {% for m in available_metrics if m.key in default_metrics %}
+        <div class="col form-check">
+          <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}"
+            id="chk_{{ m.key|replace(' ','_') }}" checked>
+          <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">
+            {{ m.label }}
+            <span class="ms-1 text-info" tabindex="0" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Aufklapp-Button -->
+      <p>
+        <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#moreMetrics" role="button"
+          aria-expanded="false" aria-controls="moreMetrics">
+          Weitere Kennzahlen anzeigen ▼
+        </a>
+      </p>
+
+      <!-- Weitere Kennzahlen -->
+      <div class="collapse" id="moreMetrics">
+        <div class="row row-cols-2 g-2 mb-3">
+          {% for m in available_metrics if m.key not in default_metrics %}
+          <div class="col form-check">
+            <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}"
+              id="chk_{{ m.key|replace(' ','_') }}">
+            <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">
+              {{ m.label }}
+              <span class="ms-1 text-info" tabindex="0" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
+            </label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button class="btn btn-primary w-100">Bild erzeugen</button>
+      <p class="text-muted small mt-2">Hinweis: Logos werden automatisch durch Initialen ersetzt, falls nicht vorhanden.
+      </p>
+
+      {% if show_cta and not is_embedded %}
+      <div class="alert alert-info mt-3" style="border-left: 4px solid #0d6efd;">
+        <strong>Premium Version sichern!</strong>
+        Unterstütze die Entwicklung und erstelle Bilder ohne Werbung.
+        <a href="#" class="alert-link">Mehr erfahren &rarr;</a>
+      </div>
+      {% endif %}
+    </form>
+
     <!-- ─── Premium Upgraded Inline Dividend Calculator Section ─── -->
     {% if not is_embedded %}
-    <div class="calc-container mb-5">
+    <div class="calc-container mb-5 mt-5">
         <div class="calc-header">
             <h2>Dividenden-<span>Rechner</span></h2>
             <p class="text-secondary">Simuliere dein passives Einkommen, plane Sparpläne und nutze den Zinseszins-Effekt.</p>
@@ -428,136 +558,6 @@
         </div>
     </div>
     {% endif %}
-
-    <div class="text-center mb-4 d-flex justify-content-center align-items-center gap-3">
-      {% if ticker %}
-      <a href="/" class="btn btn-outline-light btn-sm px-3 rounded-pill" style="border: 1px solid rgba(255,255,255,0.2); font-weight:600;">← Neue Suche</a>
-      {% endif %}
-      {% if is_stale %}
-      <span class="badge rounded-pill bg-danger px-3 py-2" style="font-weight:700;">Datenstand: {{ last_update_str }} (Veraltet!)</span>
-      {% else %}
-      <span class="badge rounded-pill bg-success px-3 py-2" style="background-color:rgba(16, 185, 129, 0.15) !important; color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); font-weight:700;">Datenstand: {{ last_update_str }}</span>
-      {% endif %}
-    </div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="mx-auto" style="max-width:640px;">
-      {% for category, message in messages %}
-      <div class="alert alert-{{ category }} glass-card text-white border-{{ category }}">{{ message }}</div>
-      {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-
-    <form class="glass-card p-4 mx-auto shadow" style="max-width:640px" method="post"
-      action="{{ url_for('generate_image') }}" id="mainForm" data-is-embedded="{{ '1' if is_embedded else '0' }}"
-      data-defaults='{{ default_metrics | tojson }}' data-descriptions='{{ metric_descriptions | tojson }}'>
-      
-      <input type="hidden" name="is_embedded" value="{{ '1' if is_embedded else '0' }}">
-
-      <!-- Suche / Ticker -->
-      <div class="mb-4 position-relative">
-        <label for="stock-search" class="form-label text-uppercase tracking-wider">Aktie suchen</label>
-        <input id="stock-search" type="text" class="form-control" placeholder="z.B. Apple, Microsoft, NVIDIA..." autocomplete="off">
-        <ul id="suggestions" class="list-group position-absolute top-100 start-0 w-100 shadow-lg mt-1"></ul>
-      </div>
-
-      <div class="mb-4">
-        <label for="ticker" class="form-label text-uppercase tracking-wider">Ticker Symbol</label>
-        <input id="ticker" name="ticker" class="form-control fw-bold" value="{{ ticker if ticker else '' }}" required placeholder="Ticker eingeben">
-      </div>
-
-      <div class="row">
-        <!-- Layout Template -->
-        <div class="col-md-6 mb-4">
-          <label for="layout" class="form-label text-uppercase tracking-wider">Design Layout</label>
-          <select id="layout" name="layout" class="form-select">
-            <option value="default" selected>Standard (Hell)</option>
-            <option value="dark">Dark Mode (Dunkel)</option>
-          </select>
-        </div>
-
-        <div class="col-md-6 mb-4">
-          <label for="bg_upload" class="form-label text-uppercase tracking-wider">Hintergrundbild</label>
-          <input type="file" id="bg_upload" accept="image/png, image/jpeg, image/webp" class="form-control">
-          <input type="hidden" name="bg_path" id="bg_path" value="">
-          <div id="bg-preview" class="mt-2 text-success small fw-bold" style="display:none;">Bereit! ✅</div>
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <label class="form-label text-uppercase tracking-wider">Optionen</label>
-        <div class="row">
-          <div class="col-md-6">
-            <div class="form-check form-switch p-0 d-flex align-items-center mb-2">
-              <input class="form-check-input ms-0 me-2" type="checkbox" name="ai_insight" value="1" id="ai_insight_chk" checked>
-              <label class="form-check-label fw-bold" for="ai_insight_chk" style="color: #10b981;">✦ KI-Insights (Gemini)</label>
-            </div>
-            <small class="text-muted d-block" style="font-size: 0.75rem; margin-top: -5px; margin-left: 36px;">Automatische KI-Analyse & Fazit hinzufügen.</small>
-          </div>
-          <div class="col-md-6">
-            <input name="watermark" class="form-control form-control-sm" placeholder="Dein Wasserzeichen (optional)" style="height: 38px;">
-          </div>
-        </div>
-      </div>
-
-      <!-- Kennzahlen -->
-      <label class="form-label d-flex justify-content-between align-items-center">
-        Kennzahlen (max 8)
-        <small id="metric-counter" class="text-muted">0 / 8</small>
-      </label>
-
-      <!-- Default-Kennzahlen -->
-      <div class="row row-cols-2 g-2 mb-2">
-        {% for m in available_metrics if m.key in default_metrics %}
-        <div class="col form-check">
-          <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}"
-            id="chk_{{ m.key|replace(' ','_') }}" checked>
-          <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">
-            {{ m.label }}
-            <span class="ms-1 text-info" tabindex="0" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
-          </label>
-        </div>
-        {% endfor %}
-      </div>
-
-      <!-- Aufklapp-Button -->
-      <p>
-        <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#moreMetrics" role="button"
-          aria-expanded="false" aria-controls="moreMetrics">
-          Weitere Kennzahlen anzeigen ▼
-        </a>
-      </p>
-
-      <!-- Weitere Kennzahlen -->
-      <div class="collapse" id="moreMetrics">
-        <div class="row row-cols-2 g-2 mb-3">
-          {% for m in available_metrics if m.key not in default_metrics %}
-          <div class="col form-check">
-            <input class="form-check-input metric-chk" type="checkbox" name="metrics" value="{{ m.key }}"
-              id="chk_{{ m.key|replace(' ','_') }}">
-            <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">
-              {{ m.label }}
-              <span class="ms-1 text-info" tabindex="0" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
-            </label>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-
-      <button class="btn btn-primary w-100">Bild erzeugen</button>
-      <p class="text-muted small mt-2">Hinweis: Logos werden automatisch durch Initialen ersetzt, falls nicht vorhanden.
-      </p>
-
-      {% if show_cta and not is_embedded %}
-      <div class="alert alert-info mt-3" style="border-left: 4px solid #0d6efd;">
-        <strong>Premium Version sichern!</strong>
-        Unterstütze die Entwicklung und erstelle Bilder ohne Werbung.
-        <a href="#" class="alert-link">Mehr erfahren &rarr;</a>
-      </div>
-      {% endif %}
-    </form>
   </div>
 
   <!-- Bootstrap Bundle -->
