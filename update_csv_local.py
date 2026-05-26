@@ -174,8 +174,8 @@ def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: flo
             # pro Ticker etwas Jitter
             time.sleep(random.uniform(*PER_TICKER_JITTER))
             
-            # yf.Ticker mit Session nutzen
-            t_obj = yf.Ticker(ticker, session=session)
+            # yf.Ticker nutzen
+            t_obj = yf.Ticker(ticker)
             info = t_obj.info  # schnelle Lösung über .info
             
             # G1: Speichern als rohes JSON für Data-Lake / RAG
