@@ -1,0 +1,26 @@
+{
+  "brand_name": "Schatzsuche 4.0",
+  "website": "schatzsuche40.de",
+  "tone": "professionell, verständlich, nahbar, ohne unnötiges Fachchinesisch, motivierend",
+  "typical_topics": [
+    "ETFs & langfristiger Vermögensaufbau",
+    "Immobilien als Kapitalanlage (Cashflow, Hebeleffekt)",
+    "Smartes Investment & Crowdinvesting",
+    "Finanz-Mindset und finanzielle Unabhängigkeit"
+  ],
+  "cta_variants": [
+    "Folge @schatzsuche40 für clevere Finanztipps! 🚀",
+    "Mehr praxisnahe Tipps auf schatzsuche40.de! 🧭",
+    "Starte jetzt deinen entspannten Vermögensaufbau! 💰",
+    "Clever investieren statt kompliziert spekulieren. 💡"
+  ],
+  "typography": {
+    "headline_font": "Outfit",
+    "body_font": "Inter"
+  },
+  "logo_rules": {
+    "placement": "top_center",
+    "margin_top": 80,
+    "size": [320, 80]
+  }
+}

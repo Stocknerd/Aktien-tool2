@@ -1,0 +1,9 @@
+{
+  "short_disclaimer": "Keine Anlageberatung. Alle Angaben ohne Gewähr. Investments bergen Risiken.",
+  "long_disclaimer": "Risikohinweis: Keine Anlageberatung im Sinne des WpHG. Alle Inhalte dienen ausschließlich der Information und privaten Unterhaltung. Wertentwicklungen der Vergangenheit sind kein Indikator für zukünftige Erträge. Jedes Investment birgt das Risiko des Totalverlusts.",
+  "placement_rules": {
+    "font_size": 22,
+    "color": "#A0B0B2",
+    "margin_bottom": 40
+  }
+}

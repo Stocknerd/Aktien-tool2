@@ -1,0 +1,11 @@
+{
+  "primary": "#C9A227",
+  "accent": "#1A535C",
+  "background": "#0B1E21",
+  "text": "#F7F7F7",
+  "text_secondary": "#A0B0B2",
+  "card_bg": "#142C30",
+  "border": "#C9A227",
+  "gold_gradient": ["#C9A227", "#8E6F16"],
+  "highlight": "#FFD700"
+}

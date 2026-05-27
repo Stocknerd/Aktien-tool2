@@ -187,8 +187,82 @@ def post_to_instagram_feed(caption, image_path, wp_img_url=None, link_url=None, 
         print(f"[ERR] Instagram Timeout: Bild konnte nicht publiziert werden.")
         return False
             
+        return False
+            
     except Exception as e:
         print(f"[ERR] Instagram-Posting fehlgeschlagen: {e}")
+        return False
+
+def post_instagram_reel(caption, video_filename, comment_text=None):
+    """
+    Postet ein Video als Instagram Reel über die offizielle Graph API.
+    Der Video-Pfad muss im Nginx static directory liegen: /static/temp_social/{video_filename}
+    sodass er unter https://tool.schatzsuche40.de/static/temp_social/{video_filename} öffentlich erreichbar ist.
+    """
+    PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
+    META_INSTA_ID = os.environ.get("META_INSTA_ID")
+    if not (META_INSTA_ID and PAGE_TOKEN):
+        print("[SKIP] Instagram Business ID oder Token fehlt für Reel-Posting.")
+        return False
+        
+    try:
+        # 100% stable remote URL served via Nginx static
+        public_url = f"https://tool.schatzsuche40.de/static/temp_social/{video_filename}"
+        print(f"REEL: Sende Video-URL an Meta: {public_url}")
+        
+        # Step 1: Create Video Container for REELS
+        container_url = f"https://graph.facebook.com/v20.0/{META_INSTA_ID}/media"
+        params = {
+            "media_type": "REELS",
+            "video_url": public_url,
+            "caption": caption,
+            "access_token": PAGE_TOKEN
+        }
+        
+        r = requests.post(container_url, params=params)
+        data = r.json()
+        
+        if "id" not in data:
+            print(f"[ERR] Instagram Reel Container Fehler: {data}")
+            return False
+            
+        creation_id = data["id"]
+        print(f"[OK] Instagram Reel: Container erstellt ({creation_id}). Warte auf Verarbeitung...")
+        
+        # Step 2: Publish Media (with retry for async processing)
+        publish_url = f"https://graph.facebook.com/v20.0/{META_INSTA_ID}/media_publish"
+        params_pub = {
+            "creation_id": creation_id,
+            "access_token": PAGE_TOKEN
+        }
+        
+        import time
+        max_retries = 10
+        # Reels processing takes a bit longer, so we wait 20 seconds initially and retry every 15 seconds
+        time.sleep(20)
+        for attempt in range(max_retries):
+            r_pub = requests.post(publish_url, params=params_pub)
+            data_pub = r_pub.json()
+            
+            if "id" in data_pub:
+                print(f"[OK] Instagram Reel: Erfolgreich veröffentlicht! (ID: {data_pub['id']}).")
+                if comment_text:
+                    time.sleep(3)
+                    post_comment(data_pub['id'], comment_text)
+                return True
+            elif data_pub.get('error', {}).get('code') in [9007, 2207027] or "processing" in str(data_pub).lower():
+                print(f"[WAIT] Instagram Reel verarbeitet noch... (Versuch {attempt+1}/{max_retries})")
+                time.sleep(15)
+                continue
+            else:
+                print(f"[ERR] Instagram Reel Publish Fehler: {data_pub}")
+                return False
+                
+        print(f"[ERR] Instagram Reel Timeout: Video-Verarbeitung hat zu lange gedauert.")
+        return False
+        
+    except Exception as e:
+        print(f"[ERR] Instagram Reel Posting fehlgeschlagen: {e}")
         return False
 
 def post_to_pinterest(title, description, image_path, link_url=None):

@@ -1,0 +1,52 @@
+{
+  "investment_style": "Core-Satellite: 70% langfristige Basis-Investments (ETFs), 30% Sachwerte & Cashflow-Säulen (Immobilien, P2P/Crowdinvesting)",
+  "holdings": [
+    {
+      "name": "MSCI World ETF",
+      "type": "ETF",
+      "role": "Weltweites Basis-Investment für langfristigen Vermögensaufbau"
+    },
+    {
+      "name": "Emerging Markets ETF",
+      "type": "ETF",
+      "role": "Wachstums-Beimischung für Schwellenländer"
+    },
+    {
+      "name": "Vermietete Eigentumswohnung",
+      "type": "Immobilie",
+      "role": "Inflationsschutz & monatlicher Cashflow durch Mieteinnahmen"
+    },
+    {
+      "name": "Crowdinvesting (z.B. Immobilien-Kredite)",
+      "type": "P2P/Crowd",
+      "role": "Zinsstarke Beimischung im Sachwertbereich"
+    }
+  ],
+  "allowed_topics": [
+    "Historische ETF-Renditen und Zinseszinsrechnungen",
+    "Vergleich zwischen Mieten und Kaufen",
+    "Vorteile von Immobilien als Sachwerte",
+    "Asset-Allokation in Prozent (z.B. 70% ETFs, 20% Immobilien, 10% Crowdinvesting)",
+    "Hypothetische Rechenbeispiele (z.B. 'Was passiert bei 150€ monatlicher Sparrate?')"
+  ],
+  "sensitive_data_policy": {
+    "no_absolute_euro_amounts_of_personal_wealth": true,
+    "no_personal_bank_accounts_or_tax_ids": true,
+    "no_tenant_names_or_exact_property_addresses": true,
+    "allow_percentage_distributions": true,
+    "allow_hypothetische_rechenbeispiele": true
+  },
+  "blacklist": {
+    "untrusted_assets": [
+      "Hype-Memecoins",
+      "Hochspekulative Hebelprodukte & CFDs",
+      "Get-Rich-Quick Systeme",
+      "Daytrading & Forex-Trading Hype"
+    ],
+    "untrusted_statements": [
+      "Garantierte Renditeversprechen über der risikofreien Rendite",
+      "Schnell reich werden ohne Risiko",
+      "Sofortiger Ausstieg aus dem Job ohne Absicherung"
+    ]
+  }
+}
