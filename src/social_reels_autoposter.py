@@ -364,15 +364,14 @@ def run_track_ai(topic=None):
     render_viral_list(content, image_path)
     print(f"AI TRACK: Image saved at {image_path}")
     
-    # 3. Render Full Voiceover Video (Voiceover + Subtitles)
-    script_text = content.get("reel_script", "")
-    print(f"AI TRACK: Synthesis Voiceover Script ({len(script_text.split())} words):\n'{script_text}'")
-    
+    # 3. Render Silent Video (Musik + Zoom)
+    print("AI TRACK: Rendering Silent Reel video with smooth background music...")
     build_reel_mp4(
-        script_text=script_text,
+        script_text=None,
         background_image_path=image_path,
         output_mp4_path=video_path,
-        silent=False
+        silent=True,
+        duration=10.0
     )
     
     # 4. Social posting to X, FB, Pinterest (Image)
