@@ -408,6 +408,29 @@ def run_track_ai(topic=None):
         token_file=youtube_token
     )
     
+    # 7. TikTok Upload (Video - Optional plug-and-play)
+    tiktok_token = os.path.join(BASE_DIR, 'token_tiktok.pickle')
+    if os.path.exists(tiktok_token):
+        print("AI TRACK: token_tiktok.pickle found. Publishing Video to TikTok...")
+        try:
+            from src.tiktok_uploader import upload_video_to_tiktok
+            tiktok_key = os.getenv("TIKTOK_CLIENT_KEY")
+            tiktok_secret = os.getenv("TIKTOK_CLIENT_SECRET")
+            if tiktok_key and tiktok_secret:
+                upload_video_to_tiktok(
+                    video_path=video_path,
+                    caption=content.get("caption_tiktok", caption_ig),
+                    client_key=tiktok_key,
+                    client_secret=tiktok_secret,
+                    token_file=tiktok_token
+                )
+            else:
+                print("TIKTOK: Skip. TIKTOK_CLIENT_KEY or TIKTOK_CLIENT_SECRET missing in .env.")
+        except Exception as tk_err:
+            print(f"TIKTOK: Warning: Upload failed: {tk_err}")
+    else:
+        print("TIKTOK: Skip. token_tiktok.pickle not found on server (optional plug-and-play).")
+    
     print("✅ TRACK 3 AI INFOGRAPHIC PIPELINE COMPLETED SUCCESSFULLY!")
     return True
 
