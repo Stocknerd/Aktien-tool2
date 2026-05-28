@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.config import BASE_DIR, COLORS, COLORS_HEX
-from src.graphic_generator import render_viral_list, render_dividend_calendar
+from src.graphic_generator import render_viral_list, render_dividend_calendar, render_pure_ai_infographic
 from src.reel_generator import build_reel_mp4
 from src.content_generator import generate_structured_content
 from src.youtube_uploader import upload_video as youtube_upload_video
@@ -461,8 +461,8 @@ def run_track_ai(topic=None):
     image_path = os.path.join(public_dir, image_filename)
     video_path = os.path.join(public_dir, video_filename)
     
-    # 2. Render Image
-    render_viral_list(content, image_path)
+    # 2. Render Image using SOTA gpt-image-2 AI model
+    render_pure_ai_infographic(content, image_path)
     print(f"AI TRACK: Image saved at {image_path}")
     
     # 3. Render Silent Video (Musik + Zoom)
