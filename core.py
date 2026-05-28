@@ -530,6 +530,34 @@ def render_stock_card(row, selected: list, layout_mode: str = 'default',
 
         panel_bottom = y
 
+    # ── 7. AI Verdict Section (New for Single Stock Card) ─────────
+    if ai_verdict and ai_verdict.strip():
+        av_pad = 40
+        av_w = W - 2 * PAD
+        f_av_bld = _font(FONT_BLD_PATH, 24, ImageFont.load_default())
+        
+        # Calculate text wrapping
+        av_text = ai_verdict.strip()
+        av_lines = wrap_title(draw, av_text, f_av_bld, av_w - 60)
+        # Dynamic box height: header + lines * line_height + bottom padding
+        av_box_h = 65 + len(av_lines) * 28
+        
+        av_y = panel_bottom + 10
+        # Draw AI Branding / Box
+        draw.rounded_rectangle([PAD, av_y, W - PAD, av_y + av_box_h], radius=15, fill=(10, 35, 25, 240))
+        draw.rounded_rectangle([PAD, av_y, W - PAD, av_y + av_box_h], radius=15, outline=(16, 185, 129, 200), width=3)
+        
+        # Icon/Label (Centered)
+        ai_label = "KI-BEWERTUNG"
+        al_w = int(draw.textlength(ai_label, font=f_av_bld))
+        draw.text(((W - al_w) // 2, av_y + 12), ai_label, fill=WHITE, font=f_av_bld)
+        
+        for li, line in enumerate(av_lines):
+            lw = int(draw.textlength(line, font=f_av_bld))
+            draw.text(((W - lw) // 2, av_y + 50 + li * 28), line, fill=WHITE, font=f_av_bld)
+            
+        panel_bottom = av_y + av_box_h + 10
+
     # Place ABOVE the background logo strip (which starts ~280px from bottom)
     abfrage = str(row.get('Abfragedatum') or row.get('last_update') or '')
     try:

@@ -190,6 +190,25 @@ def run_track_stock():
     print("STOCK TRACK: Publishing Video to Instagram Reels...")
     post_instagram_reel(caption, video_filename, comment_text)
     
+    # 4. YouTube Shorts Upload (Video)
+    print("STOCK TRACK: Uploading Video to YouTube Shorts...")
+    youtube_meta = {
+        "title": ((f"{names} im Check! 📈"[:70] if not is_comparison else f"{names} im Börsen-Duell! ⚔️"[:70]) + " #shorts #aktien"),
+        "description": caption + "\n\n#shorts #aktien #finanzen #geldanlage #investieren",
+        "tags": ["Aktien", "Börse", "Finanzen", "Investieren", "Geldanlage", symbols]
+    }
+    
+    try:
+        youtube_token = os.path.join(BASE_DIR, 'token_finance.pickle')
+        youtube_upload_video(
+            video_file=video_path,
+            metadata_dict=youtube_meta,
+            privacy_status='public',
+            token_file=youtube_token
+        )
+    except Exception as yt_err:
+        print(f"STOCK TRACK: Warning: YouTube upload failed: {yt_err}")
+    
     print("✅ TRACK 1 STOCK CARD PIPELINE COMPLETED SUCCESSFULLY!")
     return True
 
@@ -328,6 +347,25 @@ def run_track_calendar():
     
     print("CALENDAR TRACK: Publishing Video to Instagram Reels...")
     post_instagram_reel(caption, video_filename, comment_text)
+    
+    # 4. YouTube Shorts Upload (Video)
+    print("CALENDAR TRACK: Uploading Video to YouTube Shorts...")
+    youtube_meta = {
+        "title": "Dividendenkalender der Woche! 💰 #shorts #dividenden",
+        "description": caption + "\n\n#shorts #dividenden #aktien #finanzen #passiveseinkommen",
+        "tags": ["Dividenden", "Aktien", "Börse", "Finanzen", "Passives Einkommen", "Geldanlage"]
+    }
+    
+    try:
+        youtube_token = os.path.join(BASE_DIR, 'token_finance.pickle')
+        youtube_upload_video(
+            video_file=video_path,
+            metadata_dict=youtube_meta,
+            privacy_status='public',
+            token_file=youtube_token
+        )
+    except Exception as yt_err:
+        print(f"CALENDAR TRACK: Warning: YouTube upload failed: {yt_err}")
     
     print("✅ TRACK 2 DIVIDEND CALENDAR PIPELINE COMPLETED SUCCESSFULLY!")
     return True

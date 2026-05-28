@@ -160,6 +160,69 @@ def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=F
     temp_dir = os.path.join(BASE_DIR, "temp_assets")
     os.makedirs(temp_dir, exist_ok=True)
     
+    # Check aspect ratio of background image and pad if necessary
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        orig_img = Image.open(background_image_path)
+        w, h = orig_img.size
+        if abs(w / h - 9 / 16) > 0.05:
+            print(f"REEL: Aspect ratio is not 9:16 ({w}x{h}). Padding image to 1080x1920...")
+            padded_img = Image.new("RGB", (1080, 1920), (8, 12, 28))
+            
+            # Center original image vertically
+            paste_y = (1920 - h) // 2
+            padded_img.paste(orig_img, (0, paste_y))
+            
+            draw = ImageDraw.Draw(padded_img)
+            margin1 = 25
+            margin2 = 35
+            gold_color = COLORS.get("primary", (201, 162, 39))
+            draw.rectangle([margin1, margin1, 1080 - margin1, 1920 - margin1], outline=gold_color, width=2)
+            draw.rectangle([margin2, margin2, 1080 - margin2, 1920 - margin2], outline=gold_color, width=1)
+            
+            # Draw brand logo at the top
+            from src.config import LOGO_PATH
+            if os.path.exists(LOGO_PATH):
+                try:
+                    logo = Image.open(LOGO_PATH)
+                    aspect = logo.height / logo.width
+                    logo_w = 320
+                    logo_h = int(logo_w * aspect)
+                    logo = logo.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
+                    padded_img.paste(logo, (int((1080 - logo_w) / 2), 70), logo if logo.mode == "RGBA" else None)
+                except Exception as logo_err:
+                    print(f"REEL: Logo pasting failed: {logo_err}")
+            else:
+                try:
+                    font_logo = ImageFont.truetype(FONT_PATHS.get("Outfit-Bold.ttf", "arial.ttf"), 36)
+                    draw.text((540, 100), "SCHATZSUCHE 4.0", fill=gold_color, font=font_logo, anchor="mm")
+                except:
+                    pass
+                
+            # Draw elegant brand footer at the bottom
+            try:
+                from src.config import BRAND_PROFILE, DISCLAIMERS
+                font_footer = ImageFont.truetype(FONT_PATHS.get("Inter-Bold.ttf", "arial.ttf"), 22)
+                footer_text = f"{BRAND_PROFILE.get('website', 'schatzsuche40.de')}  |  @schatzsuche40"
+                draw.text((540, 1720), footer_text, fill=gold_color, font=font_footer, anchor="mm")
+                
+                font_disc = ImageFont.truetype(FONT_PATHS.get("Inter-Regular.ttf", "arial.ttf"), 16)
+                disclaimer_text = DISCLAIMERS.get("short_disclaimer", "")
+                import textwrap
+                disc_lines = textwrap.wrap(disclaimer_text, width=95)
+                disc_y = 1760
+                for line in disc_lines:
+                    draw.text((540, disc_y), line, fill=(160, 176, 178), font=font_disc, anchor="mm")
+                    disc_y += 22
+            except Exception as footer_err:
+                print(f"REEL: Footer drawing failed: {footer_err}")
+                
+            temp_padded_path = os.path.join(temp_dir, f"padded_{os.path.basename(background_image_path)}")
+            padded_img.save(temp_padded_path, "PNG")
+            background_image_path = temp_padded_path
+    except Exception as pad_err:
+        print(f"REEL: Aspect ratio formatting failed: {pad_err}")
+
     audio_path = os.path.join(temp_dir, "reel_audio.mp3") if not silent else None
     
     if not silent:
