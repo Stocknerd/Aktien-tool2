@@ -20,7 +20,7 @@ from core import render_stock_card, render_compare, CSV_FILE
 from ai_logic import get_tool_promotion_caption, get_ai_verdict, get_ai_comparison_verdict
 from social_publisher import run_social_sync, post_instagram_reel
 
-# A solid list of evergreen financial topics for Track 3 (AI Infographics)
+# A deep and structured list of 44 evergreen financial topics for Track 3 (AI Infographics)
 EVERGREEN_FINANCIAL_TOPICS = [
     "Zinseszins: Warum Zeit dein größter Hebel an der Börse ist",
     "Warum breit gestreute ETFs die beste Basis für dein Depot sind",
@@ -41,8 +41,64 @@ EVERGREEN_FINANCIAL_TOPICS = [
     "Wie viel Geld braucht man zum Starten? Depotaufbau ab 25 Euro",
     "Warum Gold kein produktives Investment ist aber als Schutz dient",
     "Die Macht der Dividenden: Historischer Treiber des Aktienmarkts",
-    "Was ist die Ausschüttungsquote und warum ist sie so wichtig?"
+    "Was ist die Ausschüttungsquote und warum ist sie so wichtig?",
+    "Die 4%-Regel: Wie viel Vermögen brauchst du für die finanzielle Freiheit?",
+    "Aktienrückkäufe einfach erklärt: Warum sie den Kurs steigen lassen",
+    "Was ist das KGV? Die wichtigste Aktienkennzahl richtig verstehen",
+    "5 Dividenden-Aristokraten, die seit über 25 Jahren ihre Ausschüttung steigern",
+    "Der Zins-Effekt auf dem Tagesgeldkonto: Worauf du jetzt achten musst",
+    "Active Investing vs. Passive Investing: Wer schlägt langfristig den Markt?",
+    "Was passiert bei einem Aktiensplit? Am Beispiel von Nvidia & Apple",
+    "Die 50-30-20 Regel: Das einfachste System für deine Budgetplanung",
+    "Dollar-Cost-Average vs. Einmalanlage: Wann lohnt sich welche Strategie?",
+    "Die geheimen Kosten beim Aktienkauf: Spread, Ordergebühren & Steuern",
+    "Zyklische vs. Nicht-zyklische Aktien: So machst du dein Depot krisenfest",
+    "Was ist der Zinseszins-Effekt und wie rechnest du ihn aus?",
+    "Warum Market Timing scheitert: Time in the market beats timing the market",
+    "Small Caps vs. Large Caps: Lohnt sich das höhere Risiko bei kleinen Firmen?",
+    "Wie liest man eine Bilanz? Die 3 wichtigsten Kennzahlen für Anfänger",
+    "Der Home Bias: Warum zu viele deutsche Aktien im Depot deine Rendite bremsen",
+    "Value vs. Growth Investing: Der ewige Kampf der Investment-Stile",
+    "Was ist der Free Cashflow und warum ist er wichtiger als der Gewinn?",
+    "Dividenden-Fallen: Warum eine extrem hohe Dividendenrendite gefährlich ist",
+    "ETFs im Sparplan: Warum du auch in einer Korrektur weiterkaufen solltest",
+    "Was ist die Schuldengrenze der USA und warum betrifft sie dein Depot?",
+    "Warum Zinsentscheidungen der Fed und EZB deine Aktienkurse bewegen",
+    "Die Macht der Gewohnheit: Wie automatisierte Sparpläne dein Leben verändern",
+    "Rebalancing im Depot: Warum du Gewinner stutzen und Verlierer aufbauen musst"
 ]
+
+def get_dynamic_trending_topic() -> str:
+    """Uses GPT to suggest an extremely high-trending, current financial or macroeconomic topic of the week."""
+    try:
+        from openai import OpenAI
+        client = OpenAI()
+        model_name = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o")
+        prompt = (
+            "Du bist ein Top-Finanzblogger in Deutschland. Nenne mir EIN einziges extrem aktuelles, "
+            "hochgradig virales Finanz-, Börsen- oder makroökonomisches Thema für diese Woche "
+            "(z. B. eine aktuelle Leitzinsentscheidung der Fed/EZB, ein neuer Hype wie AI-Aktien, "
+            "die neuesten Inflationsdaten, Krypto-Trends oder Marktvolatilitäten). "
+            "Das Thema muss perfekt geeignet sein, um es als Infografik-Liste für Privatanleger verständlich zu erklären.\n\n"
+            "Gib mir AUSSCHLIESSLICH das Thema als kurzen, knackigen Titel (max. 50 Zeichen) aus. "
+            "Kein Präfix, kein Suffix, kein Punkt am Ende, keine Anführungszeichen."
+        )
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": "Du bist ein präziser Finanz-Experte."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.85
+        )
+        topic = response.choices[0].message.content.strip()
+        # Clean quotes
+        if (topic.startswith('"') and topic.endswith('"')) or (topic.startswith("'") and topic.endswith("'")):
+            topic = topic[1:-1]
+        return topic
+    except Exception as e:
+        print(f"TREND DETECTOR: Warning: Failed to fetch dynamic topic: {e}")
+        return None
 
 def load_stock_database():
     """Loads the main stock CSV database."""
@@ -380,8 +436,15 @@ def run_track_ai(topic=None):
     print("🚀 TRACK 3: RUNNING AI INFOGRAPHIC (EVERGREEN) PIPELINE...")
     
     if not topic:
-        # Choose a random evergreen topic
-        topic = random.choice(EVERGREEN_FINANCIAL_TOPICS)
+        # 50% chance of a highly trending topic, 50% chance of a deep evergreen topic
+        if random.random() < 0.5:
+            print("AI TRACK: Fetching dynamic trending topic via GPT...")
+            topic = get_dynamic_trending_topic()
+            
+        if not topic:
+            # Fallback or standard choice from the deep evergreen topic pool
+            print("AI TRACK: Selecting from the evergreen topic pool...")
+            topic = random.choice(EVERGREEN_FINANCIAL_TOPICS)
         
     print(f"AI TRACK: Chosen Topic: '{topic}'")
     
