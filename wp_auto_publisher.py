@@ -227,8 +227,8 @@ def generate_blog_post():
         """
 
     # Get Affiliate Links from ENV or use placeholder
-    affiliate_url = os.environ.get("AFFILIATE_URL", "https://traderepublic.com/de-de")
-    affiliate_broker = os.environ.get("AFFILIATE_BROKER", "Trade Republic")
+    affiliate_url = os.environ.get("AFFILIATE_URL", "https://www.financeads.net/tc.php?t=47128C46917042T")
+    affiliate_broker = os.environ.get("AFFILIATE_BROKER", "CapTrader")
     
     # Add Affiliate Monetization Block
     html_content += f"""
@@ -243,7 +243,7 @@ def generate_blog_post():
     <!-- /wp:paragraph -->
     
     <!-- wp:paragraph {{"align":"center","textColor":"black"}} -->
-    <p class="has-text-align-center has-black-color has-text-color">Eröffne jetzt dein Depot bei <strong>{affiliate_broker}</strong>, handle Aktien für nur 1€ und sichere dir exzellente Zinsen auf dein nicht investiertes Kapital!</p>
+    <p class="has-text-align-center has-black-color has-text-color">Eröffne jetzt dein Depot bei <strong>{affiliate_broker}</strong> und erhalte direkten Zugang zu weltweiten Börsenplätzen, günstigen Ordergebühren und professionellen Trading-Tools!</p>
     <!-- /wp:paragraph -->
     
     <!-- wp:buttons {{"layout":{{"type":"flex","justifyContent":"center"}}}} -->

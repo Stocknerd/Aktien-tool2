@@ -1379,10 +1379,10 @@ RESULT_HTML = """
     </div>
     <div class="broker-item">
       <div>
-        <div class="broker-name">Trade Republic</div>
-        <div class="broker-desc">4% Zinsen p.a. & 1€ pro Trade</div>
+        <div class="broker-name">CapTrader</div>
+        <div class="broker-desc">Profi-Plattform & US-Optionen</div>
       </div>
-      <a href="https://www.financeads.net/tc.php?t=47128C274449894T" class="broker-btn" target="_blank">Depot sichern</a>
+      <a href="https://www.financeads.net/tc.php?t=47128C46917042T" class="broker-btn" target="_blank">Depot öffnen</a>
     </div>
     <div class="broker-item">
       <div>
@@ -1393,10 +1393,10 @@ RESULT_HTML = """
     </div>
     <div class="broker-item">
       <div>
-        <div class="broker-name">CapTrader</div>
-        <div class="broker-desc">Profi-Plattform & US-Optionen</div>
+        <div class="broker-name">comdirect</div>
+        <div class="broker-desc">Testsieger & Top Service</div>
       </div>
-      <a href="https://www.financeads.net/tc.php?t=47128C46917042T" class="broker-btn" target="_blank">Depot öffnen</a>
+      <a href="https://www.financeads.net/tc.php?t=47128C87024090T" class="broker-btn" target="_blank">Depot sichern</a>
     </div>
   </div>
   <div class="tip-box">
