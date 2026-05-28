@@ -482,7 +482,7 @@ def generate_image():
         from flask import session
         session.pop('ai_verdict', None)
 
-    img = core.render_stock_card(row.iloc[0], selected, layout_mode, watermark, bg_path=bg_path)
+    img = core.render_stock_card(row.iloc[0], selected, layout_mode, watermark, bg_path=bg_path, ai_verdict=ai_verdict)
     
     filename = f"{ticker}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
     path = os.path.join(core.OUT_DIR, filename)

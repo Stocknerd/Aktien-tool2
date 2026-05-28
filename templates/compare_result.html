@@ -35,11 +35,18 @@
           <div id="tradingview_chart_compare" style="height: 100%;"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
           <script type="text/javascript">
+          let tvSymbol = "{{ t1 }}";
+          if (tvSymbol.endsWith(".DE")) {
+              tvSymbol = "XETR:" + tvSymbol.replace(".DE", "");
+          } else if (tvSymbol.endsWith(".F")) {
+              tvSymbol = "FWB:" + tvSymbol.replace(".F", "");
+          }
+
           new TradingView.widget(
           {
           "width": "100%",
           "height": 500,
-          "symbol": "{{ t1 }}",
+          "symbol": tvSymbol,
           "interval": "D",
           "timezone": "Europe/Berlin",
           "theme": "dark",

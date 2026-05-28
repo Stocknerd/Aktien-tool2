@@ -648,7 +648,7 @@
 
     async function loadDatabase() {
       try {
-        const res = await fetch('/api/dividenden-kalender');
+        const res = await fetch('/api/screener');
         const data = await res.json();
         allStocks = data.stocks || [];
         
@@ -709,7 +709,7 @@
       ).slice(0, 8);
 
       if (matches.length > 0) {
-        dSugg.innerHTML = matches.map(o => `<div class='search-item' data-sym='${o.symbol}'><strong>${o.symbol}</strong> - ${o.name} <span class="float-end text-success">${o.div_yield.toFixed(2)}%</span></div>`).join('');
+        dSugg.innerHTML = matches.map(o => `<div class='search-item' data-sym='${o.symbol}'><strong>${o.symbol}</strong> - ${o.name} <span class="float-end text-success">${o.div_yield ? o.div_yield.toFixed(2) + '%' : '0.00%'}</span></div>`).join('');
         dSugg.style.display = 'block';
       } else {
         dSugg.style.display = 'none';
