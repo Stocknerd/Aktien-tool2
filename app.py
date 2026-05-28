@@ -177,6 +177,31 @@ def api_dividend_calendar():
     
     return jsonify({'stocks': results, 'sectors': all_sectors, 'total': len(results)})
 
+@app.route('/api/search-all')
+def api_search_all():
+    df = core.load_df()
+    import math
+    def safe_float(val, default=0):
+        try:
+            if pd.notna(val):
+                v = float(str(val).replace(',', '.'))
+                if math.isfinite(v):
+                    return round(v, 2)
+        except:
+            pass
+        return default
+    
+    results = []
+    for _, r in df.iterrows():
+        if pd.isna(r.get('Symbol')):
+            continue
+        results.append({
+            'symbol': str(r['Symbol']),
+            'name': core.get_clean_name(r),
+            'div_yield': safe_float(r.get('Dividendenrendite'), 0)
+        })
+    return jsonify({'stocks': results})
+
 # ─── Aktien-Screener ─────────────────────────────────────────
 @app.route('/screener')
 def screener_page():
@@ -516,6 +541,11 @@ def upload_background():
 def display_result(filename):
     is_embedded = request.args.get('embed') == '1'
     ticker = request.args.get('ticker', '').upper()
+    if not ticker:
+        base = os.path.basename(filename)
+        if "_" in base:
+            ticker = base.split("_")[0].upper()
+            
     company_name = ""
     related_stocks = []
     if ticker:

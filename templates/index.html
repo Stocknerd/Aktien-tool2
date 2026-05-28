@@ -648,7 +648,7 @@
 
     async function loadDatabase() {
       try {
-        const res = await fetch('/api/screener');
+        const res = await fetch('/api/search-all');
         const data = await res.json();
         allStocks = data.stocks || [];
         
