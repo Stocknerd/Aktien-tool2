@@ -482,8 +482,19 @@ def generate_image():
     df = core.load_df()
     row = df[df['Symbol'] == ticker]
     if row.empty:
-        flash(f"Ticker '{ticker}' nicht gefunden.", "danger")
-        return redirect(url_for('home'))
+        # Try to resolve by name
+        resolved = False
+        for col in ['resolved_name', 'Security', 'Langname']:
+            if col in df.columns:
+                match = df[df[col].str.contains(ticker, case=False, na=False)]
+                if not match.empty:
+                    row = match.iloc[[0]]
+                    ticker = row.iloc[0]['Symbol']
+                    resolved = True
+                    break
+        if not resolved:
+            flash(f"Ticker '{ticker}' nicht gefunden.", "danger")
+            return redirect(url_for('home'))
 
     # Background override validation
     bg_path = None
@@ -627,8 +638,28 @@ def generate_compare():
         return redirect(url_for('compare_home'))
 
     df = core.load_df()
+    
+    # Try resolving t1 if not found by Symbol
     row1 = df[df['Symbol'] == t1]
+    if row1.empty:
+        for col in ['resolved_name', 'Security', 'Langname']:
+            if col in df.columns:
+                match = df[df[col].str.contains(t1, case=False, na=False)]
+                if not match.empty:
+                    row1 = match.iloc[[0]]
+                    t1 = row1.iloc[0]['Symbol']
+                    break
+                    
+    # Try resolving t2 if not found by Symbol
     row2 = df[df['Symbol'] == t2]
+    if row2.empty:
+        for col in ['resolved_name', 'Security', 'Langname']:
+            if col in df.columns:
+                match = df[df[col].str.contains(t2, case=False, na=False)]
+                if not match.empty:
+                    row2 = match.iloc[[0]]
+                    t2 = row2.iloc[0]['Symbol']
+                    break
 
     if row1.empty or row2.empty:
         missing = t1 if row1.empty else t2

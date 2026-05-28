@@ -607,8 +607,51 @@
       }
     }
 
-    // Loader on manual submit
-    document.getElementById('mainForm').addEventListener('submit', showLoader);
+    // Loader and Auto-Resolution on manual submit
+    document.getElementById('mainForm').addEventListener('submit', (e) => {
+      const searchInput = document.getElementById('stock-search');
+      const tickerInput = document.getElementById('ticker');
+      
+      const searchVal = searchInput ? searchInput.value.trim() : '';
+      const tickerVal = tickerInput ? tickerInput.value.trim() : '';
+      
+      // Case 1: Ticker is empty but search input has a name/symbol
+      if (!tickerVal && searchVal) {
+        const exactMatch = allStocks.find(s => 
+          (s.symbol && s.symbol.toUpperCase() === searchVal.toUpperCase()) || 
+          (s.name && s.name.toLowerCase() === searchVal.toLowerCase())
+        );
+        if (exactMatch) {
+          tickerInput.value = exactMatch.symbol;
+        } else {
+          const partialMatch = allStocks.find(s => 
+            (s.symbol && String(s.symbol).toLowerCase().includes(searchVal.toLowerCase())) || 
+            (s.name && String(s.name).toLowerCase().includes(searchVal.toLowerCase()))
+          );
+          if (partialMatch) {
+            tickerInput.value = partialMatch.symbol;
+          } else {
+            tickerInput.value = searchVal;
+          }
+        }
+      }
+      // Case 2: Ticker is filled but might be a company name instead of a symbol
+      else if (tickerVal) {
+        const uppercaseTicker = tickerVal.toUpperCase();
+        const tickerExists = allStocks.some(s => s.symbol && s.symbol.toUpperCase() === uppercaseTicker);
+        if (!tickerExists) {
+          const nameMatch = allStocks.find(s => 
+            s.name && String(s.name).toLowerCase().includes(tickerVal.toLowerCase())
+          );
+          if (nameMatch) {
+            tickerInput.value = nameMatch.symbol;
+            if (searchInput) searchInput.value = `${nameMatch.symbol} – ${nameMatch.name}`;
+          }
+        }
+      }
+      
+      showLoader();
+    });
 
     // ─── Custom Background Upload ───────────────────────────────
     const bgInput = document.getElementById('bg_upload');
@@ -670,12 +713,12 @@
       if (!q) { sugg.style.display = 'none'; return; }
       
       const matches = allStocks.filter(s => 
-        s.symbol.toLowerCase().includes(q) || 
-        s.name.toLowerCase().includes(q)
+        (s.symbol && String(s.symbol).toLowerCase().includes(q)) || 
+        (s.name && String(s.name).toLowerCase().includes(q))
       ).slice(0, 10);
 
       if (matches.length > 0) {
-        sugg.innerHTML = matches.map(o => `<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name}</li>`).join('');
+        sugg.innerHTML = matches.map(o => `<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name || ''}</li>`).join('');
         sugg.style.display = 'block';
       } else {
         sugg.style.display = 'none';
@@ -685,7 +728,11 @@
     sugg.addEventListener('click', e => {
       const li = e.target.closest('li[data-sym]');
       if (!li) return;
-      search.value = ticker.value = li.dataset.sym;
+      const sym = li.dataset.sym;
+      ticker.value = sym;
+      
+      const matched = allStocks.find(s => s.symbol === sym);
+      search.value = matched ? `${sym} – ${matched.name || ''}` : sym;
       sugg.style.display = 'none';
     });
 
@@ -704,12 +751,12 @@
       if (!q) { dSugg.style.display = 'none'; return; }
 
       const matches = allStocks.filter(s => 
-        s.symbol.toLowerCase().includes(q) || 
-        s.name.toLowerCase().includes(q)
+        (s.symbol && String(s.symbol).toLowerCase().includes(q)) || 
+        (s.name && String(s.name).toLowerCase().includes(q))
       ).slice(0, 8);
 
       if (matches.length > 0) {
-        dSugg.innerHTML = matches.map(o => `<div class='search-item' data-sym='${o.symbol}'><strong>${o.symbol}</strong> - ${o.name} <span class="float-end text-success">${o.div_yield ? o.div_yield.toFixed(2) + '%' : '0.00%'}</span></div>`).join('');
+        dSugg.innerHTML = matches.map(o => `<div class='search-item' data-sym='${o.symbol}'><strong>${o.symbol}</strong> - ${o.name || ''} <span class="float-end text-success">${o.div_yield ? o.div_yield.toFixed(2) + '%' : '0.00%'}</span></div>`).join('');
         dSugg.style.display = 'block';
       } else {
         dSugg.style.display = 'none';

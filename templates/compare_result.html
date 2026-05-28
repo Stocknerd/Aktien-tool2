@@ -53,7 +53,7 @@
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script type="text/javascript">
     function createWidget(symbol, containerId) {
-        let tvSymbol = symbol;
+        let tvSymbol = symbol.toUpperCase().trim();
         if (tvSymbol.endsWith(".DE")) {
             tvSymbol = "XETR:" + tvSymbol.replace(".DE", "");
         } else if (tvSymbol.endsWith(".F")) {
