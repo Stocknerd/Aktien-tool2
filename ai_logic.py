@@ -142,33 +142,51 @@ def generate_blog_header_image(stock_names):
     
     try:
         client = OpenAI(api_key=api_key)
-        # Try DALL-E 3 first (1024x1024 or standard landscape)
+        model_name = os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-2")
+        
+        # Try premium image model first
         try:
+            print(f"IMAGE: Generating blog header via {model_name}...")
             response = client.images.generate(
-                model="dall-e-3",
+                model=model_name,
                 prompt=prompt,
                 size="1024x1024",
-                quality="standard",
+                quality="auto",
                 n=1,
             )
             image_url = response.data[0].url
-            img_response = requests.get(image_url)
+            img_response = requests.get(image_url, timeout=20)
             if img_response.status_code == 200:
                  img = Image.open(io.BytesIO(img_response.content))
                  return img
-        except Exception as e3:
-            print(f"DALL-E 3 failed: {e3}. Trying DALL-E 2 fallback...")
-            response = client.images.generate(
-                model="dall-e-2",
-                prompt=prompt,
-                size="1024x1024",
-                n=1,
-            )
-            image_url = response.data[0].url
-            img_response = requests.get(image_url)
-            if img_response.status_code == 200:
-                 img = Image.open(io.BytesIO(img_response.content))
-                 return img
+        except Exception as e_premium:
+            print(f"Premium model {model_name} failed: {e_premium}. Trying DALL-E 3 fallback...")
+            try:
+                response = client.images.generate(
+                    model="dall-e-3",
+                    prompt=prompt,
+                    size="1024x1024",
+                    quality="standard",
+                    n=1,
+                )
+                image_url = response.data[0].url
+                img_response = requests.get(image_url, timeout=20)
+                if img_response.status_code == 200:
+                     img = Image.open(io.BytesIO(img_response.content))
+                     return img
+            except Exception as e3:
+                print(f"DALL-E 3 failed: {e3}. Trying DALL-E 2 fallback...")
+                response = client.images.generate(
+                    model="dall-e-2",
+                    prompt=prompt,
+                    size="1024x1024",
+                    n=1,
+                )
+                image_url = response.data[0].url
+                img_response = requests.get(image_url, timeout=20)
+                if img_response.status_code == 200:
+                     img = Image.open(io.BytesIO(img_response.content))
+                     return img
     except Exception as e:
         print(f"Error generating DALL-E image: {e}")
     return None
