@@ -247,6 +247,28 @@ def api_screener():
             pass
         return default
 
+    EXCHANGE_RATES_TO_USD = {
+        'USD': 1.0,
+        'EUR': 1.08,
+        'CHF': 1.10,
+        'GBP': 1.27,
+        'JPY': 0.0064,
+        'CAD': 0.73,
+        'AUD': 0.66,
+        'HKD': 0.128,
+        'INR': 0.012,
+        'SEK': 0.095,
+        'DKK': 0.145,
+        'NOK': 0.093,
+        'BRL': 0.19,
+        'CNY': 0.14,
+        'TWD': 0.031,
+        'KRW': 0.00073,
+        'SGD': 0.74,
+        'MXN': 0.059,
+        'ZAR': 0.054
+    }
+
     results = []
     # Using specific columns to keep payload small
     for _, r in df.iterrows():
@@ -256,6 +278,17 @@ def api_screener():
             
         sector = str(r.get('Sektor', '')) if pd.notna(r.get('Sektor')) else ''
         region = str(r.get('Region', '')) if pd.notna(r.get('Region')) else ''
+        
+        mcap = safe_float(r.get('Marktkapitalisierung'))
+        # Support both German/English column naming variations for Währung
+        currency = str(r.get('Währung') or r.get('W\u00e4hrung') or 'USD').strip().upper()
+        if not currency or currency == 'NAN':
+            currency = 'USD'
+            
+        mcap_usd = None
+        if mcap is not None:
+            rate = EXCHANGE_RATES_TO_USD.get(currency, 1.0)
+            mcap_usd = round(mcap * rate, 2)
         
         results.append({
             'symbol': str(r['Symbol']),
@@ -269,8 +302,9 @@ def api_screener():
             'op_marge': safe_float_pct(r.get('Operative Marge')),
             'roe': safe_float_pct(r.get('Eigenkapitalrendite')),
             'kbv': safe_float(r.get('KBV')),
-            'mcap': safe_float(r.get('Marktkapitalisierung')),
-            'currency': str(r.get('Währung', '')) if pd.notna(r.get('Währung')) else '',
+            'mcap': mcap,
+            'mcap_usd': mcap_usd,
+            'currency': currency,
             'rating': str(r.get('Recommendation Key', '')) if pd.notna(r.get('Recommendation Key')) else ''
         })
         
