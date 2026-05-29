@@ -332,9 +332,9 @@ def generate_blog_post():
     <!-- /wp:paragraph -->
     """
     
-    # Determine publishing status: 'publish' on Mondays (weekday 0), 'draft' otherwise
+    # Determine publishing status: 'publish' on Mondays (0) and Fridays (4), 'draft' otherwise
     current_weekday = datetime.today().weekday()
-    status = "publish" if current_weekday == 0 else "draft"
+    status = "publish" if current_weekday in (0, 4) else "draft"
     
     # Prepare dynamic tags
     print("Bereite dynamische SEO-Schlagwörter vor...")
@@ -383,49 +383,52 @@ def generate_blog_post():
             print(f"Fehler bei XML-RPC Meta-Injizierung: {e}")
         
         # --- NEW: Trigger ONE Social Media Post for the ENTIRE Article ---
-        try:
-            print("Hole generelle Social-Media-Caption für den Blogartikel...")
-            stock_names_str = ", ".join(stock_names)
-            social_caption = get_social_caption(stock_names_str, excerpt)
-            
-            # Generate a separate SQUARE image for Social Media (better for Instagram/Facebook)
-            print("Generiere quadratisches Social-Media-Header-Bild...")
-            social_img = render_social_square_header(selected_list, title_text="TOP 3 DIVIDENDEN-CHECKS", bg_img=header_img_raw) # Note: we need to keep raw header_img if we want to reuse it
-            
-            # Save the square header image to the public path for Meta API fetch
-            public_dir = os.path.join("static", "temp_social")
-            os.makedirs(public_dir, exist_ok=True)
-            public_path_sq = os.path.join(public_dir, "blog_header_sq.png")
-            social_img.save(public_path_sq)
-            
-            # Upload the square social header image to WordPress to get a secure HTTPS URL for Meta
-            print("Lade quadratisches Social-Media-Header-Bild in WordPress hoch...")
-            social_img_byte_arr = io.BytesIO()
-            social_img.save(social_img_byte_arr, format='PNG')
-            social_img_bytes = social_img_byte_arr.getvalue()
-            
-            sq_wp_img_url = None
+        if status == "publish":
             try:
-                sq_media_response = requests.post(
-                    WP_MEDIA_URL,
-                    auth=HTTPBasicAuth(WP_USER, WP_PASS),
-                    data=social_img_bytes,
-                    headers={
-                        'Content-Type': 'image/png',
-                        'Content-Disposition': 'attachment; filename="blog_header_sq.png"'
-                    }
-                )
-                if sq_media_response.status_code == 201:
-                    sq_wp_img_url = sq_media_response.json().get('source_url', '')
-                    print(f"[OK] Quadratisches Header-Bild hochgeladen: {sq_wp_img_url}")
-                else:
-                    print(f"[ERR] Quadratisches Header-Bild Upload fehlgeschlagen: {sq_media_response.status_code}")
-            except Exception as upload_err:
-                print(f"[ERR] WordPress Asset Upload gescheitert: {upload_err}")
+                print("Hole generelle Social-Media-Caption für den Blogartikel...")
+                stock_names_str = ", ".join(stock_names)
+                social_caption = get_social_caption(stock_names_str, excerpt)
                 
-            run_social_sync("MARKET-UPDATE", social_caption, public_path_sq, blog_url=blog_url, wp_img_url=sq_wp_img_url, title=title)
-        except Exception as e:
-            print(f"Fehler bei Social-Push (Artikel-Ebene): {e}")
+                # Generate a separate SQUARE image for Social Media (better for Instagram/Facebook)
+                print("Generiere quadratisches Social-Media-Header-Bild...")
+                social_img = render_social_square_header(selected_list, title_text="TOP 3 DIVIDENDEN-CHECKS", bg_img=header_img_raw) # Note: we need to keep raw header_img if we want to reuse it
+                
+                # Save the square header image to the public path for Meta API fetch
+                public_dir = os.path.join("static", "temp_social")
+                os.makedirs(public_dir, exist_ok=True)
+                public_path_sq = os.path.join(public_dir, "blog_header_sq.png")
+                social_img.save(public_path_sq)
+                
+                # Upload the square social header image to WordPress to get a secure HTTPS URL for Meta
+                print("Lade quadratisches Social-Media-Header-Bild in WordPress hoch...")
+                social_img_byte_arr = io.BytesIO()
+                social_img.save(social_img_byte_arr, format='PNG')
+                social_img_bytes = social_img_byte_arr.getvalue()
+                
+                sq_wp_img_url = None
+                try:
+                    sq_media_response = requests.post(
+                        WP_MEDIA_URL,
+                        auth=HTTPBasicAuth(WP_USER, WP_PASS),
+                        data=social_img_bytes,
+                        headers={
+                            'Content-Type': 'image/png',
+                            'Content-Disposition': 'attachment; filename="blog_header_sq.png"'
+                        }
+                    )
+                    if sq_media_response.status_code == 201:
+                        sq_wp_img_url = sq_media_response.json().get('source_url', '')
+                        print(f"[OK] Quadratisches Header-Bild hochgeladen: {sq_wp_img_url}")
+                    else:
+                        print(f"[ERR] Quadratisches Header-Bild Upload fehlgeschlagen: {sq_media_response.status_code}")
+                except Exception as upload_err:
+                    print(f"[ERR] WordPress Asset Upload gescheitert: {upload_err}")
+                    
+                run_social_sync("MARKET-UPDATE", social_caption, public_path_sq, blog_url=blog_url, wp_img_url=sq_wp_img_url, title=title)
+            except Exception as e:
+                print(f"Fehler bei Social-Push (Artikel-Ebene): {e}")
+        else:
+            print("[SKIP] Überspringe Social-Media-Push, da der Beitrag nur als Entwurf (Draft) gespeichert wurde.")
     else:
         print(f"Warnung: Veröffentlichung fehlgeschlagen. Code: {response.status_code}")
         print(response.text)
