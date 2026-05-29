@@ -1022,21 +1022,35 @@ def render_blog_header(selected_stocks: List[Dict[str, Any]], title_text: str = 
         cx = PAD + i * (COL_W + PAD) + COL_W // 2
         cy_base = 180
         
-        # Panel
-        px1, py1 = PAD + i * (COL_W + PAD), 150
-        px2, py2 = px1 + COL_W, H - 100
-        draw.rounded_rectangle([px1, py1, px2, py2], radius=15, fill=(255, 255, 255, 10), outline=(255, 255, 255, 40), width=2)
-        
+        # Draw panel only if NOT using a background image
+        if not bg_img:
+            px1, py1 = PAD + i * (COL_W + PAD), 150
+            px2, py2 = px1 + COL_W, H - 100
+            draw.rounded_rectangle([px1, py1, px2, py2], radius=15, fill=(255, 255, 255, 10), outline=(255, 255, 255, 40), width=2)
+        else:
+            # Elegant circular backdrop behind logo for contrast/readability
+            logo_r = 55
+            draw.ellipse([cx - logo_r, cy_base + 25, cx + logo_r, cy_base + 135], fill=(255, 255, 255, 220), outline=(255, 255, 255, 80), width=2)
+            
         # Logo
         logo_path = os.path.join(LOGO_DIR, f"{symbol}.png")
+        logo_loaded = False
         if os.path.exists(logo_path):
             try:
                 logo = Image.open(logo_path).convert("RGBA")
-                logo.thumbnail((120, 120))
+                logo.thumbnail((90, 90))
                 lx = cx - logo.width // 2
-                ly = cy_base + 30
+                ly = cy_base + 80 - logo.height // 2
                 img.paste(logo, (lx, ly), logo)
+                logo_loaded = True
             except: pass
+            
+        if not logo_loaded and bg_img:
+            # Draw fallback text inside the circle if logo is missing and we drew a circle
+            first_letter = symbol[0]
+            f_letter = _font(FONT_BLD_PATH, 48, ImageFont.load_default())
+            tw_l = int(draw.textlength(first_letter, font=f_letter))
+            draw.text((cx - tw_l // 2, cy_base + 80 - 28), first_letter, fill=(30, 41, 59), font=f_letter)
             
         # Ticker & Name
         ty = cy_base + 170
@@ -1100,19 +1114,42 @@ def render_social_square_header(selected_stocks: List[Dict[str, Any]], title_tex
         y1 = START_Y + i * (BOX_H + GAP)
         y2 = y1 + BOX_H
         
-        # Glass panel
-        draw.rounded_rectangle([PAD, y1, W - PAD, y2], radius=20, fill=(255, 255, 255, 15), outline=(255, 255, 255, 50), width=3)
-        
-        # Logo
+        # Logo loading first so we can center it
         logo_path = os.path.join(LOGO_DIR, f"{symbol}.png")
+        logo = None
         if os.path.exists(logo_path):
             try:
                 logo = Image.open(logo_path).convert("RGBA")
+            except: pass
+
+        # Glass panel & Logo background
+        logo_loaded = False
+        if not bg_img:
+            draw.rounded_rectangle([PAD, y1, W - PAD, y2], radius=20, fill=(255, 255, 255, 15), outline=(255, 255, 255, 50), width=3)
+            if logo:
                 logo.thumbnail((120, 120))
                 lx = PAD + 40
                 ly = y1 + (BOX_H - logo.height) // 2
                 img.paste(logo, (lx, ly), logo)
-            except: pass
+                logo_loaded = True
+        else:
+            # Elegant circular backdrop for logo
+            logo_r = 50
+            cx_logo = PAD + 90
+            cy_logo = y1 + BOX_H // 2
+            draw.ellipse([cx_logo - logo_r, cy_logo - logo_r, cx_logo + logo_r, cy_logo + logo_r], fill=(255, 255, 255, 220), outline=(255, 255, 255, 80), width=2)
+            if logo:
+                logo.thumbnail((80, 80))
+                lx = cx_logo - logo.width // 2
+                ly = cy_logo - logo.height // 2
+                img.paste(logo, (lx, ly), logo)
+                logo_loaded = True
+            else:
+                # Fallback text in circle
+                first_letter = symbol[0]
+                f_letter = _font(FONT_BLD_PATH, 42, ImageFont.load_default())
+                tw_l = int(draw.textlength(first_letter, font=f_letter))
+                draw.text((cx_logo - tw_l // 2, cy_logo - 24), first_letter, fill=(30, 41, 59), font=f_letter)
             
         # Text
         tx = PAD + 200
