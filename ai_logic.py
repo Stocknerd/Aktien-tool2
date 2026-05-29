@@ -154,11 +154,14 @@ def generate_blog_header_image(stock_names):
                 quality="auto",
                 n=1,
             )
-            image_url = response.data[0].url
-            img_response = requests.get(image_url, timeout=20)
-            if img_response.status_code == 200:
-                 img = Image.open(io.BytesIO(img_response.content))
-                 return img
+            data = response.data[0]
+            if hasattr(data, 'url') and data.url:
+                img_response = requests.get(data.url, timeout=20)
+                if img_response.status_code == 200:
+                    return Image.open(io.BytesIO(img_response.content))
+            elif hasattr(data, 'b64_json') and data.b64_json:
+                import base64
+                return Image.open(io.BytesIO(base64.b64decode(data.b64_json)))
         except Exception as e_premium:
             print(f"Premium model {model_name} failed: {e_premium}. Trying DALL-E 3 fallback...")
             try:
@@ -169,24 +172,33 @@ def generate_blog_header_image(stock_names):
                     quality="standard",
                     n=1,
                 )
-                image_url = response.data[0].url
-                img_response = requests.get(image_url, timeout=20)
-                if img_response.status_code == 200:
-                     img = Image.open(io.BytesIO(img_response.content))
-                     return img
+                data = response.data[0]
+                if hasattr(data, 'url') and data.url:
+                    img_response = requests.get(data.url, timeout=20)
+                    if img_response.status_code == 200:
+                        return Image.open(io.BytesIO(img_response.content))
+                elif hasattr(data, 'b64_json') and data.b64_json:
+                    import base64
+                    return Image.open(io.BytesIO(base64.b64decode(data.b64_json)))
             except Exception as e3:
                 print(f"DALL-E 3 failed: {e3}. Trying DALL-E 2 fallback...")
-                response = client.images.generate(
-                    model="dall-e-2",
-                    prompt=prompt,
-                    size="1024x1024",
-                    n=1,
-                )
-                image_url = response.data[0].url
-                img_response = requests.get(image_url, timeout=20)
-                if img_response.status_code == 200:
-                     img = Image.open(io.BytesIO(img_response.content))
-                     return img
+                try:
+                    response = client.images.generate(
+                        model="dall-e-2",
+                        prompt=prompt,
+                        size="1024x1024",
+                        n=1,
+                    )
+                    data = response.data[0]
+                    if hasattr(data, 'url') and data.url:
+                        img_response = requests.get(data.url, timeout=20)
+                        if img_response.status_code == 200:
+                            return Image.open(io.BytesIO(img_response.content))
+                    elif hasattr(data, 'b64_json') and data.b64_json:
+                        import base64
+                        return Image.open(io.BytesIO(base64.b64decode(data.b64_json)))
+                except Exception as e2:
+                    print(f"DALL-E 2 failed: {e2}")
     except Exception as e:
         print(f"Error generating DALL-E image: {e}")
     return None
