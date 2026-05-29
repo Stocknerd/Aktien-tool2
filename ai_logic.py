@@ -144,7 +144,7 @@ def generate_blog_header_image(stock_names):
         client = OpenAI(api_key=api_key)
         model_name = os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-2")
         
-        # Try premium image model first
+        # Try premium image model
         try:
             print(f"IMAGE: Generating blog header via {model_name}...")
             response = client.images.generate(
@@ -163,44 +163,9 @@ def generate_blog_header_image(stock_names):
                 import base64
                 return Image.open(io.BytesIO(base64.b64decode(data.b64_json)))
         except Exception as e_premium:
-            print(f"Premium model {model_name} failed: {e_premium}. Trying DALL-E 3 fallback...")
-            try:
-                response = client.images.generate(
-                    model="dall-e-3",
-                    prompt=prompt,
-                    size="1024x1024",
-                    quality="standard",
-                    n=1,
-                )
-                data = response.data[0]
-                if hasattr(data, 'url') and data.url:
-                    img_response = requests.get(data.url, timeout=20)
-                    if img_response.status_code == 200:
-                        return Image.open(io.BytesIO(img_response.content))
-                elif hasattr(data, 'b64_json') and data.b64_json:
-                    import base64
-                    return Image.open(io.BytesIO(base64.b64decode(data.b64_json)))
-            except Exception as e3:
-                print(f"DALL-E 3 failed: {e3}. Trying DALL-E 2 fallback...")
-                try:
-                    response = client.images.generate(
-                        model="dall-e-2",
-                        prompt=prompt,
-                        size="1024x1024",
-                        n=1,
-                    )
-                    data = response.data[0]
-                    if hasattr(data, 'url') and data.url:
-                        img_response = requests.get(data.url, timeout=20)
-                        if img_response.status_code == 200:
-                            return Image.open(io.BytesIO(img_response.content))
-                    elif hasattr(data, 'b64_json') and data.b64_json:
-                        import base64
-                        return Image.open(io.BytesIO(base64.b64decode(data.b64_json)))
-                except Exception as e2:
-                    print(f"DALL-E 2 failed: {e2}")
+            print(f"Premium model {model_name} failed: {e_premium}. Falling back directly to vector layout.")
     except Exception as e:
-        print(f"Error generating DALL-E image: {e}")
+        print(f"Error generating image: {e}")
     return None
 
 def get_ai_comparison_verdict(symbol_a, name_a, data_a, symbol_b, name_b, data_b):

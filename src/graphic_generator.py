@@ -48,28 +48,9 @@ def generate_dalle_image(prompt, aspect_ratio="1:1"):
             img_data = base64.b64decode(data.b64_json)
             return Image.open(io.BytesIO(img_data))
     except Exception as e:
-        print(f"WARNING: Image generation failed with {model_name}: {e}. Trying DALL-E 3 fallback...")
-        try:
-            response = client.images.generate(
-                model="dall-e-3",
-                prompt=prompt,
-                size="1024x1024",
-                quality="auto",
-                n=1
-            )
-            data = response.data[0]
-            if hasattr(data, 'url') and data.url:
-                r = requests.get(data.url, timeout=20)
-                r.raise_for_status()
-                return Image.open(io.BytesIO(r.content))
-            elif hasattr(data, 'b64_json') and data.b64_json:
-                import base64
-                img_data = base64.b64decode(data.b64_json)
-                return Image.open(io.BytesIO(img_data))
-        except Exception as e2:
-            print(f"ERROR: Image generation fallback failed: {e2}")
+        print(f"WARNING: Image generation failed with {model_name}: {e}.")
             
-    # Always return a beautiful brand fallback image if both API routes fail
+    # Always return a beautiful brand fallback image if the API route fails
     print("IMAGE: API generation failed completely. Creating beautiful brand vector fallback image...")
     fallback_img = Image.new("RGB", (800, 800), COLORS["card_bg"])
     f_draw = ImageDraw.Draw(fallback_img)
