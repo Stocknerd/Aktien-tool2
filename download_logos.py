@@ -118,10 +118,9 @@ def clean_company_name(name: str) -> str:
     return name.title()
 
 
-def get_logo_from_clearbit(symbol: str, company_name: str, session: requests.Session) -> Optional[str]:
+def get_logo_from_google(symbol: str, company_name: str, session: requests.Session) -> Optional[str]:
     """
-    Versucht, das Logo von Clearbit zu beziehen.
-    Clearbit bietet eine einfache API für Firmenlogos.
+    Versucht das Logo über die Google Favicon API (128px) abzurufen.
     
     Args:
         symbol: Ticker-Symbol
@@ -131,25 +130,24 @@ def get_logo_from_clearbit(symbol: str, company_name: str, session: requests.Ses
     Returns:
         Logo URL oder None
     """
-    # Versuche verschiedene Domain-Varianten
     potential_domains = [
-        f"{company_name.lower().replace(' ', '')}.com",
+        f"{company_name.lower().replace(' ', '').replace('&', '')}.com",
         f"{symbol.lower()}.com",
     ]
     
     for domain in potential_domains:
         try:
-            logo_url = f'https://logo.clearbit.com/{domain}'
+            logo_url = f"https://www.google.com/s2/favicons?sz=128&domain={domain}"
             response = session.head(logo_url, timeout=TIMEOUT, allow_redirects=True)
-            
             if response.status_code == 200:
-                logger.debug(f"Clearbit: Logo gefunden für {domain}")
+                logger.debug(f"Google Favicon: Logo gefunden für {domain}")
                 return logo_url
         except Exception as e:
-            logger.debug(f"Clearbit: Fehler bei {domain}: {e}")
+            logger.debug(f"Google Favicon: Fehler bei {domain}: {e}")
             continue
-    
+            
     return None
+
 
 
 def get_logo_from_wikipedia(company_name: str, session: requests.Session) -> Optional[str]:
@@ -296,12 +294,11 @@ def download_logo(
     
     clean_name = clean_company_name(company_name)
     
-    # Versuche verschiedene Quellen in Reihenfolge
     sources = [
-        ('Clearbit', lambda: get_logo_from_clearbit(symbol, clean_name, session)),
         ('Yahoo Finance', lambda: get_logo_from_yahoo_finance(symbol, session)),
         ('Wikipedia', lambda: get_logo_from_wikipedia(clean_name, session)),
         ('CompaniesLogo', lambda: get_logo_from_companieslogo(clean_name, session)),
+        ('Google Favicon', lambda: get_logo_from_google(symbol, clean_name, session)),
     ]
     
     for source_name, get_logo_func in sources:
