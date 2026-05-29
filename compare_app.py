@@ -1391,13 +1391,6 @@ RESULT_HTML = """
       </div>
       <a href="https://www.financeads.net/tc.php?t=47128C15212339T" class="broker-btn" target="_blank">Zum Broker</a>
     </div>
-    <div class="broker-item">
-      <div>
-        <div class="broker-name">comdirect</div>
-        <div class="broker-desc">Testsieger & Top Service</div>
-      </div>
-      <a href="https://www.financeads.net/tc.php?t=47128C87024090T" class="broker-btn" target="_blank">Depot sichern</a>
-    </div>
   </div>
   <div class="tip-box">
     <strong>💡 Dividenden-Pro-Tipp:</strong> Bei der <strong>Consorsbank</strong> kannst du jetzt eine automatische Wiederanlage der Dividenden auch bei Einzelaktien einstellen – ideal für den Zinseszinseffekt!
