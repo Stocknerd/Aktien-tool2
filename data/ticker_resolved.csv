@@ -1,4 +1,4 @@
-﻿Symbol,Security,GICS Sector,valid_yahoo_ticker,resolved_name,resolved_exchange,resolved_score,SourceIndex,Sektor
+Symbol,Security,GICS Sector,valid_yahoo_ticker,resolved_name,resolved_exchange,resolved_score,SourceIndex,Sektor
 AAPL,APPLE INC,Information Technology,AAPL,Apple Inc.,NMS,2569100.0,SP500,
 NVDA,NVIDIA CORP,Information Technology,NVDA,NVIDIA Corporation,NMS,2407900.0,SP500,
 MSFT,MICROSOFT CORP,Information Technology,MSFT,Microsoft Corporation,NMS,2170600.0,SP500,
@@ -28,7 +28,7 @@ CVX,CHEVRON CORP,Energy,CVX,Chevron Corporation,NYQ,2033700.0,SP500,
 CRM,SALESFORCE INC,Information Technology,CRM,"Salesforce, Inc.",NYQ,2016300.0,SP500,
 NESN,NESTLE SA,Consumer Staples,NESN.SW,NESTLE N,EBS,20014.0,MSCI World,
 ORCL,ORACLE CORP,Information Technology,ORCL,Oracle Corporation,NYQ,2041100.0,SP500,
-NOVO B,NOVO NORDISK CLASS B,Health Care,NVO,BRAIN NOVO BITTENCOURT FI MULTI,SAO,20001.0,,
+NOVO B,NOVO NORDISK CLASS B,Health Care,NVO,Novo Nordisk,SAO,20001.0,,
 ROG,ROCHE HOLDING PAR AG,Health Care,ROG,Rogers Corporation,NYQ,2001100.0,,
 CSCO,CISCO SYSTEMS INC,Information Technology,CSCO,"Cisco Systems, Inc.",NMS,2035400.0,SP500,
 PM,PHILIP MORRIS INTERNATIONAL INC,Consumer Staples,PM,Philip Morris International Inc,NYQ,2012200.0,SP500,
