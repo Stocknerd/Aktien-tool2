@@ -93,14 +93,18 @@ def generate_blog_post():
     print("Generiere Premium Querformat-Blog-Header via DALL-E 3...")
     header_img_raw = generate_blog_header_image(stock_names)
     
-    # Fallback if DALL-E fails
-    if not header_img_raw:
-        print("Fallback auf lokale Grafik...")
-        
-    from core import render_blog_header
     selected_list = selected.to_dict('records')
-    # Use render_blog_header to composite logos and stats over the bg_img
-    header_img = render_blog_header(selected_list, bg_img=header_img_raw)
+    
+    # Check if image generation succeeded
+    if header_img_raw:
+        print("Erstelle reines KI-Blog-Header-Bild ohne Karten-Overlay (Pure AI).")
+        from PIL import Image, ImageOps
+        # Fit image to exactly 1200x630 (landscape)
+        header_img = ImageOps.fit(header_img_raw, (1200, 630), method=Image.Resampling.LANCZOS).convert("RGBA")
+    else:
+        print("Fallback auf lokale Grafik mit Karten...")
+        from core import render_blog_header
+        header_img = render_blog_header(selected_list, bg_img=None)
         
     header_byte_arr = io.BytesIO()
     header_img.save(header_byte_arr, format='PNG')
@@ -391,7 +395,14 @@ def generate_blog_post():
                 
                 # Generate a separate SQUARE image for Social Media (better for Instagram/Facebook)
                 print("Generiere quadratisches Social-Media-Header-Bild...")
-                social_img = render_social_square_header(selected_list, title_text="TOP 3 DIVIDENDEN-CHECKS", bg_img=header_img_raw) # Note: we need to keep raw header_img if we want to reuse it
+                if header_img_raw:
+                    print("Erstelle reines KI-Social-Square-Bild ohne Karten-Overlay (Pure AI).")
+                    from PIL import Image, ImageOps
+                    # Fit to exactly 1080x1080 (square)
+                    social_img = ImageOps.fit(header_img_raw, (1080, 1080), method=Image.Resampling.LANCZOS).convert("RGBA")
+                else:
+                    print("Fallback auf lokale Social-Grafik mit Karten...")
+                    social_img = render_social_square_header(selected_list, title_text="TOP 3 DIVIDENDEN-CHECKS", bg_img=None)
                 
                 # Save the square header image to the public path for Meta API fetch
                 public_dir = os.path.join("static", "temp_social")
