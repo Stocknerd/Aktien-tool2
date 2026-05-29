@@ -362,7 +362,7 @@ def main():
     df = pd.read_csv(CSV_PATH)
     
     # Prüfe erforderliche Spalten
-    required_columns = ['Symbol', 'Langname']
+    required_columns = ['Symbol', 'Security']
     missing_columns = [col for col in required_columns if col not in df.columns]
     
     if missing_columns:
