@@ -93,20 +93,26 @@ def draw_karaoke_subtitles(img, t, words_data, font_path, base_font_size=55):
     bar_top = y_pos - padding
     bar_bottom = y_pos + base_font_size + padding
     
-    overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
-    overlay_draw = ImageDraw.Draw(overlay)
-    overlay_draw.rounded_rectangle(
-        [bar_left, bar_top, bar_right, bar_bottom],
-        radius=16, fill=(11, 30, 33, 180) # Brand background color with opacity
-    )
-    img = Image.alpha_composite(img.convert('RGBA'), overlay).convert('RGB')
+    # Create a small local overlay box instead of a full screen image
+    box_w = int(bar_right - bar_left)
+    box_h = int(bar_bottom - bar_top)
+    if box_w > 0 and box_h > 0:
+        overlay = Image.new('RGBA', (box_w, box_h), (0, 0, 0, 0))
+        overlay_draw = ImageDraw.Draw(overlay)
+        overlay_draw.rounded_rectangle(
+            [0, 0, box_w, box_h],
+            radius=16, fill=(11, 30, 33, 180) # Brand background color with opacity
+        )
+        img_rgba = img.convert('RGBA')
+        img_rgba.paste(overlay, (int(bar_left), int(bar_top)), overlay)
+        img = img_rgba.convert('RGB')
     draw = ImageDraw.Draw(img)
     
     for w_obj in words_to_draw:
         w_text = w_obj["text"] + " "
         use_font = font_bold if w_obj["active"] else font
         # Outline for crisp text
-        for adj, b_idx in [(-2,-2), (2,-2), (-2,2), (2,2), (0,-2), (0,2), (-2,0), (2,0)]:
+        for adj, b_idx in [(-2,-2), (2,-2), (-2,2), (2,2)]:
             draw.text((current_x + adj, y_pos + b_idx), w_text, font=use_font, fill="black")
         draw.text((current_x, y_pos), w_text, font=use_font, fill=w_obj["color"])
         w_bbox = draw.textbbox((0, 0), w_text, font=use_font)
@@ -248,7 +254,7 @@ def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=F
         zoom_factor = 1.0 + (0.08 * progress)
         img = Image.fromarray(img_array)
         new_w, new_h = int(w * zoom_factor), int(h * zoom_factor)
-        img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        img = img.resize((new_w, new_h), Image.Resampling.BILINEAR)
         left = (new_w - w) / 2
         top = (new_h - h) / 2
         img = img.crop((left, top, left + w, top + h))
@@ -292,7 +298,7 @@ def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=F
     
     # Render final MP4
     print(f"REEL: Rendering {'SILENT ' if silent else ''}final MP4 to {output_mp4_path}...")
-    video_clip.write_videofile(output_mp4_path, fps=30, codec="libx264", audio_codec="aac" if video_clip.audio else None)
+    video_clip.write_videofile(output_mp4_path, fps=24, codec="libx264", audio_codec="aac" if video_clip.audio else None)
     print(f"REEL: Video created successfully! ({output_mp4_path})")
     
     # Cleanup temp audio
