@@ -179,27 +179,13 @@ def api_dividend_calendar():
 
 @app.route('/api/search-all')
 def api_search_all():
-    df = core.load_df()
-    import math
-    def safe_float(val, default=0):
-        try:
-            if pd.notna(val):
-                v = float(str(val).replace(',', '.'))
-                if math.isfinite(v):
-                    return round(v, 2)
-        except:
-            pass
-        return default
-    
-    results = []
-    for _, r in df.iterrows():
-        if pd.isna(r.get('Symbol')):
-            continue
-        results.append({
-            'symbol': str(r['Symbol']),
-            'name': core.get_clean_name(r),
-            'div_yield': safe_float(r.get('Dividendenrendite'), 0)
-        })
+    index = core.get_search_index()
+    results = [{
+        'symbol': item['symbol'],
+        'name': item['name'],
+        'div_yield': item.get('div_yield', 0.0),
+        'sector': item.get('sector', '')
+    } for item in index]
     return jsonify({'stocks': results})
 
 # ─── Aktien-Screener ─────────────────────────────────────────

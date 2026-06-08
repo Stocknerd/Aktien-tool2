@@ -141,9 +141,21 @@ def load_df():
                             break
                 
                 lng = str(row.get('Langname') or '').strip()
+                dy = row.get('Dividendenrendite')
+                try:
+                    dy_val = float(str(dy).replace(',', '.')) if pd.notna(dy) else 0.0
+                    if not math.isfinite(dy_val):
+                        dy_val = 0.0
+                except:
+                    dy_val = 0.0
+                
+                sector = str(row.get('Sektor') or '').strip() if pd.notna(row.get('Sektor')) else ''
+                
                 new_index.append({
                     'symbol': sym,
                     'name': clean_n,
+                    'div_yield': round(dy_val, 2),
+                    'sector': sector,
                     'norm_sym': norm(sym),
                     'norm_name': norm(clean_n),
                     'norm_lng': norm(lng)
