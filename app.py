@@ -513,8 +513,10 @@ def generate_image():
     saas_logic.log_usage(token, "render")
 
     is_embedded_form = request.form.get('is_embedded') == '1'
-    embed_param = "?embed=1" if is_embedded_form or request.args.get('embed') == '1' else ""
-    return redirect(url_for('display_result', filename=filename, ticker=ticker) + embed_param)
+    kwargs = {'filename': filename, 'ticker': ticker}
+    if is_embedded_form or request.args.get('embed') == '1':
+        kwargs['embed'] = '1'
+    return redirect(url_for('display_result', **kwargs))
 
 @app.route('/upload-background', methods=['POST'])
 def upload_background():
@@ -680,8 +682,12 @@ def generate_compare():
     saas_logic.log_usage(token, "compare")
 
     is_embedded = request.form.get('embed') == '1'
-    embed_param = "&embed=1" if is_embedded or request.args.get('embed') == '1' else ""
-    return redirect(url_for('compare_result', filename=fname, t1=t1, t2=t2, m_param=m_param) + embed_param)
+    kwargs = {'filename': fname, 't1': t1, 't2': t2}
+    if m_param:
+        kwargs['m_param'] = m_param
+    if is_embedded or request.args.get('embed') == '1':
+        kwargs['embed'] = '1'
+    return redirect(url_for('compare_result', **kwargs))
 
 @app.route('/compare/result/<path:filename>')
 def compare_result(filename):
