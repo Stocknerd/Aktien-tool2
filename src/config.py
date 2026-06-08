@@ -94,10 +94,10 @@ if not os.path.exists(LOGO_PATH):
 
 # Cache modern Google Fonts for premium visuals
 FONT_LINKS = {
-    "Outfit-Bold.ttf": "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/outfit/static/Outfit-Bold.ttf",
-    "Outfit-Regular.ttf": "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/outfit/static/Outfit-Regular.ttf",
-    "Inter-Regular.ttf": "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/inter/static/Inter-Regular.ttf",
-    "Inter-Bold.ttf": "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/inter/static/Inter-Bold.ttf"
+    "Outfit-Bold.ttf": "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Bold.ttf",
+    "Outfit-Regular.ttf": "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Regular.ttf",
+    "Inter-Regular.ttf": "https://github.com/google/fonts/raw/main/ofl/inter/static/Inter-Regular.ttf",
+    "Inter-Bold.ttf": "https://github.com/google/fonts/raw/main/ofl/inter/static/Inter-Bold.ttf"
 }
 
 def ensure_fonts():
