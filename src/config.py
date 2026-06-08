@@ -96,8 +96,8 @@ if not os.path.exists(LOGO_PATH):
 FONT_LINKS = {
     "Outfit-Bold.ttf": "https://github.com/Outfitio/Outfit-Fonts/raw/main/fonts/ttf/Outfit-Bold.ttf",
     "Outfit-Regular.ttf": "https://github.com/Outfitio/Outfit-Fonts/raw/main/fonts/ttf/Outfit-Regular.ttf",
-    "Inter-Regular.ttf": "https://github.com/rsms/inter/raw/master/docs/font-files/Inter-Regular.ttf",
-    "Inter-Bold.ttf": "https://github.com/rsms/inter/raw/master/docs/font-files/Inter-Bold.ttf"
+    "Inter-Regular.ttf": "https://github.com/google/fonts/raw/main/ofl/inter/static/Inter-Regular.ttf",
+    "Inter-Bold.ttf": "https://github.com/google/fonts/raw/main/ofl/inter/static/Inter-Bold.ttf"
 }
 
 def ensure_fonts():
@@ -122,8 +122,23 @@ def ensure_fonts():
             print(f"FONT: Successfully downloaded and cached {name}")
         except Exception as e:
             print(f"WARNING: Font download failed for {name}: {e}. Will fall back to system fonts.")
-            # Map fallbacks
-            fallback_system = "C:\\Windows\\Fonts\\arialbd.ttf" if "Bold" in name else "C:\\Windows\\Fonts\\arial.ttf"
+            # Map fallbacks: try Outfit (premium cached font) first, then system fonts, then arial
+            fallback_system = os.path.join(FONTS_DIR, f"Outfit-{'Bold' if 'Bold' in name else 'Regular'}.ttf")
+            if not (os.path.exists(fallback_system) and os.path.getsize(fallback_system) > 1000):
+                if os.name == 'nt':
+                    fallback_system = "C:\\Windows\\Fonts\\arialbd.ttf" if "Bold" in name else "C:\\Windows\\Fonts\\arial.ttf"
+                else:
+                    linux_paths = [
+                        f"/usr/share/fonts/opentype/inter/Inter-{'Bold' if 'Bold' in name else 'Regular'}.otf",
+                        f"/usr/share/fonts/truetype/inter/Inter-{'Bold' if 'Bold' in name else 'Regular'}.ttf",
+                        f"/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if "Bold" in name else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                        f"/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if "Bold" in name else "/usr/share/fonts/truetype/liberation/LiberationSans.ttf",
+                    ]
+                    fallback_system = "arial.ttf"
+                    for lp in linux_paths:
+                        if os.path.exists(lp):
+                            fallback_system = lp
+                            break
             if os.path.exists(fallback_system):
                 downloaded[name] = fallback_system
             else:

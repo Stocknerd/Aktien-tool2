@@ -395,7 +395,7 @@ def render_viral_list(content, output_path, bg_image_path=None):
     
     # 2. Draw 5 structured fact rows
     start_y = box_y + box_h + 35
-    row_h = 135
+    row_h = 170
     row_spacing = 20
     
     font_num = get_font("Outfit-Bold.ttf", 34)
@@ -418,7 +418,7 @@ def render_viral_list(content, output_path, bg_image_path=None):
         )
         
         # Circle badge for number
-        cx, cy, cr = box_x + 65, row_y + 68, 32
+        cx, cy, cr = box_x + 65, row_y + 85, 32
         draw.ellipse([cx - cr, cy - cr, cx + cr, cy + cr], fill=COLORS["primary"])
         draw.text((cx, cy), str(i + 1), fill=COLORS["background"], font=font_num, anchor="mm")
         
@@ -430,14 +430,18 @@ def render_viral_list(content, output_path, bg_image_path=None):
             title, desc = pt.strip(), ""
             
         # Draw Title
-        draw.text((box_x + 130, row_y + 25), title, fill=COLORS["primary"], font=font_title, anchor="lm")
+        draw.text((box_x + 130, row_y + 30), title, fill=COLORS["primary"], font=font_title, anchor="lm")
         
-        # Draw Wrapped Description
-        desc_lines = textwrap.wrap(desc, width=54)
-        desc_y = row_y + 65
-        for line in desc_lines[:2]: # Max 2 lines to fit row_h beautifully
+        # Draw Wrapped Description (up to 3 lines, dynamically centered vertically)
+        desc_lines = textwrap.wrap(desc, width=52)
+        lines_to_draw = desc_lines[:3]
+        total_text_h = len(lines_to_draw) * 28
+        start_desc_y = row_y + 60 + (95 - total_text_h) / 2
+        
+        desc_y = start_desc_y
+        for line in lines_to_draw:
             draw.text((box_x + 130, desc_y), line, fill=COLORS["text"], font=font_desc, anchor="lm")
-            desc_y += 30
+            desc_y += 28
 
     img.save(output_path, "PNG")
     print(f"GRAPHIC: Saved Viral List (Track 3) Infographic to {output_path}")

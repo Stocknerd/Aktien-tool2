@@ -48,10 +48,10 @@ def generate_structured_content(topic, template_type="evergreen"):
         - Die Zentral-Highlight-Box zeigt eine markante, emotionale oder wichtige Kennzahl:
           - highlight_value: Eine sehr große, fette Zahl oder ein Wert (max. 15 Zeichen, z. B. '350 MIO. €' oder '100.000 €').
           - highlight_label: Ein kurzes Schlagwort darunter (max. 15 Zeichen, z. B. 'WENIGER?' oder 'IM DEPOT?').
-        - Die Fakten-Liste (card_points) MUSS GENAU 5 reichhaltige und hoch-informative Punkte enthalten.
+        - Die Fakten-Liste (card_points) MUSS GENAU 5 reichhaltige, extrem aussagekräftige und hoch-informative Punkte enthalten.
           - JEDER Punkt muss im exakten Format '"Titel: Beschreibung"' ausgegeben werden!
           - Der Titel (vor dem Doppelpunkt) ist fett gedruckt, extrem knackig und enthält oft Geldbeträge oder kurze Kernaussagen (max. 30 Zeichen, z. B. '100 € weniger/Monat' oder '70% in Welt-ETFs').
-          - Die Beschreibung (nach dem Doppelpunkt) liefert den konkreten Kontext, ist informativ und fachlich tief (max. 105 Zeichen, z. B. 'wenn der Höchstbetrag von 1.800€ auf 1.700€ sinkt und dadurch Familien massiv finanziell entlastet werden').
+          - Die Beschreibung (nach dem Doppelpunkt) liefert den konkreten Kontext, ist informativ und fachlich tief (max. 150 Zeichen, z. B. 'wenn der Höchstbetrag von 1.800€ auf 1.700€ sinkt und dadurch Familien massiv finanziell entlastet werden, um private Altersvorsorge zu stärken').
           - Das System ordnet jedem Punkt automatisch ein passendes Icon (euro, calendar, time, percent, people, star) zu.
         
         WICHTIGE ANFORDERUNGEN AN DAS REEL:
@@ -65,11 +65,11 @@ def generate_structured_content(topic, template_type="evergreen"):
           "highlight_value": "Großer Wert für Box (max 15 Zeichen)",
           "highlight_label": "Label für Box (max 15 Zeichen)",
           "card_points": [
-            "Titel 1 (max 30 Chars): Beschreibung 1 (max 105 Chars)",
-            "Titel 2 (max 30 Chars): Beschreibung 2 (max 105 Chars)",
-            "Titel 3 (max 30 Chars): Beschreibung 3 (max 105 Chars)",
-            "Titel 4 (max 30 Chars): Beschreibung 4 (max 105 Chars)",
-            "Titel 5 (max 30 Chars): Beschreibung 5 (max 105 Chars)"
+            "Titel 1 (max 30 Chars): Beschreibung 1 (max 150 Chars)",
+            "Titel 2 (max 30 Chars): Beschreibung 2 (max 150 Chars)",
+            "Titel 3 (max 30 Chars): Beschreibung 3 (max 150 Chars)",
+            "Titel 4 (max 30 Chars): Beschreibung 4 (max 150 Chars)",
+            "Titel 5 (max 30 Chars): Beschreibung 5 (max 150 Chars)"
           ],
           "dalle_prompt": "Detaillierter Prompt für ein 9:16 Bild (max. 3 Farbnuancen: warmes Gold, dunkles Petrol, Offwhite). Keine Menschen, keine Gesichter.",
           "caption_ig": "Instagram-Caption mit Absätzen, Emojis, Hashtags, CTA und dem Disclaimer.",
