@@ -116,19 +116,31 @@ def load_df():
             _CACHED_DF = df
             _CACHED_MTIME = mtime
             
-            # Rebuild search index
+            # Rebuild search index (highly optimized)
             new_index = []
-            for _, row in df.iterrows():
+            def norm(s):
+                return str(s).lower().replace('-', ' ').replace('.', ' ').strip()
+                
+            records = df.to_dict('records')
+            for row in records:
                 sym = str(row.get('Symbol') or '').strip()
                 if not sym:
                     continue
-                clean_n = get_clean_name(row)
+                
+                # Inline fast name resolution
+                clean_n = "Aktie"
+                for field in ['resolved_name', 'Security', 'Symbol']:
+                    val = row.get(field)
+                    if pd.notna(val):
+                        s = str(val).strip()
+                        if s and s.lower() not in ['nan', 'null', 'none', '<na>']:
+                            if field == 'Symbol' and '.' in s:
+                                clean_n = s.split('.')[0]
+                            else:
+                                clean_n = s
+                            break
+                
                 lng = str(row.get('Langname') or '').strip()
-                
-                # Pre-normalize for instant matching
-                def norm(s):
-                    return s.lower().replace('-', ' ').replace('.', ' ').strip()
-                
                 new_index.append({
                     'symbol': sym,
                     'name': clean_n,
