@@ -255,14 +255,14 @@ def run_track_stock():
     img.save(image_path)
     print(f"STOCK TRACK: Image saved at {image_path}")
     
-    # 2. Render Silent Video (Musik + Zoom)
-    print("STOCK TRACK: Rendering Silent Reel video...")
+    # 2. Render Video with Voiceover and Karaoke Subtitles
+    print("STOCK TRACK: Rendering Reel video with voiceover and subtitles...")
     build_reel_mp4(
-        script_text=None,
+        script_text=verdict,
         background_image_path=image_path,
         output_mp4_path=video_path,
-        silent=True,
-        duration=8.0
+        silent=False,
+        duration=12.0
     )
     
     caption = get_tool_promotion_caption(is_comparison, names, symbols, fin_texts)
@@ -401,14 +401,30 @@ def run_track_calendar():
     render_dividend_calendar(payouts, image_path)
     print(f"CALENDAR TRACK: Image saved at {image_path}")
     
-    # Render video
-    print("CALENDAR TRACK: Rendering Silent Reel video...")
+    # Construct dynamic speaker script for calendar
+    valid_payout_names = [p["name"] for p in payouts if p["name"] != "DUMMY" and p["symbol"] != "DUMMY"]
+    top_3_payouts = valid_payout_names[:3]
+    if top_3_payouts:
+        calendar_script = (
+            f"Der Dividenden-Kalender für diese Woche! Im Fokus stehen diesmal: {', '.join(top_3_payouts)}. "
+            "Wer diese Aktien rechtzeitig vor dem Ex-Tag im Depot hat, sichert sich die nächste Ausschüttung. "
+            "Welchen Dividenden-Zahler hast du bereits im Depot? Schreib es uns in die Kommentare und folge Schatzsuche vier punkt null für tägliches Finanzwissen!"
+        )
+    else:
+        calendar_script = (
+            "Der wöchentliche Dividenden-Kalender ist da! Hier siehst du die ex-dividend Termine für die kommenden Tage. "
+            "Wer diese Aktien rechtzeitig im Depot hat, sichert sich die nächste Ausschüttung! "
+            "Welchen Wert hast du bereits im Depot? Schreib es uns in die Kommentare und folge Schatzsuche vier punkt null!"
+        )
+
+    # Render video with voiceover and subtitles
+    print("CALENDAR TRACK: Rendering Reel video with voiceover and subtitles...")
     build_reel_mp4(
-        script_text=None,
+        script_text=calendar_script,
         background_image_path=image_path,
         output_mp4_path=video_path,
-        silent=True,
-        duration=9.0
+        silent=False,
+        duration=12.0
     )
     
     # Captions & Text
@@ -500,18 +516,30 @@ def run_track_ai(topic=None):
     image_path = os.path.join(public_dir, image_filename)
     video_path = os.path.join(public_dir, video_filename)
     
-    # 2. Render Image using SOTA gpt-image-2 AI model
-    render_pure_ai_infographic(content, image_path)
+    # 2. Render Hybrid Image (AI Background Illustration + Programmatic Text Overlay & Logos)
+    bg_path = os.path.join(public_dir, f"ai_bg_{timestamp}.png")
+    try:
+        from src.graphic_generator import generate_dalle_image
+        print("AI TRACK: Generating AI background illustration...")
+        bg_img = generate_dalle_image(content.get("dalle_prompt", "Abstract finance background in gold and dark petrol"), aspect_ratio="9:16")
+        bg_img.save(bg_path)
+        print(f"AI TRACK: Background saved at {bg_path}")
+    except Exception as e:
+        print(f"AI TRACK: Warning: Background generation failed: {e}")
+        bg_path = None
+
+    print("AI TRACK: Rendering programmatic infographic list on background...")
+    render_viral_list(content, image_path, bg_image_path=bg_path)
     print(f"AI TRACK: Image saved at {image_path}")
     
-    # 3. Render Silent Video (Musik + Zoom)
-    print("AI TRACK: Rendering Silent Reel video with smooth background music...")
+    # 3. Render Reel Video with Voiceover and Karaoke Subtitles
+    print("AI TRACK: Rendering Reel video with voiceover and subtitles...")
     build_reel_mp4(
-        script_text=None,
+        script_text=content.get("reel_script"),
         background_image_path=image_path,
         output_mp4_path=video_path,
-        silent=True,
-        duration=10.0
+        silent=False,
+        duration=15.0
     )
     
     # 4. Social posting to X, FB, Pinterest (Image)

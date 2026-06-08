@@ -1,10 +1,14 @@
 import os
 import json
 from openai import OpenAI
+from dotenv import load_dotenv
 from src.config import BRAND_PROFILE, PORTFOLIO_PROFILE, DISCLAIMERS, COLORS_HEX
 
-# Instantiate standard OpenAI client (automatically reads OPENAI_API_KEY from environment)
-client = OpenAI()
+# Load environment variables from .env file if present
+load_dotenv()
+
+# Instantiate standard OpenAI client (using a fallback dummy key to prevent crashes on import in local development)
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "dummy-key-for-local-import"))
 
 def generate_structured_content(topic, template_type="evergreen"):
     """
@@ -44,14 +48,15 @@ def generate_structured_content(topic, template_type="evergreen"):
         - Die Zentral-Highlight-Box zeigt eine markante, emotionale oder wichtige Kennzahl:
           - highlight_value: Eine sehr große, fette Zahl oder ein Wert (max. 15 Zeichen, z. B. '350 MIO. €' oder '100.000 €').
           - highlight_label: Ein kurzes Schlagwort darunter (max. 15 Zeichen, z. B. 'WENIGER?' oder 'IM DEPOT?').
-        - Die Fakten-Liste (card_points) MUSS GENAU 5 prägnante Punkte enthalten.
+        - Die Fakten-Liste (card_points) MUSS GENAU 5 reichhaltige und hoch-informative Punkte enthalten.
           - JEDER Punkt muss im exakten Format '"Titel: Beschreibung"' ausgegeben werden!
           - Der Titel (vor dem Doppelpunkt) ist fett gedruckt, extrem knackig und enthält oft Geldbeträge oder kurze Kernaussagen (max. 30 Zeichen, z. B. '100 € weniger/Monat' oder '70% in Welt-ETFs').
-          - Die Beschreibung (nach dem Doppelpunkt) liefert den Kontext (max. 75 Zeichen, z. B. 'wenn der Höchstbetrag von 1.800€ auf 1.700€ sinkt').
+          - Die Beschreibung (nach dem Doppelpunkt) liefert den konkreten Kontext, ist informativ und fachlich tief (max. 105 Zeichen, z. B. 'wenn der Höchstbetrag von 1.800€ auf 1.700€ sinkt und dadurch Familien massiv finanziell entlastet werden').
           - Das System ordnet jedem Punkt automatisch ein passendes Icon (euro, calendar, time, percent, people, star) zu.
         
         WICHTIGE ANFORDERUNGEN AN DAS REEL:
-        - Der gesprochene Reel-Sprechtext (reel_script) muss exakt 60-80 Wörter umfassen (für 30-45 Sekunden Video). Keine Szenenüberschriften, reiner gesprochener Text, beginnend mit einer starken Hook.
+        - Der gesprochene Reel-Sprechtext (reel_script) muss exakt 60-80 Wörter umfassen (für 30-45 Sekunden Video). Keine Szenenüberschriften, reiner gesprochener Text.
+        - HOOK-REGEL: Der Text MUSS direkt mit einem extrem fesselnden Satz beginnen (z. B. eine provokante Frage oder schockierende Statistik). Es darf ABSOLUT KEINE Begrüßung enthalten sein (z. B. KEIN 'Willkommen bei...', 'Hallo...', 'In diesem Video...', 'Heute schauen wir uns...'). Starte direkt mit dem brennenden Thema!
         
         Antworte AUSSCHLIESSLICH im folgenden validen JSON-Format:
         {{
@@ -60,17 +65,17 @@ def generate_structured_content(topic, template_type="evergreen"):
           "highlight_value": "Großer Wert für Box (max 15 Zeichen)",
           "highlight_label": "Label für Box (max 15 Zeichen)",
           "card_points": [
-            "Titel 1 (max 30 Chars): Beschreibung 1 (max 75 Chars)",
-            "Titel 2 (max 30 Chars): Beschreibung 2 (max 75 Chars)",
-            "Titel 3 (max 30 Chars): Beschreibung 3 (max 75 Chars)",
-            "Titel 4 (max 30 Chars): Beschreibung 4 (max 75 Chars)",
-            "Titel 5 (max 30 Chars): Beschreibung 5 (max 75 Chars)"
+            "Titel 1 (max 30 Chars): Beschreibung 1 (max 105 Chars)",
+            "Titel 2 (max 30 Chars): Beschreibung 2 (max 105 Chars)",
+            "Titel 3 (max 30 Chars): Beschreibung 3 (max 105 Chars)",
+            "Titel 4 (max 30 Chars): Beschreibung 4 (max 105 Chars)",
+            "Titel 5 (max 30 Chars): Beschreibung 5 (max 105 Chars)"
           ],
           "dalle_prompt": "Detaillierter Prompt für ein 9:16 Bild (max. 3 Farbnuancen: warmes Gold, dunkles Petrol, Offwhite). Keine Menschen, keine Gesichter.",
           "caption_ig": "Instagram-Caption mit Absätzen, Emojis, Hashtags, CTA und dem Disclaimer.",
           "caption_tiktok": "Kurze, knackige TikTok-Caption.",
           "caption_shorts": "Spannende YouTube Shorts Caption.",
-          "reel_script": "Sprechtext für das Video-Voiceover (60-80 Wörter)."
+          "reel_script": "Sprechtext für das Video-Voiceover (60-80 Wörter). Startet direkt mit der Hook, absolut keine Begrüßungen!"
         }}
         """
     else:
@@ -85,25 +90,26 @@ def generate_structured_content(topic, template_type="evergreen"):
         WICHTIGE ANFORDERUNGEN AN DIE GRAFIK-ELEMENTE:
         - Die Headline (Überschrift) muss extrem knackig und aussagekräftig sein. Sie darf maximal 40 Zeichen lang sein!
         - Die Subheadline darf maximal 60 Zeichen lang sein.
-        - Die 3 Kernaussagen (card_points) müssen kurz und präzise sein (maximal 75 Zeichen pro Punkt!). Sie beschreiben die wichtigsten Lektionen oder Schritte zum Thema.
+        - Die 3 Kernaussagen (card_points) müssen kurz und präzise sein (maximal 105 Zeichen pro Punkt!). Sie beschreiben die wichtigsten Lektionen oder Schritte zum Thema.
         
         WICHTIGE ANFORDERUNGEN AN DAS REEL:
-        - Der gesprochene Reel-Text (reel_script) muss exakt 60-80 Wörter umfassen (ideal für ein 30-45 Sekunden Reel). Er muss fesselnd sein, ohne Abschnitte oder Szenenüberschriften im Text. Es muss reines gesprochenes Deutsch sein, beginnend mit einer starken Hook und endend mit einem CTA.
+        - Der gesprochene Reel-Text (reel_script) muss exakt 60-80 Wörter umfassen (ideal für ein 30-45 Sekunden Reel). Er muss fesselnd sein, ohne Abschnitte oder Szenenüberschriften im Text. Es muss reines gesprochenes Deutsch sein.
+        - HOOK-REGEL: Der Text MUSS direkt mit einem extrem fesselnden Satz beginnen (z. B. eine provokante Frage oder schockierende Statistik). Es darf ABSOLUT KEINE Begrüßung enthalten sein (z. B. KEIN 'Willkommen bei...', 'Hallo...', 'In diesem Video...', 'Heute schauen wir uns...').
         
         Antworte AUSSCHLIESSLICH im folgenden validen JSON-Format:
         {{
           "headline": "Knackige H1 (max 40 Zeichen, z.B. 'Zinseszins verstehen')",
           "subheadline": "Unterstützende Subline (max 60 Zeichen)",
           "card_points": [
-            "Punkt 1 (max 75 Zeichen, prägnant, lösungsorientiert)",
-            "Punkt 2 (max 75 Zeichen, faktenbasiert, verständlich)",
-            "Punkt 3 (max 75 Zeichen, handlungsauffordernd)"
+            "Punkt 1 (max 105 Zeichen, prägnant, lösungsorientiert)",
+            "Punkt 2 (max 105 Zeichen, faktenbasiert, verständlich)",
+            "Punkt 3 (max 105 Zeichen, handlungsauffordernd)"
           ],
           "dalle_prompt": "Detaillierter Prompt für ein 9:16 Bild. Beschreibe eine ästhetische, leicht geheimnisvolle oder hochmoderne Finanz-Metapher. Verwende Farben wie warmes Gold und dunkles Petrol. KEINE Menschen, KEINE Gesichter. Nur hochwertige, dreidimensionale, filmisch beleuchtete Konzeptkunst.",
           "caption_ig": "Instagram-Caption mit Absätzen, Emojis, Hashtags, CTA und dem rechtlichen Disclaimer am Ende.",
           "caption_tiktok": "Kurze, knackige TikTok-Caption mit Hook, Emojis und Top-Hashtags.",
           "caption_shorts": "Spannende YouTube Shorts Caption inklusive kurzer Beschreibung.",
-          "reel_script": "Der fließende, laut gesprochene Sprechtext für das Video-Voiceover (60-80 Wörter)."
+          "reel_script": "Der fließende, laut gesprochene Sprechtext für das Video-Voiceover (60-80 Wörter). Startet direkt mit der Hook, absolut keine Begrüßungen!"
         }}
         """
 

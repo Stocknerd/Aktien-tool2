@@ -63,10 +63,35 @@ def generate_dalle_image(prompt, aspect_ratio="1:1"):
     f_draw.text((400, 580), "Clever investieren, langfristig wachsen.", fill=COLORS["text_secondary"], font=font_sub, anchor="mm")
     return fallback_img
 
-def render_base_layout(content):
-    """Renders the common background, double golden borders, logo, and titles."""
+def render_base_layout(content, bg_image_path=None):
+    """Renders the common background (color or image), double golden borders, logo, and titles."""
     # 9:16 Canvas (1080 x 1920)
-    img = Image.new("RGB", (1080, 1920), COLORS["background"])
+    if bg_image_path and os.path.exists(bg_image_path):
+        try:
+            bg_img = Image.open(bg_image_path)
+            # Crop image to 9:16 aspect ratio from the center
+            bw, bh = bg_img.size
+            target_ratio = 1080 / 1920
+            current_ratio = bw / bh
+            if current_ratio > target_ratio:
+                new_w = int(bh * target_ratio)
+                left = (bw - new_w) // 2
+                bg_img = bg_img.crop((left, 0, left + new_w, bh))
+            else:
+                new_h = int(bw / target_ratio)
+                top = (bh - new_h) // 2
+                bg_img = bg_img.crop((0, top, bw, top + new_h))
+            bg_img = bg_img.resize((1080, 1920), Image.Resampling.LANCZOS)
+            
+            # Semi-transparent dark petrol overlay for premium look & text readability
+            overlay = Image.new("RGBA", (1080, 1920), (11, 30, 33, 210))
+            img = Image.alpha_composite(bg_img.convert("RGBA"), overlay).convert("RGB")
+        except Exception as e:
+            print(f"WARNING: Base layout background image error: {e}")
+            img = Image.new("RGB", (1080, 1920), COLORS["background"])
+    else:
+        img = Image.new("RGB", (1080, 1920), COLORS["background"])
+        
     draw = ImageDraw.Draw(img)
 
     # --- Double Golden Borders ---
@@ -333,7 +358,7 @@ def render_pure_ai_infographic(content, output_path):
     print(f"IMAGE: Saved pure AI infographic to {output_path}")
     return img
 
-def render_viral_list(content, output_path):
+def render_viral_list(content, output_path, bg_image_path=None):
     """
     Renders Track 3 (AI Infographic) in the premium "Elterngeld"-style:
     - 9:16 vertical canvas (1080x1920)
@@ -344,7 +369,7 @@ def render_viral_list(content, output_path):
       and wrapped Title & Description text
     - Sand-colored warning disclaimer at the bottom
     """
-    img, draw, top_y = render_base_layout(content)
+    img, draw, top_y = render_base_layout(content, bg_image_path=bg_image_path)
     
     # 1. Centered Highlight Box (Gold Border, Dark Petrol Fill)
     box_x = 80
