@@ -137,7 +137,7 @@ def post_to_instagram_feed(caption, image_path, wp_img_url=None, link_url=None, 
             public_url = wp_img_url
         else:
             filename = os.path.basename(image_path)
-            public_url = f"http://3.71.191.12/static/temp_social/{filename}"
+            public_url = f"https://tool.schatzsuche40.de/static/temp_social/{filename}"
         
         container_url = f"https://graph.facebook.com/v20.0/{META_INSTA_ID}/media"
         params = {

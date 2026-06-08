@@ -122,15 +122,36 @@ def ensure_fonts():
             print(f"FONT: Successfully downloaded and cached {name}")
         except Exception as e:
             print(f"WARNING: Font download failed for {name}: {e}. Will fall back to system fonts.")
-            # Map fallbacks: try Outfit (premium cached font) first, then system fonts, then arial
-            fallback_system = os.path.join(FONTS_DIR, f"Outfit-{'Bold' if 'Bold' in name else 'Regular'}.ttf")
-            if not (os.path.exists(fallback_system) and os.path.getsize(fallback_system) > 1000):
+            fallback_system = None
+            
+            # 1. If Inter failed, check system Inter first (especially on Linux)
+            if "Inter" in name:
+                if os.name == 'nt':
+                    win_inter = f"C:\\Windows\\Fonts\\Inter-{'Bold' if 'Bold' in name else 'Regular'}.ttf"
+                    if os.path.exists(win_inter):
+                        fallback_system = win_inter
+                else:
+                    linux_inter_paths = [
+                        f"/usr/share/fonts/opentype/inter/Inter-{'Bold' if 'Bold' in name else 'Regular'}.otf",
+                        f"/usr/share/fonts/truetype/inter/Inter-{'Bold' if 'Bold' in name else 'Regular'}.ttf",
+                    ]
+                    for lp in linux_inter_paths:
+                        if os.path.exists(lp):
+                            fallback_system = lp
+                            break
+
+            # 2. If system Inter not found or not requested, try Outfit from FONTS_DIR
+            if not fallback_system:
+                outfit_path = os.path.join(FONTS_DIR, f"Outfit-{'Bold' if 'Bold' in name else 'Regular'}.ttf")
+                if os.path.exists(outfit_path) and os.path.getsize(outfit_path) > 1000:
+                    fallback_system = outfit_path
+
+            # 3. If still not found, try generic system fonts
+            if not fallback_system:
                 if os.name == 'nt':
                     fallback_system = "C:\\Windows\\Fonts\\arialbd.ttf" if "Bold" in name else "C:\\Windows\\Fonts\\arial.ttf"
                 else:
                     linux_paths = [
-                        f"/usr/share/fonts/opentype/inter/Inter-{'Bold' if 'Bold' in name else 'Regular'}.otf",
-                        f"/usr/share/fonts/truetype/inter/Inter-{'Bold' if 'Bold' in name else 'Regular'}.ttf",
                         f"/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if "Bold" in name else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
                         f"/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if "Bold" in name else "/usr/share/fonts/truetype/liberation/LiberationSans.ttf",
                     ]
@@ -139,7 +160,8 @@ def ensure_fonts():
                         if os.path.exists(lp):
                             fallback_system = lp
                             break
-            if os.path.exists(fallback_system):
+            
+            if fallback_system and os.path.exists(fallback_system):
                 downloaded[name] = fallback_system
             else:
                 downloaded[name] = "arial.ttf"

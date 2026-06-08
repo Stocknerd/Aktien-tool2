@@ -4,7 +4,7 @@ import io
 import textwrap
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont, ImageChops
-from src.config import COLORS, FONT_PATHS, LOGO_PATH, DISCLAIMERS, BRAND_PROFILE
+from src.config import COLORS, FONT_PATHS, LOGO_PATH, DISCLAIMERS, BRAND_PROFILE, BASE_DIR
 from src.content_generator import client
 
 def get_font(font_name, size):
