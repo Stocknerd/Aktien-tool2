@@ -103,6 +103,9 @@ FONT_LINKS = {
 def ensure_fonts():
     """Downloads Google Fonts if they do not exist locally."""
     downloaded = {}
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
     for name, url in FONT_LINKS.items():
         path = os.path.join(FONTS_DIR, name)
         if os.path.exists(path) and os.path.getsize(path) > 1000:
@@ -111,7 +114,7 @@ def ensure_fonts():
         
         print(f"FONT: Downloading Google Font {name}...")
         try:
-            r = requests.get(url, timeout=15)
+            r = requests.get(url, headers=headers, timeout=15)
             r.raise_for_status()
             with open(path, "wb") as f:
                 f.write(r.content)
