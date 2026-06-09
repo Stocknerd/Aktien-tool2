@@ -271,7 +271,14 @@ def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=F
             # Gold progress bar (201, 162, 39)
             draw.rectangle([0, h - bar_height, bar_width, h], fill=COLORS["primary"])
             
-        return np.array(img)
+        # Run garbage collection periodically (every 2 seconds) to prevent memory leak
+        if int(t * 24) % 48 == 0:
+            import gc
+            gc.collect()
+            
+        res = np.array(img)
+        img.close()
+        return res
 
     video_clip = img_clip.transform(animate_frame)
     if audio_clip:
@@ -298,7 +305,7 @@ def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=F
     
     # Render final MP4
     print(f"REEL: Rendering {'SILENT ' if silent else ''}final MP4 to {output_mp4_path}...")
-    video_clip.write_videofile(output_mp4_path, fps=24, codec="libx264", audio_codec="aac" if video_clip.audio else None)
+    video_clip.write_videofile(output_mp4_path, fps=24, codec="libx264", audio_codec="aac" if video_clip.audio else None, preset="veryfast", threads=1, logger=None)
     print(f"REEL: Video created successfully! ({output_mp4_path})")
     
     # Cleanup temp audio

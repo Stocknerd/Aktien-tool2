@@ -603,6 +603,17 @@ def run_track_ai(topic=None):
     return True
 
 if __name__ == "__main__":
+    # Set resource memory limit to 1000MB (soft) / 1250MB (hard) to prevent swap-thrashing on AWS micro instance
+    try:
+        import resource
+        soft_limit = 1000 * 1024 * 1024  # 1000 MB
+        hard_limit = 1250 * 1024 * 1024  # 1250 MB
+        resource.setrlimit(resource.RLIMIT_AS, (soft_limit, hard_limit))
+        print(f"RESOURCE LIMIT: Virtual memory ceiling set to {soft_limit / (1024*1024):.0f} MB")
+    except Exception as e:
+        # Ignore on Windows or unsupported platforms
+        pass
+
     parser = argparse.ArgumentParser(description="Schatzsuche 4.0 Social Media Autoposter Controller")
     parser.add_argument("--track", type=str, choices=["stock", "calendar", "ai"], required=True,
                         help="Select the content track/säule to execute: 'stock' (Track 1), 'calendar' (Track 2), or 'ai' (Track 3)")
