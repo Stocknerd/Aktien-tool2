@@ -320,7 +320,7 @@ def post_to_pinterest(title, description, image_path, link_url=None):
         print(f"[ERR] Pinterest-Posting fehlgeschlagen: {e}")
         return False
 
-def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None, title=None, comment_text=None):
+def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None, title=None, comment_text=None, skip_instagram=False):
     """Hier erfolgt der koordinierte Social-Media-Push."""
     print(f"Bündele Social-Media-Push für {symbol}...")
     
@@ -331,12 +331,16 @@ def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None,
     post_to_facebook_page(caption, image_path, link_url=blog_url, comment_text=comment_text)
     
     # 3. Instagram (Offizielle API)
-    post_to_instagram_feed(caption, image_path, wp_img_url=wp_img_url, link_url=blog_url, comment_text=comment_text)
+    if not skip_instagram:
+        post_to_instagram_feed(caption, image_path, wp_img_url=wp_img_url, link_url=blog_url, comment_text=comment_text)
+    else:
+        print("[SKIP] Instagram Feed-Posting übersprungen (Reel wird separat gepostet).")
     
     # 4. Pinterest (Offizielle API)
     # Pinterest requires a strict title. Fallback to symbol if not provided.
     pin_title = title if title else f"Aktienanalyse: {symbol}"
     post_to_pinterest(pin_title, caption, image_path, link_url=blog_url)
+
 
 if __name__ == "__main__":
     # Test-Run

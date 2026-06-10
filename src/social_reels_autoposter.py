@@ -278,7 +278,8 @@ def run_track_stock():
         blog_url="https://schatzsuche40.de",
         wp_img_url=None,
         title=names,
-        comment_text=comment_text
+        comment_text=comment_text,
+        skip_instagram=True
     )
     
     # Video as Reel to Instagram
@@ -453,7 +454,8 @@ def run_track_calendar():
         blog_url="https://schatzsuche40.de",
         wp_img_url=None,
         title="Dividendenkalender der Woche",
-        comment_text=comment_text
+        comment_text=comment_text,
+        skip_instagram=True
     )
     
     print("CALENDAR TRACK: Publishing Video to Instagram Reels...")
@@ -552,7 +554,8 @@ def run_track_ai(topic=None):
         blog_url="https://schatzsuche40.de",
         wp_img_url=None,
         title=content.get("headline", "Finanz-Fakten"),
-        comment_text="👉 Folge @schatzsuche40 für dein tägliches Finanzwissen! 🚀"
+        comment_text="👉 Folge @schatzsuche40 für dein tägliches Finanzwissen! 🚀",
+        skip_instagram=True
     )
     
     # 5. Instagram Reels Upload (Video)
