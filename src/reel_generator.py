@@ -11,9 +11,8 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from src.config import COLORS, FONT_PATHS, BASE_DIR
 from src.content_generator import client
 
-# Audio and SFX source files
-MUSIC_FILE = "background_finance.mp3"
-MUSIC_URL = "https://cdn.pixabay.com/download/audio/2022/03/24/audio_c8c8a73467.mp3" 
+# Audio and SFX source files (local library configuration)
+AUDIO_DIR = os.path.join(BASE_DIR, "audio_library")
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 def generate_speech_and_words(text, output_mp3_path):
@@ -121,37 +120,79 @@ def draw_karaoke_subtitles(img, t, words_data, font_path, base_font_size=55):
     return img
 
 def ensure_bg_music():
-    """Tries to find the background music locally or copies it from videoautomation."""
-    local_music = os.path.join(BASE_DIR, MUSIC_FILE)
-    if os.path.exists(local_music) and os.path.getsize(local_music) > 1000:
-        return local_music
-        
-    # Try copying from videoautomation Dropbox folder if nearby
-    dropbox_path = "c:/Users/fhofm/Dropbox/videoautomation/background_finance.mp3"
-    if os.path.exists(dropbox_path):
-        print(f"MUSIC: Copying music file from {dropbox_path}...")
+    """
+    Ensures that a local library of copyright-free background music exists,
+    downloads fallback tracks from a reliable GitHub repository if empty,
+    and returns the path to a randomly selected track for variety.
+    """
+    import random
+    os.makedirs(AUDIO_DIR, exist_ok=True)
+    
+    TRACKS_TO_DOWNLOAD = [
+        "chill_preview_1.mp3",
+        "chill_preview_2.mp3",
+        "cool_preview_1.mp3",
+        "cool_preview_2.mp3",
+        "happy_preview_1.mp3",
+        "happy_preview_2.mp3",
+        "light_preview_1.mp3",
+        "light_preview_2.mp3",
+    ]
+    
+    # Check existing MP3 files in the library
+    existing_tracks = []
+    if os.path.exists(AUDIO_DIR):
+        existing_tracks = [
+            os.path.join(AUDIO_DIR, f)
+            for f in os.listdir(AUDIO_DIR)
+            if f.lower().endswith(".mp3") and os.path.getsize(os.path.join(AUDIO_DIR, f)) > 1000
+        ]
+    
+    # If the library is empty, download our curated tracks
+    if not existing_tracks:
+        print("MUSIC: Local audio library is empty. Downloading copyright-free tracks...")
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)'
+        }
+        for track in TRACKS_TO_DOWNLOAD:
+            url = f"https://raw.githubusercontent.com/mluedke2/app-preview-music/master/{track}"
+            local_path = os.path.join(AUDIO_DIR, track)
+            try:
+                print(f"MUSIC: Downloading {track}...")
+                r = requests.get(url, headers=headers, timeout=20)
+                r.raise_for_status()
+                with open(local_path, "wb") as f:
+                    f.write(r.content)
+                existing_tracks.append(local_path)
+            except Exception as e:
+                print(f"WARNING: Could not download {track}: {e}")
+                
+    # If we still have no tracks, try downloading from the old Pixabay fallback link just in case
+    if not existing_tracks:
+        print("MUSIC: Falling back to old Pixabay music download...")
+        local_music = os.path.join(BASE_DIR, "background_finance.mp3")
+        old_url = "https://cdn.pixabay.com/download/audio/2022/03/24/audio_c8c8a73467.mp3"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)'
+        }
         try:
-            with open(dropbox_path, "rb") as sf, open(local_music, "wb") as df:
-                df.write(sf.read())
-            return local_music
+            r = requests.get(old_url, headers=headers, timeout=20)
+            r.raise_for_status()
+            with open(local_music, 'wb') as f:
+                f.write(r.content)
+            existing_tracks.append(local_music)
         except Exception as e:
-            print(f"WARNING: Could not copy music file: {e}")
+            print(f"WARNING: Old Pixabay music fallback download failed: {e}")
             
-    # Download fallback
-    print(f"MUSIC: Downloading licensing-free music from {MUSIC_URL}...")
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)'
-    }
-    try:
-        r = requests.get(MUSIC_URL, headers=headers, timeout=20)
-        r.raise_for_status()
-        with open(local_music, 'wb') as f:
-            f.write(r.content)
-        print("MUSIC: Download successful!")
-        return local_music
-    except Exception as e:
-        print(f"WARNING: Music download failed: {e}. Reel will have no background music.")
+    # If we still have no tracks, return None
+    if not existing_tracks:
+        print("WARNING: Background music library is empty and downloads failed. Reel will have no music.")
         return None
+        
+    # Return a randomly selected track
+    selected_track = random.choice(existing_tracks)
+    print(f"MUSIC: Selected background track: {os.path.basename(selected_track)}")
+    return selected_track
 
 def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=False, duration=10.0):
     """
