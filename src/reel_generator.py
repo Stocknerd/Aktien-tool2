@@ -119,26 +119,88 @@ def draw_karaoke_subtitles(img, t, words_data, font_path, base_font_size=55):
 
     return img
 
-def ensure_bg_music():
+def ensure_bg_music(mood=None):
     """
     Ensures that a local library of copyright-free background music exists,
-    downloads fallback tracks from a reliable GitHub repository if empty,
-    and returns the path to a randomly selected track for variety.
+    downloads missing curated tracks from a reliable GitHub repository,
+    and returns the path to a selected track based on requested mood/variety.
     """
     import random
     os.makedirs(AUDIO_DIR, exist_ok=True)
     
-    TRACKS_TO_DOWNLOAD = [
-        "chill_preview_1.mp3",
-        "chill_preview_2.mp3",
-        "cool_preview_1.mp3",
-        "cool_preview_2.mp3",
-        "happy_preview_1.mp3",
-        "happy_preview_2.mp3",
-        "light_preview_1.mp3",
-        "light_preview_2.mp3",
-    ]
+    MOODS = {
+        "action": [
+            "Action_Preview_1.mp3",
+            "action_preview_2.mp3",
+            "action_preview_3.mp3",
+            "action_preview_4.mp3",
+            "action_preview_5.mp3"
+        ],
+        "chill": [
+            "chill_preview_1.mp3",
+            "chill_preview_2.mp3",
+            "chill_preview_3.mp3",
+            "chill_preview_4.mp3",
+            "chill_preview_5.mp3",
+            "chill_preview_6.mp3"
+        ],
+        "cool": [
+            "cool_preview_1.mp3",
+            "cool_preview_2.mp3",
+            "cool_preview_3.mp3",
+            "cool_preview_4.mp3",
+            "cool_preview_5.mp3",
+            "cool_preview_6.mp3"
+        ],
+        "happy": [
+            "happy_preview_1.mp3",
+            "happy_preview_2.mp3",
+            "happy_preview_3.mp3",
+            "happy_preview_4.mp3",
+            "happy_preview_5.mp3",
+            "happy_preview_6.mp3",
+            "happy_preview_7.mp3",
+            "happy_preview_8.mp3"
+        ],
+        "light": [
+            "light_preview_1.mp3",
+            "light_preview_2.mp3",
+            "light_preview_3.mp3",
+            "light_preview_4.mp3",
+            "light_preview_5.mp3"
+        ],
+        "contemplative": [
+            "contemplative_preview_1.mp3"
+        ],
+        "dark": [
+            "dark_preview_1.mp3",
+            "dark_preview_2.mp3",
+            "dark_preview_4.mp3",
+            "dark_preview_5.mp3"
+        ]
+    }
     
+    TRACKS_TO_DOWNLOAD = []
+    for tracks in MOODS.values():
+        TRACKS_TO_DOWNLOAD.extend(tracks)
+    
+    # Download any missing tracks from the curated list
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)'
+    }
+    for track in TRACKS_TO_DOWNLOAD:
+        local_path = os.path.join(AUDIO_DIR, track)
+        if not os.path.exists(local_path) or os.path.getsize(local_path) < 1000:
+            url = f"https://raw.githubusercontent.com/mluedke2/app-preview-music/master/{track}"
+            try:
+                print(f"MUSIC: Downloading missing track {track}...")
+                r = requests.get(url, headers=headers, timeout=20)
+                r.raise_for_status()
+                with open(local_path, "wb") as f:
+                    f.write(r.content)
+            except Exception as e:
+                print(f"WARNING: Could not download {track}: {e}")
+                
     # Check existing MP3 files in the library
     existing_tracks = []
     if os.path.exists(AUDIO_DIR):
@@ -147,34 +209,12 @@ def ensure_bg_music():
             for f in os.listdir(AUDIO_DIR)
             if f.lower().endswith(".mp3") and os.path.getsize(os.path.join(AUDIO_DIR, f)) > 1000
         ]
-    
-    # If the library is empty, download our curated tracks
-    if not existing_tracks:
-        print("MUSIC: Local audio library is empty. Downloading copyright-free tracks...")
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)'
-        }
-        for track in TRACKS_TO_DOWNLOAD:
-            url = f"https://raw.githubusercontent.com/mluedke2/app-preview-music/master/{track}"
-            local_path = os.path.join(AUDIO_DIR, track)
-            try:
-                print(f"MUSIC: Downloading {track}...")
-                r = requests.get(url, headers=headers, timeout=20)
-                r.raise_for_status()
-                with open(local_path, "wb") as f:
-                    f.write(r.content)
-                existing_tracks.append(local_path)
-            except Exception as e:
-                print(f"WARNING: Could not download {track}: {e}")
-                
+            
     # If we still have no tracks, try downloading from the old Pixabay fallback link just in case
     if not existing_tracks:
         print("MUSIC: Falling back to old Pixabay music download...")
         local_music = os.path.join(BASE_DIR, "background_finance.mp3")
         old_url = "https://cdn.pixabay.com/download/audio/2022/03/24/audio_c8c8a73467.mp3"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)'
-        }
         try:
             r = requests.get(old_url, headers=headers, timeout=20)
             r.raise_for_status()
@@ -189,12 +229,20 @@ def ensure_bg_music():
         print("WARNING: Background music library is empty and downloads failed. Reel will have no music.")
         return None
         
-    # Return a randomly selected track
+    # Return a track matching requested mood, or fallback to random
+    if mood and mood in MOODS:
+        allowed_names = set(MOODS[mood])
+        mood_tracks = [t for t in existing_tracks if os.path.basename(t) in allowed_names]
+        if mood_tracks:
+            selected_track = random.choice(mood_tracks)
+            print(f"MUSIC: Selected background track for mood '{mood}': {os.path.basename(selected_track)}")
+            return selected_track
+            
     selected_track = random.choice(existing_tracks)
-    print(f"MUSIC: Selected background track: {os.path.basename(selected_track)}")
+    print(f"MUSIC: Selected random background track: {os.path.basename(selected_track)}")
     return selected_track
 
-def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=False, duration=10.0):
+def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=False, duration=10.0, mood=None):
     """
     Creates a 9:16 vertical video Reel:
     - If silent=False: Voiceover TTS & Word-level Karaoke Subtitles
@@ -326,7 +374,7 @@ def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=F
         video_clip = video_clip.with_audio(audio_clip)
     
     # 3. Add background music
-    music_path = ensure_bg_music()
+    music_path = ensure_bg_music(mood=mood)
     if music_path and os.path.exists(music_path):
         print(f"MUSIC: Mixing background music...")
         try:

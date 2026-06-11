@@ -262,7 +262,8 @@ def run_track_stock():
         background_image_path=image_path,
         output_mp4_path=video_path,
         silent=False,
-        duration=12.0
+        duration=12.0,
+        mood="cool"
     )
     
     caption = get_tool_promotion_caption(is_comparison, names, symbols, fin_texts)
@@ -425,7 +426,8 @@ def run_track_calendar():
         background_image_path=image_path,
         output_mp4_path=video_path,
         silent=False,
-        duration=12.0
+        duration=12.0,
+        mood="happy"
     )
     
     # Captions & Text
@@ -534,6 +536,18 @@ def run_track_ai(topic=None):
     render_viral_list(content, image_path, bg_image_path=bg_path)
     print(f"AI TRACK: Image saved at {image_path}")
     
+    # Determine content-aware background music mood
+    script_lower = (content.get("reel_script", "") + " " + topic).lower()
+    if any(w in script_lower for w in ["crash", "krise", "warnung", "risiko", "gefahr", "verlust", "schulden", "inflation", "steuer", "abgabe"]):
+        detected_mood = "dark"
+    elif any(w in script_lower for w in ["dividende", "gewinn", "erfolg", "rendite", "reichtum", "sparen", "frei", "passiv", "zins"]):
+        detected_mood = "happy"
+    elif any(w in script_lower for w in [" künstliche", " ai ", "tech", "crypto", "krypto", "bitcoin", "nvidia", "zukunft"]):
+        detected_mood = "action"
+    else:
+        detected_mood = "chill"
+    print(f"AI TRACK: Dynamic background music mood detected: {detected_mood}")
+
     # 3. Render Reel Video with Voiceover and Karaoke Subtitles
     print("AI TRACK: Rendering Reel video with voiceover and subtitles...")
     build_reel_mp4(
@@ -541,7 +555,8 @@ def run_track_ai(topic=None):
         background_image_path=image_path,
         output_mp4_path=video_path,
         silent=False,
-        duration=15.0
+        duration=15.0,
+        mood=detected_mood
     )
     
     # 4. Social posting to X, FB, Pinterest (Image)
