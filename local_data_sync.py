@@ -42,14 +42,28 @@ def main():
     
     # 4. Trigger Remote Deployment
     print("--- Triggering Remote Deploy via SSH ---")
-    # Using the key that worked: id_rsa_antigravity_2048
-    ssh_key = "C:/Users/fhofmann/.ssh/id_rsa_antigravity_2048"
-    if not os.path.exists(ssh_key):
-        print(f"ERROR: SSH Key not found at {ssh_key}")
+    
+    possible_keys = [
+        os.path.join(os.path.expanduser("~"), ".ssh", "id_rsa_antigravity_2048"),
+        os.path.join(os.path.expanduser("~"), "Downloads", "LightsailDefaultKey-eu-central-1.pem"),
+        "C:/Users/fhofm/Downloads/LightsailDefaultKey-eu-central-1.pem",
+        os.path.join(os.path.expanduser("~"), ".ssh", "aws-eb")
+    ]
+    ssh_key = None
+    for key in possible_keys:
+        if os.path.exists(key):
+            ssh_key = key
+            break
+            
+    if not ssh_key:
+        print("ERROR: No suitable SSH key found for deployment.")
         return
+        
+    print(f"Using SSH key: {ssh_key}")
 
     ssh_cmd = [
         "ssh", "-i", ssh_key,
+        "-o", "StrictHostKeyChecking=no",
         "ubuntu@3.71.191.12",
         "cd /home/ubuntu/aktien-tool2 && bash deploy.sh && sudo systemctl restart aktien-tool.service"
     ]

@@ -5,10 +5,10 @@
 chcp 65001 > nul
 setlocal enabledelayedexpansion
 
-cd /d C:\Users\fhofmann\Documents\Aktien-Tool2
+cd /d "%~dp0"
 mkdir logs 2>nul
 
-set LOGFILE=C:\Users\fhofmann\Documents\Aktien-Tool2\logs\local_update.log
+set LOGFILE=%~dp0logs\local_update.log
 
 echo ========================================================================= >> "%LOGFILE%"
 echo 📊 [%date% %time%] Starte automatisiertes Datenupdate... >> "%LOGFILE%"
@@ -38,7 +38,20 @@ echo [%date% %time%] ✅ [2/3] Git Push erfolgreich beendet. >> "%LOGFILE%"
 
 :: 3. Trigger Remote Deploy auf AWS Server via SSH
 echo [%date% %time%] 🚀 [3/3] Trigger Remote Deployment auf AWS Server... >> "%LOGFILE%"
-ssh -o StrictHostKeyChecking=no -i "C:\Users\fhofmann\Downloads\LightsailDefaultKey-eu-central-1.pem" ubuntu@3.71.191.12 "cd /home/ubuntu/aktien-tool2 && bash deploy.sh" >> "%LOGFILE%" 2>&1
+
+:: Find correct SSH Key
+set SSH_KEY=
+if exist "%USERPROFILE%\Downloads\LightsailDefaultKey-eu-central-1.pem" set SSH_KEY=%USERPROFILE%\Downloads\LightsailDefaultKey-eu-central-1.pem
+if exist "C:\Users\fhofm\Downloads\LightsailDefaultKey-eu-central-1.pem" set SSH_KEY=C:\Users\fhofm\Downloads\LightsailDefaultKey-eu-central-1.pem
+if exist "%USERPROFILE%\.ssh\aws-eb" set SSH_KEY=%USERPROFILE%\.ssh\aws-eb
+
+if "%SSH_KEY%"=="" (
+    echo ❌ [%date% %time%] ERROR: Kein SSH-Key gefunden! >> "%LOGFILE%"
+    exit /b 1
+)
+echo [%date% %time%] SSH Key used: %SSH_KEY% >> "%LOGFILE%"
+
+ssh -o StrictHostKeyChecking=no -i "%SSH_KEY%" ubuntu@3.71.191.12 "cd /home/ubuntu/aktien-tool2 && bash deploy.sh" >> "%LOGFILE%" 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo ❌ [%date% %time%] ERROR: Remote AWS Deployment fehlgeschlagen! >> "%LOGFILE%"
@@ -49,3 +62,4 @@ echo [%date% %time%] ✅ [3/3] AWS Deployment erfolgreich beendet. >> "%LOGFILE%
 echo ========================================================================= >> "%LOGFILE%"
 echo 🎉 [%date% %time%] Datenupdate und Server-Deployment ERFOLGREICH! >> "%LOGFILE%"
 echo ========================================================================= >> "%LOGFILE%"
+

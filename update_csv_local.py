@@ -154,7 +154,25 @@ def get_session():
     session = curl_requests.Session(impersonate="chrome")
     return session
 
-_SESSIONS = {} # Pro Thread eine Session
+# Single global shared curl_cffi session for all threads
+_SHARED_SESSION = None
+_session_lock = threading.Lock()
+
+def get_shared_session():
+    global _SHARED_SESSION
+    with _session_lock:
+        if _SHARED_SESSION is None:
+            _SHARED_SESSION = get_session()
+        return _SHARED_SESSION
+
+def reset_shared_session():
+    global _SHARED_SESSION
+    with _session_lock:
+        try:
+            print("🔄 Resetting global curl_cffi session to bypass rate limit.")
+            _SHARED_SESSION = get_session()
+        except Exception as e:
+            print(f"⚠️ Failed to reset global session: {e}")
 
 _cooldown_lock = threading.Lock()
 _global_cooldown_until = 0.0
@@ -162,12 +180,9 @@ _global_cooldown_until = 0.0
 def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: float = BACKOFF_START) -> Dict:
     global _global_cooldown_until
     
-    # Session pro Thread holen oder erstellen
+    session = get_shared_session()
     from threading import current_thread
     tid = current_thread().name
-    if tid not in _SESSIONS:
-        _SESSIONS[tid] = get_session()
-    session = _SESSIONS[tid]
     
     last_err: Exception | None = None
     for attempt in range(1, max_tries + 1):
@@ -209,13 +224,9 @@ def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: flo
                         _global_cooldown_until = cooldown_target
                         print(f"🛑 [RATE LIMIT DETECTED] Ticker {ticker} triggered 429. Setting global cooldown for 5 mins.")
                 
-                # Reset session to clear bad cookies/crumbs
-                try:
-                    _SESSIONS[tid] = get_session()
-                    session = _SESSIONS[tid]
-                    print(f"🔄 Thread {tid}: Created a new curl_cffi session to bypass rate limit.")
-                except Exception as s_err:
-                    print(f"⚠️ Failed to reset session: {s_err}")
+                # Reset the global session
+                reset_shared_session()
+                session = get_shared_session()
             
             print(f"⚠️ [WARN] Ticker {ticker} Fetch-Fehler (Versuch {attempt}/{max_tries}): {e}")
             time.sleep(base_sleep * (2 ** (attempt - 1)))
@@ -327,10 +338,10 @@ def main() -> None:
             print(f"[INFO] Konnte bestehende '{FILE_OUTPUT.name}' nicht mergen: {e}")
 
     # --- Stale/Missing-Filter ---
-    need_cols = SPALTEN_KENNZAHLEN
+    # Wir aktualisieren nur Ticker, die heute noch nicht erfolgreich aktualisiert wurden (Abfragedatum ist ungleich heute oder fehlt).
+    # Damit verhindern wir, dass permanent 4000+ Ticker geladen werden, nur weil bei einigen einzelne Nischen-Kennzahlen fehlen.
     stale_mask = df["Abfragedatum"].ne(heute) | df["Abfragedatum"].isna()
-    missing_mask = df[need_cols].isna().any(axis=1)
-    df_run = df[stale_mask | missing_mask].copy()
+    df_run = df[stale_mask].copy()
 
     if df_run.empty:
         print("[OK] Alles frisch – nichts zu tun.")
