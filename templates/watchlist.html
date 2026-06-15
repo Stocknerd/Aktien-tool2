@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Meine Watchlist | Schatzsuche 4.0</title>
+    <link rel="canonical" href="{{ request.base_url }}" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+          --bg: #0B1E21;
+          --surface: rgba(13, 34, 38, 0.85);
+          --card: rgba(20, 44, 48, 0.45);
+          --border: rgba(201, 162, 39, 0.12);
+          --accent: #C9A227;
+          --accent-hover: #A8861B;
+          --accent-soft: rgba(201, 162, 39, 0.08);
+          --blue: #1A535C;
+          --text: #F7F7F7;
+          --text-secondary: #A0B0B2;
+          --shadow: 0 20px 40px rgba(0, 0, 0, 0.65);
+        }
+
+        body {
+          background-color: var(--bg);
+          color: var(--text);
+          font-family: 'Inter', -apple-system, sans-serif;
+          min-height: 100vh;
+        }
+
+        .glass-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 40px;
+          backdrop-filter: blur(20px);
+          margin-bottom: 30px;
+        }
+
+        /* Unified Navigation Bar styling */
+        .nav-actions {
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-bottom: 30px;
+        }
+        @media (max-width: 576px) {
+          .nav-actions {
+            margin-bottom: 20px;
+          }
+        }
+
+        .table-premium {
+          color: var(--text);
+        }
+        .table-premium th {
+          border-bottom: 2px solid var(--border);
+          color: var(--accent);
+          font-weight: 700;
+          text-transform: uppercase;
+          font-size: 0.85rem;
+          letter-spacing: 0.05em;
+        }
+        .table-premium td {
+          border-bottom: 1px solid var(--border);
+          padding: 16px 12px;
+          vertical-align: middle;
+        }
+        .table-premium tr:hover td {
+          background: rgba(255, 255, 255, 0.02);
+        }
+
+        .btn-premium-action {
+          background: transparent;
+          border: 1px solid rgba(255,255,255,0.1);
+          color: var(--text-secondary);
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        .btn-premium-action:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+          background: var(--accent-soft);
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 60px 20px;
+        }
+
+        .badge-sector {
+          background: rgba(26, 83, 92, 0.3);
+          border: 1px solid rgba(26, 83, 92, 0.5);
+          color: #a5f3fc;
+          font-weight: 500;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 0.75rem;
+        }
+
+        .stock-link {
+          color: var(--text);
+          text-decoration: none;
+          font-weight: 600;
+          transition: color 0.15s;
+        }
+        .stock-link:hover {
+          color: var(--accent);
+        }
+
+        /* Mobile adaptation */
+        @media (max-width: 768px) {
+          .table-responsive-cards table, 
+          .table-responsive-cards thead, 
+          .table-responsive-cards tbody, 
+          .table-responsive-cards th, 
+          .table-responsive-cards td, 
+          .table-responsive-cards tr {
+            display: block;
+          }
+          .table-responsive-cards thead {
+            display: none;
+          }
+          .table-responsive-cards tr {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: rgba(20, 44, 48, 0.2);
+          }
+          .table-responsive-cards td {
+            border: none;
+            padding: 8px 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .table-responsive-cards td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            margin-right: 15px;
+          }
+          .table-responsive-cards td.td-actions {
+            justify-content: flex-end;
+            gap: 10px;
+          }
+          .table-responsive-cards td.td-actions::before {
+            display: none;
+          }
+        }
+
+        {% if is_embedded %}
+        body { background: transparent !important; padding: 0 !important; }
+        .glass-card { box-shadow: none !important; border: none !important; padding: 10px !important; }
+        h1 { display: none; }
+        .nav-actions { display: none !important; }
+        {% endif %}
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        {% if not is_embedded %}
+        <!-- Unified Top Navigation Header -->
+        <div class="nav-actions">
+            <a href="/" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🏠 Home</a>
+            <a href="/screener" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🎯 Screener</a>
+            <a href="/dividenden-kalender" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📅 Kalender</a>
+            <a href="/compare" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📊 Vergleich</a>
+            <a href="/p2p" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💳 P2P</a>
+            <a href="/dividend-rechner" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💰 Rechner</a>
+            <a href="/watchlist" class="btn btn-outline-warning btn-sm rounded-pill px-3 active" style="border: 1px solid rgba(201, 162, 39, 0.3); color: #C9A227; font-weight:600;">⭐ Watchlist</a>
+        </div>
+        {% endif %}
+        
+        <div class="glass-card shadow">
+            <div class="text-center mb-5">
+                <h1 class="fw-bold m-0" style="background: linear-gradient(135deg, #fff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Meine Watchlist ⭐</h1>
+                <p class="text-muted small mt-1">Beobachte deine Favoriten und greife schnell auf ihre Analysen zu.</p>
+            </div>
+
+            <div id="loading" class="text-center py-5">
+                <div class="spinner-border text-warning" role="status">
+                    <span class="visually-hidden">Lade Watchlist...</span>
+                </div>
+                <p class="text-muted mt-2">Lade Aktiendaten...</p>
+            </div>
+
+            <div id="empty-state" class="empty-state d-none">
+                <div class="fs-1 mb-3">⭐</div>
+                <h3>Deine Watchlist ist noch leer</h3>
+                <p class="text-muted">Füge Aktien über die Suche oder den Screener hinzu, um sie hier zu vergleichen.</p>
+                <div class="mt-4">
+                    <a href="/" class="btn btn-outline-warning rounded-pill px-4">Zur Aktiensuche</a>
+                    <a href="/screener" class="btn btn-primary rounded-pill px-4 ms-2">Zum Screener</a>
+                </div>
+            </div>
+
+            <div id="watchlist-content" class="d-none">
+                <div class="table-responsive table-responsive-cards">
+                    <table class="table table-premium">
+                        <thead>
+                            <tr>
+                                <th>Aktie</th>
+                                <th>Sektor</th>
+                                <th>KGV</th>
+                                <th>Dividendenrendite</th>
+                                <th>Land</th>
+                                <th class="text-end">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="watchlist-tbody">
+                            <!-- Dynamically loaded -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadWatchlist();
+        });
+
+        function getWatchlist() {
+            return JSON.parse(localStorage.getItem('watchlist') || '[]');
+        }
+
+        function saveWatchlist(watchlist) {
+            localStorage.setItem('watchlist', JSON.stringify(watchlist));
+        }
+
+        function loadWatchlist() {
+            const symbols = getWatchlist();
+            if (symbols.length === 0) {
+                document.getElementById('loading').classList.add('d-none');
+                document.getElementById('empty-state').classList.remove('d-none');
+                return;
+            }
+
+            // Fetch latest data for all stocks
+            fetch('/api/search-all')
+                .then(res => res.json())
+                .then(data => {
+                    const allStocks = data.stocks || [];
+                    const filtered = allStocks.filter(s => symbols.includes(s.symbol));
+                    
+                    if (filtered.length === 0) {
+                        document.getElementById('loading').classList.add('d-none');
+                        document.getElementById('empty-state').classList.remove('d-none');
+                        return;
+                    }
+
+                    renderTable(filtered);
+                })
+                .catch(err => {
+                    console.error('Error fetching stock list:', err);
+                    document.getElementById('loading').innerHTML = `
+                        <div class="text-danger">
+                            <h5>Fehler beim Laden der Daten</h5>
+                            <p class="text-muted">Bitte lade die Seite neu.</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function renderTable(stocks) {
+            const tbody = document.getElementById('watchlist-tbody');
+            tbody.innerHTML = '';
+
+            stocks.forEach(stock => {
+                const tr = document.createElement('tr');
+                tr.id = `row-${stock.symbol}`;
+                
+                // Format values nicely
+                const kgv = stock.kgv || 'N/A';
+                const divYield = stock.dividendenrendite || 'N/A';
+                const sector = stock.sector || 'Aktien';
+                const land = stock.land || stock.region || 'N/A';
+
+                tr.innerHTML = `
+                    <td data-label="Aktie">
+                        <a href="/analyse/${stock.symbol}" class="stock-link">
+                            <span class="fw-bold">${stock.symbol}</span>
+                            <div class="text-muted small">${stock.name}</div>
+                        </a>
+                    </td>
+                    <td data-label="Sektor"><span class="badge-sector">${sector}</span></td>
+                    <td data-label="KGV">${kgv}</td>
+                    <td data-label="Dividendenrendite">${divYield}</td>
+                    <td data-label="Land">${land}</td>
+                    <td class="text-end td-actions">
+                        <a href="/analyse/${stock.symbol}" class="btn-premium-action" title="Analyse ansehen">🔍</a>
+                        <button onclick="removeFromWatchlist('${stock.symbol}')" class="btn-premium-action text-danger" title="Aus Watchlist entfernen">❌</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('loading').classList.add('d-none');
+            document.getElementById('watchlist-content').classList.remove('d-none');
+        }
+
+        function removeFromWatchlist(symbol) {
+            let watchlist = getWatchlist();
+            watchlist = watchlist.filter(s => s !== symbol);
+            saveWatchlist(watchlist);
+
+            const row = document.getElementById(`row-${symbol}`);
+            if (row) {
+                row.remove();
+            }
+
+            if (watchlist.length === 0) {
+                document.getElementById('watchlist-content').classList.add('d-none');
+                document.getElementById('empty-state').classList.remove('d-none');
+            }
+        }
+    </script>
+</body>
+</html>

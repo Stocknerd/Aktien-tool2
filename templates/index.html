@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% if ticker %}{{ company_name }} ({{ ticker }}) - Aktienanalyse | Schatzsuche 4.0{% else %}Aktien-Bild Generator | Schatzsuche 4.0{% endif %}</title>
   <meta name="description" content="{% if ticker %}Aktuelle Kennzahlen, Analysten-Ratings und Kursziele für {{ company_name }} ({{ ticker }}). Erstelle jetzt deine eigene Infografik.{% else %}Professionelle Aktien-Infografiken erstellen und vergleichen. Kostenlose Analyse-Tools für Dividenden-Investoren.{% endif %}">
+  <link rel="canonical" href="{{ request.base_url }}" />
   
   <!-- Open Graph -->
   <meta property="og:title" content="{% if ticker %}{{ company_name }} Analyse{% else %}Aktien-Bild Generator{% endif %}">
@@ -172,6 +173,16 @@
     .nav-actions { display: flex !important; margin-bottom: 20px; }
     {% endif %}
     .nav-actions { display: none; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    @media (max-width: 576px) {
+      .nav-actions {
+        gap: 6px !important;
+        margin-bottom: 15px !important;
+      }
+      .nav-actions .btn {
+        padding: 4px 10px !important;
+        font-size: 0.75rem !important;
+      }
+    }
 
     .stock-hover-card {
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -231,12 +242,13 @@
     
     <!-- Premium Top Navigation Action Header -->
     <div class="nav-actions mb-4">
-        <a href="/" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🏠 Home</a>
+        <a href="/" class="btn btn-outline-light btn-sm rounded-pill px-3 active" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🏠 Home</a>
         <a href="/screener{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🎯 Screener</a>
         <a href="/dividenden-kalender{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📅 Kalender</a>
         <a href="/compare{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📊 Vergleich</a>
         <a href="/p2p{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💳 P2P</a>
-        <a href="/dividend-rechner{% if is_embedded %}?embed=1{% endif %}" class="btn-outline-warning btn-sm rounded-pill px-3" style="border: 1px solid rgba(201, 162, 39, 0.3); color: #C9A227; font-weight:600;">💰 Dividenden-Rechner</a>
+        <a href="/dividend-rechner{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💰 Rechner</a>
+        <a href="/watchlist{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-warning btn-sm rounded-pill px-3" style="border: 1px solid rgba(201, 162, 39, 0.3); color: #C9A227; font-weight:600;">⭐ Watchlist</a>
     </div>
 
     {% if not is_embedded %}
@@ -250,6 +262,7 @@
           <a href="/dividenden-kalender" class="btn btn-outline-warning px-4 rounded-pill" style="border-color: rgba(245, 158, 11, 0.4); color: #f59e0b;">📅 Dividenden-Kalender</a>
           <a href="/compare" class="btn btn-outline-info px-4 rounded-pill">📊 Aktien vergleichen</a>
           <a href="/dividend-rechner" class="btn btn-outline-success px-4 rounded-pill">💰 Dividenden-Rechner</a>
+          <a href="/watchlist" class="btn btn-outline-warning px-4 rounded-pill">⭐ Watchlist</a>
           <a href="/p2p" class="btn btn-outline-light px-4 rounded-pill" style="border-color: rgba(255,255,255,0.15)">💳 P2P-Dashboard</a>
       </div>
     </div>
@@ -303,8 +316,15 @@
 
       <!-- Suche / Ticker -->
       <div class="mb-4 position-relative">
-        <label for="stock-search" class="form-label text-uppercase tracking-wider">Aktie suchen</label>
-        <input id="stock-search" type="text" class="form-control" placeholder="z.B. Apple, Microsoft, NVIDIA..." autocomplete="off" value="{% if ticker %}{{ company_name or ticker }}{% endif %}">
+        <div class="d-flex justify-content-between align-items-center">
+          <label for="stock-search" class="form-label text-uppercase tracking-wider m-0">Aktie suchen</label>
+          {% if ticker %}
+          <button type="button" id="btn-watchlist-toggle" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-0" style="font-size: 0.75rem; font-weight:600;" onclick="toggleWatchlist('{{ ticker }}')">
+              <span id="watchlist-star">☆</span> Watchlist
+          </button>
+          {% endif %}
+        </div>
+        <input id="stock-search" type="text" class="form-control mt-2" placeholder="z.B. Apple, Microsoft, NVIDIA..." autocomplete="off" value="{% if ticker %}{{ company_name or ticker }}{% endif %}">
         <ul id="suggestions" class="list-group position-absolute top-100 start-0 w-100 shadow-lg mt-1"></ul>
         <input type="hidden" name="ticker" id="ticker" value="{{ ticker if ticker else '' }}">
       </div>
@@ -1216,6 +1236,65 @@
         }
     });
     {% endif %}
+
+    // ─── Watchlist Feature (LocalStorage) ──────────────────────
+    function getWatchlist() {
+        return JSON.parse(localStorage.getItem('watchlist') || '[]');
+    }
+
+    function saveWatchlist(watchlist) {
+        localStorage.setItem('watchlist', JSON.stringify(watchlist));
+    }
+
+    function toggleWatchlist(symbol) {
+        if (!symbol) return;
+        let watchlist = getWatchlist();
+        const starEl = document.getElementById('watchlist-star');
+        const btnEl = document.getElementById('btn-watchlist-toggle');
+        
+        if (watchlist.includes(symbol)) {
+            // Remove
+            watchlist = watchlist.filter(s => s !== symbol);
+            if (starEl) starEl.innerText = '☆';
+            if (btnEl) {
+                btnEl.classList.remove('btn-warning');
+                btnEl.classList.add('btn-outline-warning');
+            }
+        } else {
+            // Add
+            watchlist.push(symbol);
+            if (starEl) starEl.innerText = '⭐';
+            if (btnEl) {
+                btnEl.classList.remove('btn-outline-warning');
+                btnEl.classList.add('btn-warning');
+            }
+        }
+        saveWatchlist(watchlist);
+    }
+
+    function checkWatchlistStatus() {
+        const symbol = "{{ ticker if ticker else '' }}";
+        if (!symbol) return;
+        const watchlist = getWatchlist();
+        const starEl = document.getElementById('watchlist-star');
+        const btnEl = document.getElementById('btn-watchlist-toggle');
+        
+        if (watchlist.includes(symbol)) {
+            if (starEl) starEl.innerText = '⭐';
+            if (btnEl) {
+                btnEl.classList.remove('btn-outline-warning');
+                btnEl.classList.add('btn-warning');
+            }
+        } else {
+            if (starEl) starEl.innerText = '☆';
+            if (btnEl) {
+                btnEl.classList.remove('btn-warning');
+                btnEl.classList.add('btn-outline-warning');
+            }
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', checkWatchlistStatus);
 
     // Run database preload
     loadDatabase();

@@ -33,7 +33,12 @@ for key in "$HOME/.ssh/id_rsa_antigravity_2048" \
            "$HOME/.ssh/id_rsa_antigravity" \
            "$HOME/.ssh/aktien_deploy" \
            "$HOME/.ssh/id_ed25519" \
-           "$HOME/.ssh/id_rsa"; do
+           "$HOME/.ssh/id_rsa" \
+           "$HOME/Downloads/LightsailDefaultKey-eu-central-1.pem" \
+           "$HOME/Downloads/LightsailDefaultKey-eu-central-1 (1).pem" \
+           "$HOME/.ssh/aws-eb" \
+           "C:/Users/fhofm/Downloads/LightsailDefaultKey-eu-central-1.pem" \
+           "C:/Users/fhofm/Downloads/LightsailDefaultKey-eu-central-1 (1).pem"; do
     if [ -f "$key" ]; then
         SSH_KEY="$key"
         break

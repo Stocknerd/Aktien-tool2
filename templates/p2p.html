@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>P2P Dashboard | Schatzsuche 4.0</title>
     <meta name="description" content="Vergleiche P2P-Plattformen und berechne deine potenziellen Zinsen.">
+    <link rel="canonical" href="{{ request.base_url }}" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -20,6 +21,46 @@
             --text-dim: #5c7477;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* Premium Navigation Bar */
+        .nav-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        @media (max-width: 576px) {
+            .nav-actions {
+                gap: 6px !important;
+                margin-bottom: 15px !important;
+            }
+            .nav-btn {
+                padding: 4px 10px !important;
+                font-size: 0.75rem !important;
+            }
+        }
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            border-radius: 50px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 6px 16px;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(201, 162, 39, 0.08);
+        }
+
         body {
             background: var(--bg); color: var(--text);
             font-family: 'Inter', -apple-system, sans-serif; line-height: 1.5;
@@ -88,6 +129,18 @@
 </head>
 <body>
 <div class="container">
+    {% if not is_embedded %}
+    <!-- Premium Top Navigation Action Header -->
+    <div class="nav-actions">
+        <a href="/" class="nav-btn">🏠 Home</a>
+        <a href="/screener" class="nav-btn">🎯 Screener</a>
+        <a href="/dividenden-kalender" class="nav-btn">📅 Kalender</a>
+        <a href="/compare" class="nav-btn">📊 Vergleich</a>
+        <a href="/p2p" class="nav-btn active">💳 P2P</a>
+        <a href="/dividend-rechner" class="nav-btn">💰 Rechner</a>
+        <a href="/watchlist" class="nav-btn">⭐ Watchlist</a>
+    </div>
+    {% endif %}
     <div class="hero">
         <h1>P2P <span>Dashboard</span></h1>
         <p>Vergleiche die besten Plattformen für P2P-Kredite und berechne dein passives Einkommen.</p>

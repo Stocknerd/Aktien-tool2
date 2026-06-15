@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /generate_image
+Disallow: /upload-background
+Disallow: /result/
+Disallow: /download/
+
+Sitemap: https://tool.schatzsuche40.de/sitemap.xml

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dividenden-Kalender 2026 | Schatzsuche 4.0</title>
     <meta name="description" content="Über 2.900 Dividenden-Aktien im Überblick. Sortiere nach Rendite, Sektor, KGV und mehr.">
+    <link rel="canonical" href="{{ request.base_url }}" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -47,6 +48,16 @@
             justify-content: center;
             flex-wrap: wrap;
             margin-bottom: 10px;
+        }
+        @media (max-width: 576px) {
+            .nav-actions {
+                gap: 6px !important;
+                margin-bottom: 15px !important;
+            }
+            .nav-btn {
+                padding: 4px 10px !important;
+                font-size: 0.75rem !important;
+            }
         }
         .nav-btn {
             display: inline-flex;
@@ -347,6 +358,52 @@
             table { min-width: 650px; }
             .drawer { width: 100%; right: -100%; }
         }
+        @media (max-width: 768px) {
+            .table-scroll table, 
+            .table-scroll thead, 
+            .table-scroll tbody, 
+            .table-scroll th, 
+            .table-scroll td, 
+            .table-scroll tr {
+                display: block;
+            }
+            .table-scroll thead {
+                display: none;
+            }
+            .table-scroll tr {
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                margin-bottom: 16px;
+                padding: 12px;
+                background: rgba(20, 44, 48, 0.2);
+            }
+            .table-scroll td {
+                border: none;
+                padding: 8px 4px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                text-align: left !important;
+            }
+            .table-scroll td::before {
+                content: attr(data-label);
+                font-weight: 700;
+                color: var(--accent);
+                text-transform: uppercase;
+                font-size: 0.75rem;
+                margin-right: 15px;
+            }
+            .table-scroll td:last-child {
+                justify-content: flex-end;
+            }
+            .table-scroll td:last-child::before {
+                display: none;
+            }
+            .action-link {
+                padding: 6px 16px !important;
+                font-size: 0.8rem !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -362,7 +419,8 @@
         <a href="/dividenden-kalender" class="nav-btn active">📅 Kalender</a>
         <a href="/compare" class="nav-btn">📊 Vergleich</a>
         <a href="/p2p" class="nav-btn">💳 P2P</a>
-        <a href="/dividend-rechner" class="nav-btn">💰 Dividenden-Rechner</a>
+        <a href="/dividend-rechner" class="nav-btn">💰 Rechner</a>
+        <a href="/watchlist" class="nav-btn">⭐ Watchlist</a>
     </div>
     {% endif %}
 
@@ -683,7 +741,8 @@ function render() {
     const start = (page - 1) * PER_PAGE;
     const slice = filteredData.slice(start, start + PER_PAGE);
     const today = new Date(); today.setHours(0,0,0,0);
-
+    const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
+ 
     $tbody.innerHTML = slice.map(d => {
         let urgencyHtml = '<span class="urgency none">–</span>';
         let dateHtml = '<span class="date-val none">–</span>';
@@ -706,9 +765,13 @@ function render() {
         const mcap_val = d.mcap ? (d.mcap / 1e9) : null;
         const mcapHtml = mcap_val !== null ? `<span class="metric-val">${mcap_val.toLocaleString('de-DE', {maximumFractionDigits:1})} Mrd ${d.currency || 'USD'}</span>` : '<span class="metric-val na">–</span>';
 
+        const isFav = watchlist.includes(d.symbol);
+        const starChar = isFav ? '⭐' : '☆';
+
         return `<tr onclick="openDrawer('${d.symbol}')">
-            <td>
+            <td data-label="Aktie">
                 <div class="stock-cell">
+                    <button class="watchlist-star-btn" onclick="event.stopPropagation(); toggleCalendarWatchlist('${d.symbol}', this)" style="background:transparent; border:none; color:var(--accent); font-size:1.1rem; padding:0 8px 0 0; cursor:pointer;">${starChar}</button>
                     <div class="stock-icon">
                         <img src="/static/logos/${d.symbol}.png" 
                              onerror="if(!this.triedBase){this.triedBase=true; this.src='/static/logos/' + '${d.symbol}'.split('.')[0] + '.png';}else{this.style.display='none'; this.nextElementSibling.style.display='flex';}"
@@ -721,14 +784,14 @@ function render() {
                     </div>
                 </div>
             </td>
-            <td><span class="sector-pill" title="${esc(d.sector)}">${esc(d.sector || '–')}</span></td>
-            <td>${dateHtml}</td>
-            <td>${urgencyHtml}</td>
-            <td style="text-align:right"><span class="yield-val${yc}">${d.div_yield.toFixed(2)} %</span></td>
-            <td style="text-align:right"><span class="amount-val">${d.amount > 0 ? d.amount.toFixed(2) + ' ' + d.currency : '–'}</span></td>
-            <td style="text-align:right" class="col-extra">${kgvHtml}</td>
-            <td style="text-align:right" class="col-extra">${kuvHtml}</td>
-            <td style="text-align:right" class="col-extra">${mcapHtml}</td>
+            <td data-label="Sektor"><span class="sector-pill" title="${esc(d.sector)}">${esc(d.sector || '–')}</span></td>
+            <td data-label="Ex-Datum">${dateHtml}</td>
+            <td data-label="Tage">${urgencyHtml}</td>
+            <td data-label="Rendite" style="text-align:right"><span class="yield-val${yc}">${d.div_yield.toFixed(2)} %</span></td>
+            <td data-label="Dividende" style="text-align:right"><span class="amount-val">${d.amount > 0 ? d.amount.toFixed(2) + ' ' + d.currency : '–'}</span></td>
+            <td data-label="KGV" style="text-align:right" class="col-extra">${kgvHtml}</td>
+            <td data-label="KUV" style="text-align:right" class="col-extra">${kuvHtml}</td>
+            <td data-label="Mkt. Kap." style="text-align:right" class="col-extra">${mcapHtml}</td>
             <td style="text-align:center" onclick="event.stopPropagation();">
                 <a href="https://www.financeads.net/tc.php?t=47128C46917042T" target="_blank" class="action-link tr-btn">Depot</a>
             </td>
@@ -926,6 +989,18 @@ $toggleExtras.addEventListener('click', () => {
 
 // Set default sort indicator
 document.querySelector('th[data-col="div_yield"]').classList.add('sorted-desc');
+
+function toggleCalendarWatchlist(symbol, btn) {
+    let watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
+    if (watchlist.includes(symbol)) {
+        watchlist = watchlist.filter(s => s !== symbol);
+        btn.innerText = '☆';
+    } else {
+        watchlist.push(symbol);
+        btn.innerText = '⭐';
+    }
+    localStorage.setItem('watchlist', JSON.stringify(watchlist));
+}
 
 fetchData();
 

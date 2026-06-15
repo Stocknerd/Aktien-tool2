@@ -194,6 +194,12 @@ def screener_page():
     is_embedded = request.args.get('embed') == '1'
     return render_template('screener.html', is_embedded=is_embedded)
 
+@app.route('/watchlist')
+def watchlist_page():
+    is_embedded = request.args.get('embed') == '1'
+    return render_template('watchlist.html', is_embedded=is_embedded)
+
+
 # ─── P2P Dashboard ───────────────────────────────────────────
 @app.route('/p2p')
 def p2p_dashboard():
@@ -704,6 +710,11 @@ def compare_result(filename):
 @app.route('/sitemap.xml')
 def sitemap():
     return send_from_directory(app.static_folder, 'sitemap.xml', mimetype='application/xml')
+
+@app.route('/robots.txt')
+def robots():
+    return send_from_directory(app.static_folder, 'robots.txt', mimetype='text/plain')
+
 
 # ─── Add Ticker Endpoint (Hebel 2) ──────────────────────────
 @app.route('/api/add-ticker', methods=['POST'])
