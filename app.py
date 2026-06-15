@@ -556,12 +556,15 @@ def display_result(filename):
             
     company_name = ""
     related_stocks = []
+    stock_data = {}
     if ticker:
         df = core.load_df()
         row = df[df['Symbol'] == ticker]
         if not row.empty:
             company_name = core.get_clean_name(row.iloc[0])
             related_stocks = get_related_stocks(ticker)
+            # Convert row to dict safely, converting pd.NA/NaN to None
+            stock_data = {k: (None if pd.isna(v) else v) for k, v in row.iloc[0].to_dict().items()}
             
     from flask import session
     ai_verdict = session.get('ai_verdict', "")
@@ -573,7 +576,8 @@ def display_result(filename):
         company_name=company_name,
         related_stocks=related_stocks,
         ai_verdict=ai_verdict,
-        is_embedded=is_embedded
+        is_embedded=is_embedded,
+        stock_data=stock_data
     )
 
 

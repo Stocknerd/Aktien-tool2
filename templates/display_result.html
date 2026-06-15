@@ -8,6 +8,25 @@
   <meta name="description" content="{% if ticker %}Deine Aktienanalyse für {{ company_name }} ({{ ticker }}) ist bereit.{% else %}Deine professionelle Aktien-Infografik wurde erstellt.{% endif %}">
   <link rel="canonical" href="{{ request.base_url }}" />
   
+  {% if stock_data and ticker %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FinancialProduct",
+    "name": "{{ company_name | escape }}",
+    "tickerSymbol": "{{ ticker | escape }}",
+    "description": "Detaillierte Aktienanalyse und fundamentale Kennzahlen für {{ company_name | escape }} ({{ ticker | escape }}). KGV: {{ stock_data.get('KGV', 'N/A') }}, Dividendenrendite: {{ stock_data.get('Dividendenrendite', 'N/A') }}%, KBV: {{ stock_data.get('KBV', 'N/A') }}.",
+    "category": "Aktie",
+    "offers": {
+      "@type": "Offer",
+      "price": "{{ stock_data.get('Vortagesschlusskurs', '') }}",
+      "priceCurrency": "{{ stock_data.get('Währung', 'EUR') }}",
+      "availability": "https://schema.org/InStock"
+    }
+  }
+  </script>
+  {% endif %}
+  
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>

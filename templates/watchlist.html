@@ -188,6 +188,18 @@
                 <p class="text-muted small mt-1">Beobachte deine Favoriten und greife schnell auf ihre Analysen zu.</p>
             </div>
 
+            <!-- Import Shared Watchlist Banner -->
+            <div id="shared-banner" class="alert alert-warning d-none mb-4" style="background: var(--accent-soft); border: 1px solid var(--accent); color: var(--text); border-radius: 12px;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <strong>📢 Geteilte Watchlist geladen!</strong> Möchtest du diese Aktien dauerhaft in deine Favoritenliste übernehmen?
+                    </div>
+                    <button class="btn btn-warning btn-sm rounded-pill px-3 fw-bold" onclick="saveSharedToLocal()" style="background-color: var(--accent); border-color: var(--accent); color: var(--bg);">
+                        ⭐ In Favoriten speichern
+                    </button>
+                </div>
+            </div>
+
             <div id="loading" class="text-center py-5">
                 <div class="spinner-border text-warning" role="status">
                     <span class="visually-hidden">Lade Watchlist...</span>
@@ -206,6 +218,12 @@
             </div>
 
             <div id="watchlist-content" class="d-none">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 pb-2" style="border-bottom: 1px solid var(--border);">
+                    <span class="text-secondary small" id="watchlist-count">0 Aktien beobachtet</span>
+                    <button id="btn-share" class="btn btn-outline-warning btn-sm rounded-pill px-3" onclick="shareWatchlist()" style="font-weight: 600;">
+                        🔗 Watchlist teilen
+                    </button>
+                </div>
                 <div class="table-responsive table-responsive-cards">
                     <table class="table table-premium">
                         <thead>
@@ -223,11 +241,10 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
-    </div>
+              <script>
+        let displayedSymbols = [];
+        let isSharedMode = false;
 
-    <script>
         document.addEventListener('DOMContentLoaded', function() {
             loadWatchlist();
         });
@@ -241,7 +258,25 @@
         }
 
         function loadWatchlist() {
-            const symbols = getWatchlist();
+            // Check query parameters first
+            const params = new URLSearchParams(window.location.search);
+            const sharedSymbolsRaw = params.get('symbols');
+            
+            let symbols = [];
+            if (sharedSymbolsRaw) {
+                symbols = sharedSymbolsRaw.split(',').map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
+                if (symbols.length > 0) {
+                    isSharedMode = true;
+                    document.getElementById('shared-banner').classList.remove('d-none');
+                }
+            }
+            
+            if (!isSharedMode) {
+                symbols = getWatchlist();
+            }
+            
+            displayedSymbols = symbols;
+
             if (symbols.length === 0) {
                 document.getElementById('loading').classList.add('d-none');
                 document.getElementById('empty-state').classList.remove('d-none');
@@ -266,7 +301,7 @@
                 .catch(err => {
                     console.error('Error fetching stock list:', err);
                     document.getElementById('loading').innerHTML = `
-                        <div class="text-danger">
+                        <div class="text-danger text-center">
                             <h5>Fehler beim Laden der Daten</h5>
                             <p class="text-muted">Bitte lade die Seite neu.</p>
                         </div>
@@ -284,7 +319,7 @@
                 
                 // Format values nicely
                 const kgv = stock.kgv || 'N/A';
-                const divYield = stock.dividendenrendite || 'N/A';
+                const divYield = stock.dividendenrendite ? stock.dividendenrendite + '%' : 'N/A';
                 const sector = stock.sector || 'Aktien';
                 const land = stock.land || stock.region || 'N/A';
 
@@ -307,24 +342,84 @@
                 tbody.appendChild(tr);
             });
 
+            document.getElementById('watchlist-count').innerText = `${stocks.length} ${stocks.length === 1 ? 'Aktie' : 'Aktien'} beobachtet`;
             document.getElementById('loading').classList.add('d-none');
             document.getElementById('watchlist-content').classList.remove('d-none');
         }
 
         function removeFromWatchlist(symbol) {
-            let watchlist = getWatchlist();
-            watchlist = watchlist.filter(s => s !== symbol);
-            saveWatchlist(watchlist);
+            if (isSharedMode) {
+                // In shared mode, we just remove it from display
+                displayedSymbols = displayedSymbols.filter(s => s !== symbol);
+                const row = document.getElementById(`row-${symbol}`);
+                if (row) row.remove();
+                document.getElementById('watchlist-count').innerText = `${displayedSymbols.length} ${displayedSymbols.length === 1 ? 'Aktie' : 'Aktien'} beobachtet`;
+                if (displayedSymbols.length === 0) {
+                    document.getElementById('watchlist-content').classList.add('d-none');
+                    document.getElementById('empty-state').classList.remove('d-none');
+                }
+                // Update share URL
+                const newUrl = window.location.origin + window.location.pathname + '?symbols=' + displayedSymbols.join(',');
+                window.history.replaceState({path: newUrl}, '', newUrl);
+            } else {
+                let watchlist = getWatchlist();
+                watchlist = watchlist.filter(s => s !== symbol);
+                saveWatchlist(watchlist);
+                displayedSymbols = watchlist;
 
-            const row = document.getElementById(`row-${symbol}`);
-            if (row) {
-                row.remove();
-            }
+                const row = document.getElementById(`row-${symbol}`);
+                if (row) {
+                    row.remove();
+                }
 
-            if (watchlist.length === 0) {
-                document.getElementById('watchlist-content').classList.add('d-none');
-                document.getElementById('empty-state').classList.remove('d-none');
+                document.getElementById('watchlist-count').innerText = `${watchlist.length} ${watchlist.length === 1 ? 'Aktie' : 'Aktien'} beobachtet`;
+
+                if (watchlist.length === 0) {
+                    document.getElementById('watchlist-content').classList.add('d-none');
+                    document.getElementById('empty-state').classList.remove('d-none');
+                }
             }
+        }
+
+        function saveSharedToLocal() {
+            let localWatchlist = getWatchlist();
+            // Merge unique symbols
+            const merged = Array.from(new Set([...localWatchlist, ...displayedSymbols]));
+            saveWatchlist(merged);
+            
+            // Hide shared banner
+            document.getElementById('shared-banner').classList.add('d-none');
+            isSharedMode = false;
+            
+            // Show alert/success message
+            alert("Erfolgreich in deiner lokalen Favoritenliste gespeichert!");
+            
+            // Clean URL query parameter
+            const newUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({path: newUrl}, '', newUrl);
+        }
+
+        function shareWatchlist() {
+            if (displayedSymbols.length === 0) return;
+            const shareUrl = window.location.origin + window.location.pathname + '?symbols=' + displayedSymbols.join(',');
+            
+            navigator.clipboard.writeText(shareUrl)
+                .then(() => {
+                    const btn = document.getElementById('btn-share');
+                    const origText = btn.innerHTML;
+                    btn.innerHTML = '✅ Link kopiert!';
+                    btn.classList.remove('btn-outline-warning');
+                    btn.classList.add('btn-warning');
+                    setTimeout(() => {
+                        btn.innerHTML = origText;
+                        btn.classList.remove('btn-warning');
+                        btn.classList.add('btn-outline-warning');
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy link:', err);
+                    alert('Kopieren fehlgeschlagen. Hier ist dein Link:\n' + shareUrl);
+                });
         }
     </script>
 </body>
