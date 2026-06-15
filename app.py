@@ -697,6 +697,172 @@ def compare_result(filename):
     m_param = request.args.get('m_param', '')
     return render_template('compare_result.html', fname=filename, t1=t1, t2=t2, m_param=m_param, is_embedded=is_embedded)
 
+# ─── SEO Sitemap (Hebel 1) ─────────────────────────────────
+@app.route('/sitemap.xml')
+def sitemap():
+    return send_from_directory(app.static_folder, 'sitemap.xml', mimetype='application/xml')
+
+# ─── Add Ticker Endpoint (Hebel 2) ──────────────────────────
+@app.route('/api/add-ticker', methods=['POST'])
+def api_add_ticker():
+    try:
+        data = request.json or {}
+        ticker_symbol = data.get('ticker', '').strip().upper()
+        if not ticker_symbol:
+            return jsonify({"status": "error", "message": "Kein Ticker angegeben."}), 400
+            
+        import re
+        if not re.match(r'^[A-Z0-9.\-]+$', ticker_symbol):
+            return jsonify({"status": "error", "message": "Ungültiger Ticker. Erlaubt sind Buchstaben, Zahlen, Punkte und Bindestriche."}), 400
+            
+        df_existing = core.load_df()
+        if not df_existing.empty and ticker_symbol in df_existing['Symbol'].astype(str).str.upper().values:
+            row = df_existing[df_existing['Symbol'].astype(str).str.upper() == ticker_symbol].iloc[0]
+            
+            # Extract div yield safely
+            dy = row.get('Dividendenrendite')
+            try:
+                dy_val = float(str(dy).replace(',', '.')) if pd.notna(dy) else 0.0
+            except:
+                dy_val = 0.0
+                
+            return jsonify({
+                "status": "success", 
+                "message": f"Aktie '{ticker_symbol}' existiert bereits.",
+                "stock": {
+                    "symbol": str(row.get('Symbol')),
+                    "name": core.get_clean_name(row),
+                    "div_yield": round(dy_val, 2),
+                    "sector": str(row.get('Sektor', '')) if pd.notna(row.get('Sektor')) else ''
+                }
+            })
+            
+        from curl_cffi import requests as curl_requests
+        import yfinance as yf
+        
+        session = curl_requests.Session(impersonate="chrome")
+        ticker_obj = yf.Ticker(ticker_symbol, session=session)
+        info = ticker_obj.info
+        
+        if not info or not info.get('symbol') or (not info.get('shortName') and not info.get('longName')):
+            return jsonify({"status": "error", "message": f"Ticker '{ticker_symbol}' wurde auf Yahoo Finance nicht gefunden."}), 404
+            
+        resolved_name = info.get('longName') or info.get('shortName') or ticker_symbol
+        sector = info.get('sector') or ''
+        
+        new_row = {
+            "Symbol": ticker_symbol,
+            "Security": resolved_name,
+            "GICS Sector": sector,
+            "valid_yahoo_ticker": ticker_symbol,
+            "resolved_name": resolved_name,
+            "resolved_exchange": info.get("exchange", ""),
+            "resolved_score": 1.0,
+            "SourceIndex": "MANUAL",
+            "Sektor": sector,
+            "Währung": info.get("currency", "USD"),
+            "Region": info.get("country", ""),
+            "Branche": info.get("industry", ""),
+            "Vortagesschlusskurs": info.get("previousClose") or info.get("currentPrice"),
+            "Dividendenrendite": info.get("dividendYield"),
+            "Ausschüttungsquote": info.get("payoutRatio", 0) * 100 if info.get("payoutRatio") else None,
+            "KGV": info.get("trailingPE"),
+            "Forward PE": info.get("forwardPE"),
+            "KBV": info.get("priceToBook"),
+            "KUV": info.get("priceToSalesTrailing12Months"),
+            "PEG-Ratio": info.get("pegRatio"),
+            "EV/EBITDA": info.get("enterpriseToEbitda"),
+            "EBIT": info.get("ebit") or info.get("ebitda"),
+            "Bruttomarge": info.get("grossMargins", 0) * 100 if info.get("grossMargins") else None,
+            "Operative Marge": info.get("operatingMargins", 0) * 100 if info.get("operatingMargins") else None,
+            "Nettomarge": info.get("profitMargins", 0) * 100 if info.get("profitMargins") else None,
+            "Marktkapitalisierung": info.get("marketCap"),
+            "Free Cashflow": info.get("freeCashflow"),
+            "Free Cashflow Yield": (info.get("freeCashflow") / info.get("marketCap")) if info.get("freeCashflow") and info.get("marketCap") else None,
+            "Operativer Cashflow": info.get("operatingCashflow"),
+            "Eigenkapitalrendite": info.get("returnOnEquity", 0) * 100 if info.get("returnOnEquity") else None,
+            "Return on Assets": info.get("returnOnAssets", 0) * 100 if info.get("returnOnAssets") else None,
+            "ROIC": None,
+            "Umsatzwachstum 3J (erwartet)": info.get("revenueGrowth", 0) * 100 if info.get("revenueGrowth") else None,
+            "Analyst Mean Target": info.get("targetMeanPrice"),
+            "Analyst High Target": info.get("targetHighPrice"),
+            "Analyst Low Target": info.get("targetLowPrice"),
+            "Current Price": info.get("currentPrice") or info.get("regularMarketPrice"),
+            "Recommendation Key": info.get("recommendationKey"),
+            "Number of Analysts": info.get("numberOfAnalystOpinions"),
+            "Ex-Dividenden-Datum": datetime.fromtimestamp(info.get("exDividendDate")).strftime("%Y-%m-%d") if info.get("exDividendDate") else None,
+            "Dividenden-Frequenz": info.get("dividendRate"),
+            "Dividenden-Betrag": info.get("dividendRate") or info.get("trailingAnnualDividendRate"),
+            "Abfragedatum": datetime.now().strftime("%Y-%m-%d"),
+            "Datenquelle": "Yahoo Finance (Manual)",
+            "Datenqualität": 1.0,
+            "Fehlende_Kennzahlen": 0
+        }
+        
+        # Write to ticker_resolved.csv
+        resolved_csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "ticker_resolved.csv")
+        if os.path.exists(resolved_csv_path):
+            try:
+                df_res = pd.read_csv(resolved_csv_path)
+                df_res = df_res[df_res['valid_yahoo_ticker'].astype(str).str.upper() != ticker_symbol]
+                new_res = pd.DataFrame([{
+                    "Symbol": ticker_symbol,
+                    "Security": resolved_name,
+                    "GICS Sector": sector,
+                    "valid_yahoo_ticker": ticker_symbol,
+                    "resolved_name": resolved_name,
+                    "resolved_exchange": info.get("exchange", ""),
+                    "resolved_score": 1.0,
+                    "SourceIndex": "MANUAL",
+                    "Sektor": sector
+                }])
+                df_res = pd.concat([df_res, new_res], ignore_index=True)
+                df_res.to_csv(resolved_csv_path, index=False)
+            except Exception as e_res:
+                print(f"⚠️ [WARN] Error writing to data/ticker_resolved.csv: {e_res}")
+                
+        # Write to stock_data.csv (core.CSV_FILE)
+        df_stock = core.load_df()
+        if not df_stock.empty and 'Symbol' in df_stock.columns:
+            df_stock = df_stock[df_stock['Symbol'].astype(str).str.upper() != ticker_symbol]
+            
+        new_stock_df = pd.DataFrame([new_row])
+        df_stock = pd.concat([df_stock, new_stock_df], ignore_index=True)
+        df_stock.to_csv(core.CSV_FILE, index=False)
+        
+        # Reset local cache
+        with core._df_cache_lock:
+            core._CACHED_DF = None
+            core._CACHED_MTIME = 0.0
+            core._SEARCH_INDEX = None
+            
+        # Re-generate sitemap
+        try:
+            from generate_sitemap import generate_sitemap
+            generate_sitemap(csv_path=core.CSV_FILE, output_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "sitemap.xml"))
+        except Exception as e_sm:
+            print(f"⚠️ [WARN] Sitemap generation failed in adder: {e_sm}")
+            
+        div_yield_val = info.get("dividendYield") or 0.0
+        try:
+            div_yield_val = float(div_yield_val)
+        except:
+            div_yield_val = 0.0
+            
+        return jsonify({
+            "status": "success",
+            "message": f"Aktie '{ticker_symbol}' erfolgreich hinzugefügt.",
+            "stock": {
+                "symbol": ticker_symbol,
+                "name": resolved_name,
+                "div_yield": round(div_yield_val, 2),
+                "sector": sector
+            }
+        })
+    except Exception as e:
+        print(f"❌ [ERROR] in /api/add-ticker: {e}")
+        return jsonify({"status": "error", "message": f"Serverfehler beim Hinzufügen der Aktie: {str(e)}"}), 500
+
 # ─── Health Endpoints (Phase 1D) ───────────────────────────
 @app.route('/health/data')
 def app_health_data():

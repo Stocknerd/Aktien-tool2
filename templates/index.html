@@ -703,6 +703,51 @@
       }
     }
 
+    async function addTickerLive(symbol, onDone) {
+      if (!symbol) return;
+      
+      const loader = document.getElementById('loader-overlay');
+      const loadingText = loader ? loader.querySelector('.loading-text') : null;
+      const originalLoadingText = loadingText ? loadingText.innerText : 'Analyse wird erstellt...';
+      
+      if (loader) {
+        if (loadingText) loadingText.innerText = `Lade Daten für '${symbol}'... ⏳`;
+        loader.style.display = 'flex';
+      }
+      
+      try {
+        const res = await fetch('/api/add-ticker', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticker: symbol })
+        });
+        
+        const data = await res.json();
+        
+        if (loader) {
+          loader.style.display = 'none';
+          if (loadingText) loadingText.innerText = originalLoadingText;
+        }
+        
+        if (res.ok && data.status === 'success') {
+          const stock = data.stock;
+          if (!allStocks.some(s => s.symbol === stock.symbol)) {
+            allStocks.push(stock);
+          }
+          alert(`Erfolgreich hinzugefügt: ${stock.name} (${stock.symbol})`);
+          if (onDone) onDone(stock);
+        } else {
+          alert(`Fehler: ${data.message || 'Aktie konnte nicht hinzugefügt werden.'}`);
+        }
+      } catch (err) {
+        if (loader) {
+          loader.style.display = 'none';
+          if (loadingText) loadingText.innerText = originalLoadingText;
+        }
+        alert('Netzwerkfehler beim Hinzufügen der Aktie.');
+      }
+    }
+
     // 1. Primary "stock-search" Autocomplete (Image generator form)
     const search = document.getElementById('stock-search');
     const ticker = document.getElementById('ticker');
@@ -718,8 +763,15 @@
         (s.name && String(s.name).toLowerCase().includes(q))
       ).slice(0, 10);
 
-      if (matches.length > 0) {
-        sugg.innerHTML = matches.map(o => `<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name || ''}</li>`).join('');
+      let html = matches.map(o => `<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name || ''}</li>`).join('');
+      const canAdd = q.length >= 2 && /^[a-z0-9.\-]+$/.test(q);
+      
+      if (canAdd) {
+        html += `<li class='list-group-item text-center missing-ticker-btn font-weight-bold' style='color:var(--accent); cursor:pointer; background:rgba(201,162,39,0.06); border-top:1px solid rgba(201,162,39,0.15);' data-add-sym='${q.toUpperCase()}'>🔍 Ticker "${q.toUpperCase()}" hinzufügen ➕</li>`;
+      }
+
+      if (matches.length > 0 || canAdd) {
+        sugg.innerHTML = html;
         sugg.style.display = 'block';
       } else {
         sugg.style.display = 'none';
@@ -727,6 +779,17 @@
     });
 
     sugg.addEventListener('click', e => {
+      const liAdd = e.target.closest('li[data-add-sym]');
+      if (liAdd) {
+        const sym = liAdd.dataset.addSym;
+        addTickerLive(sym, (stock) => {
+          ticker.value = stock.symbol;
+          search.value = `${stock.symbol} – ${stock.name || ''}`;
+        });
+        sugg.style.display = 'none';
+        return;
+      }
+
       const li = e.target.closest('li[data-sym]');
       if (!li) return;
       const sym = li.dataset.sym;
@@ -756,8 +819,15 @@
         (s.name && String(s.name).toLowerCase().includes(q))
       ).slice(0, 8);
 
-      if (matches.length > 0) {
-        dSugg.innerHTML = matches.map(o => `<div class='search-item' data-sym='${o.symbol}'><strong>${o.symbol}</strong> - ${o.name || ''} <span class="float-end text-success">${o.div_yield ? o.div_yield.toFixed(2) + '%' : '0.00%'}</span></div>`).join('');
+      let html = matches.map(o => `<div class='search-item' data-sym='${o.symbol}'><strong>${o.symbol}</strong> - ${o.name || ''} <span class="float-end text-success">${o.div_yield ? o.div_yield.toFixed(2) + '%' : '0.00%'}</span></div>`).join('');
+      const canAdd = q.length >= 2 && /^[a-z0-9.\-]+$/.test(q);
+      
+      if (canAdd) {
+        html += `<div class='search-item text-center missing-ticker-btn font-weight-bold' style='color:var(--accent); cursor:pointer; background:rgba(201,162,39,0.06); border-top:1px solid rgba(201,162,39,0.15);' data-add-sym='${q.toUpperCase()}'>🔍 Ticker "${q.toUpperCase()}" hinzufügen ➕</div>`;
+      }
+
+      if (matches.length > 0 || canAdd) {
+        dSugg.innerHTML = html;
         dSugg.style.display = 'block';
       } else {
         dSugg.style.display = 'none';
@@ -765,7 +835,17 @@
     });
 
     dSugg.addEventListener('click', e => {
-      const item = e.target.closest('.search-item');
+      const divAdd = e.target.closest('div[data-add-sym]');
+      if (divAdd) {
+        const sym = divAdd.dataset.addSym;
+        addTickerLive(sym, (stock) => {
+          selectStock(stock);
+        });
+        dSugg.style.display = 'none';
+        return;
+      }
+
+      const item = e.target.closest('.search-item[data-sym]');
       if (!item) return;
       
       const symbol = item.dataset.sym;

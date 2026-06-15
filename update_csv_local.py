@@ -149,21 +149,9 @@ def map_info(info: Dict) -> Dict:
 
 
 def get_session():
-    """Erstellt eine requests-Session mit einem realistischen User-Agent."""
-    session = requests.Session()
-    user_agents = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"
-    ]
-    session.headers.update({
-        'User-Agent': random.choice(user_agents),
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-    })
+    """Erstellt eine curl_cffi Session mit Chrome-Impersonation."""
+    from curl_cffi import requests as curl_requests
+    session = curl_requests.Session(impersonate="chrome")
     return session
 
 _SESSIONS = {} # Pro Thread eine Session
@@ -220,6 +208,14 @@ def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: flo
                     if _global_cooldown_until < cooldown_target:
                         _global_cooldown_until = cooldown_target
                         print(f"🛑 [RATE LIMIT DETECTED] Ticker {ticker} triggered 429. Setting global cooldown for 5 mins.")
+                
+                # Reset session to clear bad cookies/crumbs
+                try:
+                    _SESSIONS[tid] = get_session()
+                    session = _SESSIONS[tid]
+                    print(f"🔄 Thread {tid}: Created a new curl_cffi session to bypass rate limit.")
+                except Exception as s_err:
+                    print(f"⚠️ Failed to reset session: {s_err}")
             
             print(f"⚠️ [WARN] Ticker {ticker} Fetch-Fehler (Versuch {attempt}/{max_tries}): {e}")
             time.sleep(base_sleep * (2 ** (attempt - 1)))
@@ -443,6 +439,13 @@ def main() -> None:
     try:
         df.to_csv(FILE_OUTPUT, index=False, encoding="utf-8-sig")
         print(f"[OK] Fertig – Daten in '{FILE_OUTPUT.name}' gespeichert ({updated_rows_count}/{ticker_total} Ticker mit Änderungen).")
+        
+        # Trigger Sitemap Generation
+        try:
+            from generate_sitemap import generate_sitemap
+            generate_sitemap(csv_path=FILE_OUTPUT, output_path=BASE_DIR / "static" / "sitemap.xml")
+        except Exception as sm_err:
+            print(f"⚠️ [WARN] Sitemap-Generierung fehlgeschlagen: {sm_err}")
     except Exception as e:
         print(f"[ERR] Konnte '{FILE_OUTPUT}' nicht schreiben: {e}")
 

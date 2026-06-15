@@ -512,7 +512,6 @@ HOOD,ROBINHOOD MARKETS INC CLASS A,Financials,HOOD,"Robinhood Markets, Inc.",NMS
 PPG,PPG INDUSTRIES INC,Materials,PPG,"PPG Industries, Inc.",NYQ,2005000.0,SP500,
 FITB,FIFTH THIRD BANCORP,Financials,FITB,Fifth Third Bancorp,NMS,2005000.0,SP500,
 STLAM,STELLANTIS NV,Consumer Discretionary,STLAM.MI,STELLANTIS,MIL,20002.0,,
-BMW,BMW AG,Consumer Discretionary,BMW.DE,BAYERISCHE MOTOREN WERKE AG   S,GER,20039.0,DAX,
 KFH,KUWAIT FINANCE HOUSE,Financials,BAITAKREIT.KW,KFH Capital REIT,KUW,20003.0,,
 NTR,NUTRIEN LTD,Materials,NTR,Nutrien Ltd.,NYQ,2003500.0,,
 GDDY,GODADDY INC CLASS A,Information Technology,GDDY,GoDaddy Inc.,NYQ,2002400.0,SP500,
@@ -4105,3 +4104,4 @@ RBRK,"Rubrik, Inc.",Technology,RBRK,"Rubrik, Inc.",NYSE,1.0,MANUAL,Technology
 WAY,Waystar Holding Corp.,Technology,WAY,Waystar Holding Corp.,NASDAQ,1.0,MANUAL,Technology
 TEM,"Tempus AI, Inc.",Healthcare,TEM,"Tempus AI, Inc.",NASDAQ,1.0,MANUAL,Healthcare
 LINE,"Lineage, Inc.",Real Estate,LINE,"Lineage, Inc.",NYSE,1.0,MANUAL,Real Estate
+BMW.DE,Bayerische Motoren Werke Aktiengesellschaft,Consumer Cyclical,BMW.DE,Bayerische Motoren Werke Aktiengesellschaft,GER,1.0,MANUAL,Consumer Cyclical
