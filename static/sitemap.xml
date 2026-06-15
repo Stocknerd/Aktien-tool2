@@ -10939,12 +10939,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://tool.schatzsuche40.de/analyse/BMW</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://tool.schatzsuche40.de/analyse/BMW.DE</loc>
     <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
@@ -19448,12 +19442,6 @@
   </url>
   <url>
     <loc>https://tool.schatzsuche40.de/analyse/P911</loc>
-    <lastmod>2026-06-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://tool.schatzsuche40.de/analyse/P911.DE</loc>
     <lastmod>2026-06-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
