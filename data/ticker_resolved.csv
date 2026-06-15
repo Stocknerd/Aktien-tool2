@@ -4098,3 +4098,10 @@ BTS.R.BK,,,BTS.R.BK,BTS GROUP HOLDINGS NON-VOTING DR P,,,MSCI EM Extended,Indust
 000831.SZ,,,000831.SZ,CHINA RARE EARTH RESOURCES AND TEC,,,MSCI EM Extended,Materials
 MPI.KL,,,MPI.KL,MALAYSIAN PACIFIC INDUSTRIES,,,MSCI EM Extended,Information Technology
 LEMONTREE.NS,,,LEMONTREE.NS,LEMON TREE HOTELS LTD,,,MSCI EM Extended,Consumer Discretionary
+SPCX,Space Exploration Technologies Corp.,Industrials,SPCX,Space Exploration Technologies Corp.,NASDAQ,1.0,MANUAL,Industrials
+KLAR,Klarna Group plc,Financial Services,KLAR,Klarna Group plc,NYSE,1.0,MANUAL,Financial Services
+P911.DE,Porsche AG,Consumer Cyclical,P911.DE,Dr. Ing. h.c. F. Porsche AG,GER,1.0,MANUAL,Consumer Cyclical
+RBRK,"Rubrik, Inc.",Technology,RBRK,"Rubrik, Inc.",NYSE,1.0,MANUAL,Technology
+WAY,Waystar Holding Corp.,Technology,WAY,Waystar Holding Corp.,NASDAQ,1.0,MANUAL,Technology
+TEM,"Tempus AI, Inc.",Healthcare,TEM,"Tempus AI, Inc.",NASDAQ,1.0,MANUAL,Healthcare
+LINE,"Lineage, Inc.",Real Estate,LINE,"Lineage, Inc.",NYSE,1.0,MANUAL,Real Estate
