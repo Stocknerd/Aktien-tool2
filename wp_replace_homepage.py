@@ -16,27 +16,27 @@ HEADERS = {
 # Full replacement - premium dark design only
 NEW_CONTENT = """<!-- wp:html -->
 <style>
-.s40-hero{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);border-radius:20px;padding:60px 40px;text-align:center;margin-bottom:40px;position:relative;overflow:hidden}
-.s40-hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at center,rgba(99,102,241,.15) 0%,transparent 60%);pointer-events:none}
-.s40-hero h2{color:#f1f5f9!important;font-size:2.2rem;font-weight:800;margin-bottom:16px;letter-spacing:-.5px}
-.s40-hero p{color:#94a3b8;font-size:1.1rem;max-width:600px;margin:0 auto 32px;line-height:1.7}
-.s40-badge{display:inline-block;background:rgba(99,102,241,.2);color:#a5b4fc;border:1px solid rgba(99,102,241,.4);border-radius:50px;padding:6px 18px;font-size:.85rem;font-weight:600;margin-bottom:24px;letter-spacing:.5px}
+.s40-hero{background:linear-gradient(135deg,#091719 0%,#0B1E21 50%,#14353a 100%);border-radius:20px;padding:60px 40px;text-align:center;margin-bottom:40px;position:relative;overflow:hidden}
+.s40-hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at center,rgba(201,162,39,0.15) 0%,transparent 60%);pointer-events:none}
+.s40-hero h2{color:#F7F7F7!important;font-size:2.2rem;font-weight:800;margin-bottom:16px;letter-spacing:-.5px}
+.s40-hero p{color:#A0B0B2;font-size:1.1rem;max-width:600px;margin:0 auto 32px;line-height:1.7}
+.s40-badge{display:inline-block;background:rgba(201,162,39,0.15);color:#C9A227;border:1px solid rgba(201,162,39,0.35);border-radius:50px;padding:6px 18px;font-size:.85rem;font-weight:600;margin-bottom:24px;letter-spacing:.5px}
 .s40-tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin:40px 0}
-.s40-tool-card{background:linear-gradient(145deg,rgba(255,255,255,.06) 0%,rgba(255,255,255,.02) 100%);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:32px 28px;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;position:relative;overflow:hidden;text-decoration:none!important;display:block}
-.s40-tool-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.3);border-color:rgba(99,102,241,.5);text-decoration:none!important}
+.s40-tool-card{background:rgba(20, 44, 48, 0.45);border:1px solid rgba(201, 162, 39, 0.12);border-radius:16px;padding:32px 28px;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;position:relative;overflow:hidden;text-decoration:none!important;display:block}
+.s40-tool-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.3);border-color:rgba(201, 162, 39, 0.5);text-decoration:none!important}
 .s40-tool-icon{font-size:2.5rem;margin-bottom:16px;display:block}
-.s40-tool-title{color:#f1f5f9!important;font-size:1.25rem;font-weight:700;margin:0 0 10px}
-.s40-tool-desc{color:#94a3b8;font-size:.95rem;line-height:1.6;margin:0 0 20px}
-.s40-tool-tag{display:inline-block;background:rgba(99,102,241,.15);color:#a5b4fc;border-radius:6px;padding:3px 10px;font-size:.78rem;font-weight:600;margin-right:6px;margin-bottom:4px}
-.s40-tool-cta{display:inline-block;background:linear-gradient(90deg,#6366f1,#8b5cf6);color:#fff!important;padding:10px 22px;border-radius:8px;font-weight:700;font-size:.9rem;margin-top:16px;text-decoration:none!important;transition:opacity .2s}
-.s40-tool-cta:hover{opacity:.9;color:#fff!important;text-decoration:none!important}
+.s40-tool-title{color:#F7F7F7!important;font-size:1.25rem;font-weight:700;margin:0 0 10px}
+.s40-tool-desc{color:#A0B0B2;font-size:.95rem;line-height:1.6;margin:0 0 20px}
+.s40-tool-tag{display:inline-block;background:rgba(26,83,92,0.45);color:#A0B0B2;border-radius:6px;padding:3px 10px;font-size:.78rem;font-weight:600;margin-right:6px;margin-bottom:4px}
+.s40-tool-cta{display:inline-block;background:linear-gradient(90deg,#C9A227,#E5BA3B);color:#0B1E21!important;padding:10px 22px;border-radius:8px;font-weight:700;font-size:.9rem;margin-top:16px;text-decoration:none!important;transition:opacity .2s}
+.s40-tool-cta:hover{opacity:.9;color:#0B1E21!important;text-decoration:none!important}
 .s40-coming-soon .s40-tool-title,.s40-coming-soon .s40-tool-desc{opacity:.6}
 .s40-coming-soon .s40-tool-tag{background:rgba(148,163,184,.1);color:#64748b}
 .s40-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:40px 0}
-.s40-stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:24px 16px;text-align:center}
-.s40-stat-number{display:block;font-size:2rem;font-weight:800;color:#818cf8;margin-bottom:4px}
-.s40-stat-label{font-size:.85rem;color:#64748b}
-.s40-wrapper{background:#0f172a;border-radius:24px;padding:48px 40px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.s40-stat{background:rgba(20, 44, 48, 0.2);border:1px solid rgba(201, 162, 39, 0.08);border-radius:12px;padding:24px 16px;text-align:center}
+.s40-stat-number{display:block;font-size:2rem;font-weight:800;color:#C9A227;margin-bottom:4px}
+.s40-stat-label{font-size:.85rem;color:#A0B0B2}
+.s40-wrapper{background:#0B1E21;border-radius:24px;padding:48px 40px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
 @media(max-width:640px){.s40-hero{padding:40px 20px}.s40-hero h2{font-size:1.6rem}.s40-stats{grid-template-columns:1fr}.s40-wrapper{padding:28px 20px}}
 </style>
 

@@ -12,17 +12,17 @@
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.7);
-      --accent: #10b981;
-      --accent-hover: #059669;
+      --bg: #0B1E21;
+      --card-bg: rgba(20, 44, 48, 0.7);
+      --accent: #C9A227;
+      --accent-hover: #A8861B;
     }
 
     body {
       background-color: var(--bg);
       background-image: 
-        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+        radial-gradient(at 0% 0%, rgba(201, 162, 39, 0.04) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(26, 83, 92, 0.05) 0px, transparent 50%);
       color: white;
       font-family: 'Inter', sans-serif;
       margin: 0;
@@ -73,7 +73,7 @@
     .btn-download {
       background: var(--accent);
       border: none;
-      color: white;
+      color: #0B1E21;
       font-weight: 700;
       padding: 12px 24px;
       border-radius: 10px;
@@ -88,8 +88,8 @@
     .btn-download:hover {
       background: var(--accent-hover);
       transform: translateY(-2px);
-      color: white;
-      box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+      color: #0B1E21;
+      box-shadow: 0 10px 15px -3px rgba(201, 162, 39, 0.3);
     }
 
     .btn-back {
@@ -138,8 +138,8 @@
     {% endif %}
 
     .ai-verdict-box {
-        background: rgba(16, 185, 129, 0.05);
-        border: 1px solid rgba(16, 185, 129, 0.2);
+        background: rgba(201, 162, 39, 0.05);
+        border: 1px solid rgba(201, 162, 39, 0.2);
         border-radius: 16px;
         padding: 24px;
         margin-bottom: 40px;
@@ -147,7 +147,7 @@
         max-width: 600px;
         text-align: left;
     }
-    .ai-verdict-box h5 { color: #10b981; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .ai-verdict-box h5 { color: var(--accent); font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
     .ai-verdict-content { color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; }
   </style>
 </head>

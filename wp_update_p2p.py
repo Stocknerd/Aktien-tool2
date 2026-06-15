@@ -20,38 +20,37 @@ LOGOS = {
 
 P2P_HTML = f"""<!-- wp:html -->
 <style>
-.p2p-container {{ font-family: 'Inter', sans-serif; color: #f1f5f9; max-width: 1000px; margin: 0 auto; }}
-.p2p-intro {{ background: rgba(255,255,255,0.03); border-radius: 20px; padding: 40px; margin-bottom: 40px; border: 1px solid rgba(255,255,255,0.05); text-align: center; }}
-.p2p-intro h2 {{ color: #10b981 !important; font-size: 2.2rem; font-weight: 800; margin-bottom: 20px; }}
-.p2p-intro p {{ font-size: 1.1rem; line-height: 1.8; color: #94a3b8; max-width: 800px; margin: 0 auto; }}
+.p2p-container {{ font-family: 'Inter', sans-serif; color: #F7F7F7; max-width: 1000px; margin: 0 auto; }}
+.p2p-intro {{ background: rgba(20, 44, 48, 0.45); border-radius: 20px; padding: 40px; margin-bottom: 40px; border: 1px solid rgba(201, 162, 39, 0.12); text-align: center; }}
+.p2p-intro h2 {{ color: #C9A227 !important; font-size: 2.2rem; font-weight: 800; margin-bottom: 20px; }}
+.p2p-intro p {{ font-size: 1.1rem; line-height: 1.8; color: #A0B0B2; max-width: 800px; margin: 0 auto; }}
 
 .p2p-comparison {{ margin: 60px 0; }}
-.p2p-card {{ background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 40px; margin-bottom: 30px; display: flex; align-items: center; gap: 40px; transition: all 0.3s ease; }}
-.p2p-card:hover {{ transform: translateY(-5px); border-color: #10b981; box-shadow: 0 20px 40px rgba(0,0,0,0.3); background: rgba(30, 41, 59, 0.6); }}
+.p2p-card {{ background: rgba(20, 44, 48, 0.45); border: 1px solid rgba(201, 162, 39, 0.12); border-radius: 24px; padding: 40px; margin-bottom: 30px; display: flex; align-items: center; gap: 40px; transition: all 0.3s ease; }}
+.p2p-card:hover {{ transform: translateY(-5px); border-color: #C9A227; box-shadow: 0 20px 40px rgba(0,0,0,0.3); background: rgba(20, 44, 48, 0.6); }}
 .p2p-logo {{ width: 140px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }}
 .p2p-logo img {{ width: 100%; height: auto; max-height: 100%; object-fit: contain; }}
 .p2p-content {{ flex: 1; }}
-.p2p-tag {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 6px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.05em; }}
+.p2p-tag {{ display: inline-block; background: rgba(201, 162, 39, 0.15); color: #C9A227; padding: 6px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.05em; }}
 .p2p-title {{ font-size: 1.8rem; font-weight: 800; color: #fff !important; margin-bottom: 12px; }}
-.p2p-desc {{ color: #94a3b8; font-size: 1rem; margin-bottom: 20px; line-height: 1.6; }}
+.p2p-desc {{ color: #A0B0B2; font-size: 1rem; margin-bottom: 20px; line-height: 1.6; }}
 .p2p-features {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px; }}
 .p2p-feature {{ font-size: 0.95rem; color: #cbd5e1; display: flex; align-items: center; gap: 10px; }}
-.p2p-feature::before {{ content: '✓'; color: #10b981; font-weight: 900; }}
-.p2p-cta {{ background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff !important; padding: 14px 28px; border-radius: 12px; font-weight: 800; text-decoration: none !important; display: inline-block; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: 0.2s; }}
-.p2p-cta:hover {{ transform: scale(1.05); filter: brightness(1.1); }}
-.p2p-yield {{ font-size: 1.5rem; font-weight: 900; color: #10b981; text-align: right; min-width: 140px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 20px; }}
+.p2p-feature::before {{ content: '✓'; color: #C9A227; font-weight: 900; }}
+.p2p-cta {{ background: linear-gradient(135deg, #C9A227 0%, #E5BA3B 100%); color: #0B1E21 !important; padding: 14px 28px; border-radius: 12px; font-weight: 800; text-decoration: none !important; display: inline-block; box-shadow: 0 4px 12px rgba(201, 162, 39, 0.3); transition: 0.2s; }}
+.p2p-cta:hover {{ transform: scale(1.05); filter: brightness(1.1); color: #0B1E21 !important; }}
+.p2p-yield {{ font-size: 1.5rem; font-weight: 900; color: #C9A227; text-align: right; min-width: 140px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 20px; }}
 
 .p2p-faq {{ margin-top: 80px; }}
 .p2p-faq h3 {{ font-size: 2rem; font-weight: 800; color: #fff !important; margin-bottom: 30px; text-align: center; }}
-.faq-item {{ margin-bottom: 25px; background: rgba(255,255,255,0.02); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }}
-.faq-item h4 {{ color: #10b981 !important; font-weight: 700; margin-top: 0; margin-bottom: 10px; }}
-.faq-item p {{ color: #94a3b8; line-height: 1.6; margin-bottom: 0; }}
+.faq-item {{ margin-bottom: 25px; background: rgba(20, 44, 48, 0.2); padding: 25px; border-radius: 20px; border: 1px solid rgba(201, 162, 39, 0.08); }}
+.faq-item h4 {{ color: #C9A227 !important; font-weight: 700; margin-top: 0; margin-bottom: 10px; }}
+.faq-item p {{ color: #A0B0B2; line-height: 1.6; margin-bottom: 0; }}
 
-.p2p-table-container {{ overflow-x: auto; margin: 40px 0; background: rgba(30, 41, 59, 0.3); border-radius: 20px; padding: 20px; }}
+.p2p-table-container {{ overflow-x: auto; margin: 40px 0; background: rgba(20, 44, 48, 0.3); border-radius: 20px; padding: 20px; }}
 .p2p-table {{ width: 100%; border-collapse: collapse; color: #cbd5e1; }}
 .p2p-table th {{ text-align: left; padding: 15px; border-bottom: 2px solid rgba(255,255,255,0.1); color: #fff; text-transform: uppercase; font-size: 0.8rem; }}
 .p2p-table td {{ padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }}
-
 @media (max-width: 900px) {{
   .p2p-card {{ flex-direction: column; text-align: center; padding: 30px; }}
   .p2p-yield {{ border-left: none; padding-left: 0; text-align: center; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }}
@@ -179,13 +178,13 @@ P2P_HTML = f"""<!-- wp:html -->
     <p class="mb-0 small" style="color: #94a3b8;">P2P-Investments sind mit Risiken verbunden. Es handelt sich um unbesicherte (oder nur durch Garantien besicherte) Kredite. Es besteht das Risiko eines Totalverlustes. Streue dein Kapital daher immer auf verschiedene Plattformen und Tausende Einzelkredite.</p>
   </div>
 
-  <div class="mt-5 text-center p-4 rounded-4" style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.3);">
+  <div class="mt-5 text-center p-4 rounded-4" style="background: rgba(201, 162, 39, 0.05); border: 1px dashed rgba(201, 162, 39, 0.3);">
     <h5 class="fw-bold mb-3" style="color: #fff;">Lieber in Aktien investieren?</h5>
     <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;">
-        <a href="https://www.financeads.net/tc.php?t=47128C142835927T" target="_blank" style="background: #10b981; color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 700;">Scalable Capital*</a>
-        <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" style="background: #1e3a8a; color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 700;">Consorsbank (Reinvest)</a>
+        <a href="https://www.financeads.net/tc.php?t=47128C142835927T" target="_blank" style="background: #C9A227; color: #0B1E21; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 700;">Scalable Capital*</a>
+        <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" style="background: rgba(26, 83, 92, 0.6); color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 700; border: 1px solid rgba(201, 162, 39, 0.25);">Consorsbank (Reinvest)</a>
     </div>
-    <p style="margin-top: 15px; font-size: 0.85rem; color: #94a3b8;"><strong>💡 Tipp:</strong> Bei der <strong>Consorsbank</strong> kannst du Dividenden jetzt vollautomatisch reinvestieren!</p>
+    <p style="margin-top: 15px; font-size: 0.85rem; color: #A0B0B2;"><strong>💡 Tipp:</strong> Bei der <strong>Consorsbank</strong> kannst du Dividenden jetzt vollautomatisch reinvestieren!</p>
   </div>
 </div>
 

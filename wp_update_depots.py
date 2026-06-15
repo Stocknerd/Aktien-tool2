@@ -30,7 +30,7 @@ DEPOTS_HTML = """<!-- wp:html -->
 }
 .depot-card:hover {
   transform: translateY(-4px);
-  border-color: #6366f1;
+  border-color: #C9A227;
 }
 .depot-logo {
   width: 120px;
@@ -52,8 +52,8 @@ DEPOTS_HTML = """<!-- wp:html -->
 }
 .depot-tag {
   display: inline-block;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  background: rgba(201, 162, 39, 0.15);
+  color: #C9A227;
   padding: 4px 12px;
   border-radius: 50px;
   font-size: 0.8rem;
@@ -81,12 +81,12 @@ DEPOTS_HTML = """<!-- wp:html -->
 }
 .depot-feature::before {
   content: '✓';
-  color: #10b981;
+  color: #C9A227;
   font-weight: bold;
 }
 .depot-cta {
-  background: #6366f1;
-  color: #fff !important;
+  background: #C9A227;
+  color: #0B1E21 !important;
   padding: 14px 28px;
   border-radius: 10px;
   font-weight: 700;

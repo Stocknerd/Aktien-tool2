@@ -10,10 +10,10 @@
     <link href="{{ url_for('static', filename='css/dividend.css') }}" rel="stylesheet">
     <style>
         body {
-            background-color: #090e1a;
+            background-color: var(--bg, #0B1E21);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(201, 162, 39, 0.04) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(26, 83, 92, 0.05) 0px, transparent 50%);
             color: white;
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
@@ -50,13 +50,13 @@
             text-decoration: none;
         }
         .nav-btn.active {
-            border-color: rgba(16, 185, 129, 0.3);
-            color: #10b981;
-            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(201, 162, 39, 0.3);
+            color: var(--accent);
+            background: var(--accent-soft);
         }
 
         .navbar {
-            background: rgba(13, 20, 38, 0.85);
+            background: rgba(13, 34, 38, 0.85);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
@@ -65,7 +65,7 @@
             letter-spacing: -0.02em;
         }
         .navbar-brand span {
-            color: #10b981;
+            color: var(--accent);
         }
         /* Custom layout grids for calculator page */
         .calculator-grid {
@@ -79,7 +79,7 @@
             }
         }
         .card-panel {
-            background: rgba(13, 20, 38, 0.55);
+            background: rgba(20, 44, 48, 0.45);
             border: 1px solid var(--border);
             border-radius: 20px;
             padding: 26px;
@@ -107,7 +107,7 @@
             padding: 24px;
             text-align: center;
         }
-        .broker-promo h5 { font-size: 1.1rem; margin-bottom: 15px; color: #10b981; }
+        .broker-promo h5 { font-size: 1.1rem; margin-bottom: 15px; color: var(--accent); }
         .broker-btn-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 15px; }
         .btn-broker { padding: 8px 18px; border-radius: 50px; font-weight: 700; font-size: 0.85rem; text-decoration: none; transition: 0.2s; }
         .btn-scalable { background: #000; color: white; border: 1px solid #333; }

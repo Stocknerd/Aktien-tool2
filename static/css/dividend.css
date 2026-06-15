@@ -1,18 +1,18 @@
 /* Premium Glassmorphic Dividend Calculator Styles */
 :root {
-    --bg: #090e1a;
-    --surface: rgba(13, 20, 38, 0.85);
-    --card: rgba(22, 33, 62, 0.45);
-    --border: rgba(148, 163, 184, 0.08);
-    --border-glow: rgba(16, 185, 129, 0.2);
-    --accent: #10b981;
-    --accent-glow: rgba(16, 185, 129, 0.35);
-    --accent-soft: rgba(16, 185, 129, 0.08);
-    --blue: #3b82f6;
-    --blue-glow: rgba(59, 130, 246, 0.35);
-    --text: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-dim: #475569;
+    --bg: #0B1E21;
+    --surface: rgba(13, 34, 38, 0.85);
+    --card: rgba(20, 44, 48, 0.45);
+    --border: rgba(201, 162, 39, 0.12);
+    --border-glow: rgba(201, 162, 39, 0.35);
+    --accent: #C9A227;
+    --accent-glow: rgba(201, 162, 39, 0.45);
+    --accent-soft: rgba(201, 162, 39, 0.08);
+    --blue: #1A535C;
+    --blue-glow: rgba(26, 83, 92, 0.45);
+    --text: #F7F7F7;
+    --text-secondary: #A0B0B2;
+    --text-dim: #5c7477;
     --shadow: 0 20px 40px rgba(0, 0, 0, 0.65);
 }
 

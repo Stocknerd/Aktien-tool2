@@ -20,7 +20,7 @@ HEADERS = {
 HOMEPAGE_HTML = """<!-- wp:html -->
 <style>
 .s40-hero {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: linear-gradient(135deg, #091719 0%, #0B1E21 50%, #14353a 100%);
   border-radius: 20px;
   padding: 60px 40px;
   text-align: center;
@@ -35,18 +35,18 @@ HOMEPAGE_HTML = """<!-- wp:html -->
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(ellipse at center, rgba(99,102,241,0.15) 0%, transparent 60%);
+  background: radial-gradient(ellipse at center, rgba(201, 162, 39, 0.15) 0%, transparent 60%);
   pointer-events: none;
 }
 .s40-hero h2 {
-  color: #f1f5f9 !important;
+  color: #F7F7F7 !important;
   font-size: 2.2rem;
   font-weight: 800;
   margin-bottom: 16px;
   letter-spacing: -0.5px;
 }
 .s40-hero p {
-  color: #94a3b8;
+  color: #A0B0B2;
   font-size: 1.1rem;
   max-width: 600px;
   margin: 0 auto 32px;
@@ -54,9 +54,9 @@ HOMEPAGE_HTML = """<!-- wp:html -->
 }
 .s40-badge {
   display: inline-block;
-  background: rgba(99,102,241,0.2);
-  color: #a5b4fc;
-  border: 1px solid rgba(99,102,241,0.4);
+  background: rgba(201, 162, 39, 0.15);
+  color: #C9A227;
+  border: 1px solid rgba(201, 162, 39, 0.35);
   border-radius: 50px;
   padding: 6px 18px;
   font-size: 0.85rem;
@@ -71,8 +71,8 @@ HOMEPAGE_HTML = """<!-- wp:html -->
   margin: 40px 0;
 }
 .s40-tool-card {
-  background: linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(20, 44, 48, 0.45);
+  border: 1px solid rgba(201, 162, 39, 0.12);
   border-radius: 16px;
   padding: 32px 28px;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
@@ -84,7 +84,7 @@ HOMEPAGE_HTML = """<!-- wp:html -->
 .s40-tool-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-  border-color: rgba(99,102,241,0.5);
+  border-color: rgba(201, 162, 39, 0.5);
   text-decoration: none !important;
 }
 .s40-tool-icon {
@@ -93,21 +93,21 @@ HOMEPAGE_HTML = """<!-- wp:html -->
   display: block;
 }
 .s40-tool-title {
-  color: #f1f5f9 !important;
+  color: #F7F7F7 !important;
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 10px;
 }
 .s40-tool-desc {
-  color: #94a3b8;
+  color: #A0B0B2;
   font-size: 0.95rem;
   line-height: 1.6;
   margin: 0 0 20px;
 }
 .s40-tool-tag {
   display: inline-block;
-  background: rgba(99,102,241,0.15);
-  color: #a5b4fc;
+  background: rgba(26, 83, 92, 0.45);
+  color: #A0B0B2;
   border-radius: 6px;
   padding: 3px 10px;
   font-size: 0.78rem;
@@ -117,8 +117,8 @@ HOMEPAGE_HTML = """<!-- wp:html -->
 }
 .s40-tool-cta {
   display: inline-block;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  color: #fff !important;
+  background: linear-gradient(90deg, #C9A227, #E5BA3B);
+  color: #0B1E21 !important;
   padding: 10px 22px;
   border-radius: 8px;
   font-weight: 700;
@@ -129,7 +129,7 @@ HOMEPAGE_HTML = """<!-- wp:html -->
 }
 .s40-tool-cta:hover {
   opacity: 0.9;
-  color: #fff !important;
+  color: #0B1E21 !important;
   text-decoration: none !important;
 }
 .s40-coming-soon .s40-tool-title, .s40-coming-soon .s40-tool-desc {
@@ -146,8 +146,8 @@ HOMEPAGE_HTML = """<!-- wp:html -->
   margin: 40px 0;
 }
 .s40-stat {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(20, 44, 48, 0.2);
+  border: 1px solid rgba(201, 162, 39, 0.08);
   border-radius: 12px;
   padding: 24px 16px;
   text-align: center;
@@ -156,15 +156,15 @@ HOMEPAGE_HTML = """<!-- wp:html -->
   display: block;
   font-size: 2rem;
   font-weight: 800;
-  color: #818cf8;
+  color: #C9A227;
   margin-bottom: 4px;
 }
 .s40-stat-label {
   font-size: 0.85rem;
-  color: #64748b;
+  color: #A0B0B2;
 }
 .s40-wrapper {
-  background: #0f172a;
+  background: #0B1E21;
   border-radius: 24px;
   padding: 48px 40px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -179,7 +179,7 @@ HOMEPAGE_HTML = """<!-- wp:html -->
 /* Newsletter Section */
 .s40-newsletter {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px dashed rgba(99, 102, 241, 0.3);
+  border: 1px dashed rgba(201, 162, 39, 0.3);
   border-radius: 20px;
   padding: 40px;
   margin-top: 40px;
@@ -192,7 +192,7 @@ HOMEPAGE_HTML = """<!-- wp:html -->
   margin-bottom: 12px;
 }
 .s40-newsletter p {
-  color: #94a3b8;
+  color: #A0B0B2;
   font-size: 1rem;
   max-width: 500px;
   margin: 0 auto 24px;
@@ -213,11 +213,11 @@ HOMEPAGE_HTML = """<!-- wp:html -->
   outline: none;
 }
 .s40-newsletter-form input:focus {
-  border-color: #6366f1;
+  border-color: #C9A227;
 }
 .s40-newsletter-btn {
-  background: #6366f1;
-  color: #fff !important;
+  background: #C9A227;
+  color: #0B1E21 !important;
   border: none;
   border-radius: 8px;
   padding: 12px 24px;
@@ -227,6 +227,7 @@ HOMEPAGE_HTML = """<!-- wp:html -->
 }
 .s40-newsletter-btn:hover {
   opacity: 0.9;
+  color: #0B1E21 !important;
 }
 @media (max-width: 500px) {
   .s40-newsletter-form { flex-direction: column; }

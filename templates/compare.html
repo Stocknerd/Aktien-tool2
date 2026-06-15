@@ -8,24 +8,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-          --bg: #090e1a;
-          --surface: rgba(13, 20, 38, 0.85);
-          --card: rgba(22, 33, 62, 0.45);
-          --border: rgba(148, 163, 184, 0.08);
-          --accent: #10b981;
-          --accent-hover: #059669;
-          --accent-soft: rgba(16, 185, 129, 0.08);
-          --blue: #3b82f6;
-          --text: #f8fafc;
-          --text-secondary: #94a3b8;
+          --bg: #0B1E21;
+          --surface: rgba(13, 34, 38, 0.85);
+          --card: rgba(20, 44, 48, 0.45);
+          --border: rgba(201, 162, 39, 0.12);
+          --accent: #C9A227;
+          --accent-hover: #A8861B;
+          --accent-soft: rgba(201, 162, 39, 0.08);
+          --blue: #1A535C;
+          --text: #F7F7F7;
+          --text-secondary: #A0B0B2;
           --shadow: 0 20px 40px rgba(0, 0, 0, 0.65);
         }
 
         body {
           background-color: var(--bg);
           background-image: 
-            radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.04) 0px, transparent 50%),
-            radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.04) 0px, transparent 50%);
+            radial-gradient(at 0% 0%, rgba(201, 162, 39, 0.04) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(26, 83, 92, 0.05) 0px, transparent 50%);
           color: var(--text);
           font-family: 'Inter', sans-serif;
           min-height: 100vh;
@@ -67,19 +67,20 @@
           padding: 14px;
           border-radius: 10px;
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+          box-shadow: 0 4px 10px rgba(201, 162, 39, 0.25);
+          color: #0B1E21 !important;
         }
 
         .btn-primary:hover {
-          background-color: #059669;
+          background-color: #A8861B;
           transform: translateY(-2px);
-          box-shadow: 0 10px 15px rgba(16, 185, 129, 0.4);
+          box-shadow: 0 10px 15px rgba(201, 162, 39, 0.4);
         }
 
         .suggestions {
           position: absolute;
           z-index: 1000;
-          background: #0d1322;
+          background: #0B1E21;
           border: 1px solid var(--border);
           width: 100%;
           max-height: 200px;
