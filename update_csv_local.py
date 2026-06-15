@@ -18,6 +18,7 @@ import math
 import os
 import random
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -167,7 +168,12 @@ def get_session():
 
 _SESSIONS = {} # Pro Thread eine Session
 
+_cooldown_lock = threading.Lock()
+_global_cooldown_until = 0.0
+
 def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: float = BACKOFF_START) -> Dict:
+    global _global_cooldown_until
+    
     # Session pro Thread holen oder erstellen
     from threading import current_thread
     tid = current_thread().name
@@ -177,12 +183,19 @@ def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: flo
     
     last_err: Exception | None = None
     for attempt in range(1, max_tries + 1):
+        # Check global cooldown
+        current_time = time.time()
+        if current_time < _global_cooldown_until:
+            sleep_time = _global_cooldown_until - current_time
+            print(f"[COOLDOWN] Thread {tid} sleeping for {sleep_time:.1f}s due to active rate limit cooldown.")
+            time.sleep(sleep_time)
+            
         try:
             # pro Ticker etwas Jitter
             time.sleep(random.uniform(*PER_TICKER_JITTER))
             
-            # yf.Ticker nutzen
-            t_obj = yf.Ticker(ticker)
+            # yf.Ticker nutzen mit custom session!
+            t_obj = yf.Ticker(ticker, session=session)
             info = t_obj.info  # schnelle Lösung über .info
             
             # G1: Speichern als rohes JSON für Data-Lake / RAG
@@ -196,8 +209,21 @@ def get_info_with_retry(ticker: str, max_tries: int = MAX_TRIES, base_sleep: flo
             return info
         except Exception as e:
             last_err = e
+            err_msg = str(e)
+            
+            # Check if it is a rate limit error
+            is_rate_limit = "Too Many Requests" in err_msg or "Rate limited" in err_msg or "429" in err_msg
+            
+            if is_rate_limit:
+                with _cooldown_lock:
+                    cooldown_target = time.time() + 300.0
+                    if _global_cooldown_until < cooldown_target:
+                        _global_cooldown_until = cooldown_target
+                        print(f"🛑 [RATE LIMIT DETECTED] Ticker {ticker} triggered 429. Setting global cooldown for 5 mins.")
+            
             print(f"⚠️ [WARN] Ticker {ticker} Fetch-Fehler (Versuch {attempt}/{max_tries}): {e}")
             time.sleep(base_sleep * (2 ** (attempt - 1)))
+            
     print(f"❌ [ERROR] Ticker {ticker} fatal fehlgeschlagen nach {max_tries} Versuchen.")
     raise last_err  # type: ignore[return-value]
 
