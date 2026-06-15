@@ -320,6 +320,65 @@ def post_to_pinterest(title, description, image_path, link_url=None):
         print(f"[ERR] Pinterest-Posting fehlgeschlagen: {e}")
         return False
 
+def post_facebook_reel(caption, video_path):
+    """Postet ein Video als Facebook Reel auf die Facebook-Page (Schatzsuche 4.0)."""
+    PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
+    META_PAGE_ID = os.environ.get("META_PAGE_ID")
+    
+    if not PAGE_TOKEN or not META_PAGE_ID:
+        print("[SKIP] Facebook Reel: PAGE_TOKEN oder META_PAGE_ID fehlen.")
+        return False
+        
+    print(f"UPLOAD: Starte Facebook Reel Upload: {os.path.basename(video_path)}")
+    file_size = os.path.getsize(video_path)
+    url_base = f"https://graph.facebook.com/v20.0/{META_PAGE_ID}/video_reels"
+
+    try:
+        # STEP 1: INIT
+        params = {'upload_phase': 'start', 'access_token': PAGE_TOKEN}
+        response = requests.post(url_base, params=params).json()
+        if 'video_id' not in response:
+            print(f"ERROR: FB Reel Init Fehler: {response}")
+            return False
+        
+        video_id = response['video_id']
+        upload_url = response.get('upload_url', f"https://rupload.facebook.com/video-reels/{video_id}")
+        
+        # STEP 2: UPLOAD
+        headers = {
+            'Authorization': f'OAuth {PAGE_TOKEN}',
+            'offset': '0',
+            'file_size': str(file_size),
+            'Content-Type': 'application/octet-stream'
+        }
+        with open(video_path, 'rb') as f:
+            upload_res = requests.post(upload_url, data=f, headers=headers).json()
+            
+        if not upload_res.get('success'):
+            print(f"ERROR: FB Reel Upload Fehler: {upload_res}")
+            return False
+
+        # STEP 3: FINALIZE
+        publish_params = {
+            'upload_phase': 'finish',
+            'access_token': PAGE_TOKEN,
+            'video_id': video_id,
+            'description': caption,
+            'video_state': 'PUBLISHED'
+        }
+        
+        publish_res = requests.post(url_base, params=publish_params).json()
+        if publish_res.get('success'):
+            print(f"[OK] Facebook Reel erfolgreich veröffentlicht! ID: {video_id}")
+            return True
+        else:
+            print(f"ERROR: FB Reel Publish Fehler: {publish_res}")
+            return False
+    except Exception as e:
+        print(f"[ERR] Facebook Reel-Posting fehlgeschlagen: {e}")
+        return False
+
+
 def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None, title=None, comment_text=None, skip_instagram=False):
     """Hier erfolgt der koordinierte Social-Media-Push."""
     print(f"Bündele Social-Media-Push für {symbol}...")

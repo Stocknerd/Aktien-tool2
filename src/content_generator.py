@@ -72,7 +72,7 @@ def generate_structured_content(topic, template_type="evergreen"):
             "Titel 5 (max 30 Chars): Beschreibung 5 (max 150 Chars)"
           ],
           "dalle_prompt": "Detaillierter Prompt für ein 9:16 Bild (max. 3 Farbnuancen: warmes Gold, dunkles Petrol, Offwhite). Keine Menschen, keine Gesichter.",
-          "caption_ig": "Instagram-Caption mit Absätzen, Emojis, Hashtags, CTA und dem Disclaimer.",
+          "caption_ig": "Instagram-Caption, die direkt mit einer extrem packenden Frage oder These (Hook) beginnt, um Kommentare zu provozieren, gefolgt von strukturierten Absätzen, Emojis, Hashtags, CTA und dem rechtlichen Disclaimer.",
           "caption_tiktok": "Kurze, knackige TikTok-Caption.",
           "caption_shorts": "Spannende YouTube Shorts Caption.",
           "reel_script": "Sprechtext für das Video-Voiceover (60-80 Wörter). Startet direkt mit der Hook, absolut keine Begrüßungen!"
@@ -106,7 +106,7 @@ def generate_structured_content(topic, template_type="evergreen"):
             "Punkt 3 (max 105 Zeichen, handlungsauffordernd)"
           ],
           "dalle_prompt": "Detaillierter Prompt für ein 9:16 Bild. Beschreibe eine ästhetische, leicht geheimnisvolle oder hochmoderne Finanz-Metapher. Verwende Farben wie warmes Gold und dunkles Petrol. KEINE Menschen, KEINE Gesichter. Nur hochwertige, dreidimensionale, filmisch beleuchtete Konzeptkunst.",
-          "caption_ig": "Instagram-Caption mit Absätzen, Emojis, Hashtags, CTA und dem rechtlichen Disclaimer am Ende.",
+          "caption_ig": "Instagram-Caption, die direkt mit einer extrem packenden Frage oder These (Hook) beginnt, um Kommentare zu provozieren, gefolgt von strukturierten Absätzen, Emojis, Hashtags, CTA und dem rechtlichen Disclaimer am Ende.",
           "caption_tiktok": "Kurze, knackige TikTok-Caption mit Hook, Emojis und Top-Hashtags.",
           "caption_shorts": "Spannende YouTube Shorts Caption inklusive kurzer Beschreibung.",
           "reel_script": "Der fließende, laut gesprochene Sprechtext für das Video-Voiceover (60-80 Wörter). Startet direkt mit der Hook, absolut keine Begrüßungen!"

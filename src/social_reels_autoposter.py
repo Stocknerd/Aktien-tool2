@@ -18,7 +18,7 @@ from src.youtube_uploader import upload_video as youtube_upload_video
 
 from core import render_stock_card, render_compare, CSV_FILE
 from ai_logic import get_tool_promotion_caption, get_ai_verdict, get_ai_comparison_verdict
-from social_publisher import run_social_sync, post_instagram_reel
+from social_publisher import run_social_sync, post_instagram_reel, post_facebook_reel
 
 ## A deep and structured list of 80 evergreen financial topics for Track 3 (AI Infographics)
 EVERGREEN_FINANCIAL_TOPICS = [
@@ -485,13 +485,13 @@ def run_track_ai(topic=None):
         detected_mood = "chill"
     print(f"AI TRACK: Dynamic background music mood detected: {detected_mood}")
 
-    # 3. Render Reel Video with Voiceover and Karaoke Subtitles
-    print("AI TRACK: Rendering Reel video with voiceover and subtitles...")
+    # 3. Render Reel Video with Voiceover and Karaoke Subtitles (Option A: Silent Reel)
+    print("AI TRACK: Rendering Reel video with voiceover and subtitles (silent)...")
     build_reel_mp4(
         script_text=content.get("reel_script"),
         background_image_path=image_path,
         output_mp4_path=video_path,
-        silent=False,
+        silent=True,
         duration=15.0,
         mood=detected_mood
     )
@@ -513,6 +513,10 @@ def run_track_ai(topic=None):
     # 5. Instagram Reels Upload (Video)
     print("AI TRACK: Publishing Video to Instagram Reels...")
     post_instagram_reel(caption_ig, video_filename, "👉 Folge @schatzsuche40 für dein tägliches Finanzwissen! 🚀")
+    
+    # 5b. Facebook Reels Upload (Video)
+    print("AI TRACK: Publishing Video to Facebook Reels...")
+    post_facebook_reel(caption_ig, video_path)
     
     # 6. YouTube Shorts Upload (Video)
     print("AI TRACK: Uploading Video to YouTube Shorts...")
