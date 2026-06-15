@@ -44,7 +44,7 @@ def get_ticker_meta(ticker):
         }
     return None
 
-def get_related_stocks(ticker, limit=6):
+def get_related_stocks(ticker, limit=4):
     df = core.load_df()
     row = df[df['Symbol'] == ticker]
     if row.empty: return []
@@ -61,9 +61,17 @@ def get_related_stocks(ticker, limit=6):
     
     res = []
     for _, r in related.iterrows():
+        # Get formatted values safely
+        kgv_disp = core.display_value('KGV', r)
+        div_yield_disp = core.display_value('Dividendenrendite', r)
+        marge_disp = core.display_value('Nettomarge', r) if pd.notna(r.get('Nettomarge')) else core.display_value('Operative Marge', r)
+
         res.append({
             'symbol': r['Symbol'],
-            'name': core.get_clean_name(r)
+            'name': core.get_clean_name(r),
+            'kgv': kgv_disp,
+            'div_yield': div_yield_disp,
+            'margin': marge_disp
         })
     return res
 
@@ -565,6 +573,10 @@ def display_result(filename):
             related_stocks = get_related_stocks(ticker)
             # Convert row to dict safely, converting pd.NA/NaN to None
             stock_data = {k: (None if pd.isna(v) else v) for k, v in row.iloc[0].to_dict().items()}
+            # Add formatted versions for comparison
+            stock_data['kgv_disp'] = core.display_value('KGV', row.iloc[0])
+            stock_data['div_yield_disp'] = core.display_value('Dividendenrendite', row.iloc[0])
+            stock_data['margin_disp'] = core.display_value('Nettomarge', row.iloc[0]) if pd.notna(row.iloc[0].get('Nettomarge')) else core.display_value('Operative Marge', row.iloc[0])
             
     from flask import session
     ai_verdict = session.get('ai_verdict', "")

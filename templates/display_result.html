@@ -262,24 +262,58 @@
     </div>
 
     {% if related_stocks %}
-    <div class="related-section w-100" style="max-width: 900px;">
-        <h5 class="text-uppercase tracking-wider mb-4 text-center" style="color: #64748b; font-size: 0.8rem; letter-spacing: 0.1em;">Andere Nutzer suchten auch</h5>
-        <div class="row row-cols-2 row-cols-md-3 g-3">
-            {% for s in related_stocks %}
-            <div class="col">
-                <a href="/analyse/{{ s.symbol }}" class="text-decoration-none">
-                    <div class="glass-card p-3 d-flex align-items-center gap-3 stock-hover-card" style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;">
-                        <div class="bg-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: bold; font-size: 0.7rem; color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">
-                            {{ s.symbol[:2] }}
-                        </div>
-                        <div class="overflow-hidden">
-                            <div class="fw-bold text-white small text-truncate">{{ s.symbol }}</div>
-                            <div class="text-muted text-truncate" style="font-size: 0.65rem;">{{ s.name }}</div>
-                        </div>
-                    </div>
-                </a>
+    <div class="related-section w-100 mt-5" style="max-width: 900px; padding: 0 16px;">
+        <h5 class="text-uppercase tracking-wider mb-4 text-center" style="color: #64748b; font-size: 0.85rem; letter-spacing: 0.1em; font-weight: 700;">🏢 Branchen-Vergleich (Sektor-Peers)</h5>
+        
+        <div class="glass-card p-4 shadow mb-5" style="background: rgba(30, 41, 59, 0.45); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; backdrop-filter: blur(20px);">
+            <div class="table-responsive">
+                <table class="table table-borderless align-middle mb-0" style="color: #f7f7f7;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid rgba(255, 255, 255, 0.1); font-size: 0.85rem; color: #10b981; font-weight: 700;">
+                            <th>Aktie</th>
+                            <th class="text-end">KGV</th>
+                            <th class="text-end">Dividendenrendite</th>
+                            <th class="text-end">Marge</th>
+                            <th class="text-center">Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Current Stock (Highlight Row) -->
+                        {% if stock_data %}
+                        <tr style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; font-weight: 600;">
+                            <td class="py-3">
+                                <span class="text-white d-block fw-bold">{{ ticker }}</span>
+                                <span class="text-muted small d-block" style="font-size: 0.75rem;">{{ company_name }} (Diese Aktie)</span>
+                            </td>
+                            <td class="text-end text-white py-3">{{ stock_data.get('kgv_disp', '–') }}</td>
+                            <td class="text-end text-white py-3">{{ stock_data.get('div_yield_disp', '–') }}</td>
+                            <td class="text-end text-white py-3">{{ stock_data.get('margin_disp', '–') }}</td>
+                            <td class="text-center py-3">
+                                <span class="badge bg-success rounded-pill px-2 py-1" style="font-size: 0.65rem;">Aktiv</span>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        
+                        <!-- Peer Stocks -->
+                        {% for s in related_stocks %}
+                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s;">
+                            <td class="py-3">
+                                <a href="/analyse/{{ s.symbol }}" class="text-decoration-none d-block">
+                                    <span class="text-white fw-bold d-block">{{ s.symbol }}</span>
+                                    <span class="text-secondary small d-block" style="font-size: 0.75rem;">{{ s.name }}</span>
+                                </a>
+                            </td>
+                            <td class="text-end py-3 text-secondary">{{ s.kgv }}</td>
+                            <td class="text-end py-3 text-secondary">{{ s.div_yield }}</td>
+                            <td class="text-end py-3 text-secondary">{{ s.margin }}</td>
+                            <td class="text-center py-3">
+                                <a href="/analyse/{{ s.symbol }}" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-bold" style="font-size: 0.7rem; border-color: rgba(16,185,129,0.4);">Analyse 🔍</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            {% endfor %}
         </div>
     </div>
     {% endif %}
