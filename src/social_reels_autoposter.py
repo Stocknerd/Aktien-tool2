@@ -255,23 +255,12 @@ def run_track_stock():
     img.save(image_path)
     print(f"STOCK TRACK: Image saved at {image_path}")
     
-    # 2. Render Video with Voiceover and Karaoke Subtitles
-    print("STOCK TRACK: Rendering Reel video with voiceover and subtitles...")
-    build_reel_mp4(
-        script_text=verdict,
-        background_image_path=image_path,
-        output_mp4_path=video_path,
-        silent=False,
-        duration=12.0,
-        mood="cool"
-    )
-    
     caption = get_tool_promotion_caption(is_comparison, names, symbols, fin_texts)
     
     # 3. Publish
     print("STOCK TRACK: Publishing to social platforms...")
     
-    # Image to other standard socials (X, FB, Pinterest)
+    # Image to all standard socials (X, FB, Pinterest, and Instagram Feed!)
     run_social_sync(
         symbol=symbols,
         caption=caption,
@@ -280,31 +269,10 @@ def run_track_stock():
         wp_img_url=None,
         title=names,
         comment_text=comment_text,
-        skip_instagram=True
+        skip_instagram=False
     )
     
-    # Video as Reel to Instagram
-    print("STOCK TRACK: Publishing Video to Instagram Reels...")
-    post_instagram_reel(caption, video_filename, comment_text)
-    
-    # 4. YouTube Shorts Upload (Video)
-    print("STOCK TRACK: Uploading Video to YouTube Shorts...")
-    youtube_meta = {
-        "title": ((f"{names} im Check! 📈"[:70] if not is_comparison else f"{names} im Börsen-Duell! ⚔️"[:70]) + " #shorts #aktien"),
-        "description": caption + "\n\n#shorts #aktien #finanzen #geldanlage #investieren",
-        "tags": ["Aktien", "Börse", "Finanzen", "Investieren", "Geldanlage", symbols]
-    }
-    
-    try:
-        youtube_token = os.path.join(BASE_DIR, 'token_finance.pickle')
-        youtube_upload_video(
-            video_file=video_path,
-            metadata_dict=youtube_meta,
-            privacy_status='public',
-            token_file=youtube_token
-        )
-    except Exception as yt_err:
-        print(f"STOCK TRACK: Warning: YouTube upload failed: {yt_err}")
+    print("STOCK TRACK: Reel video and YouTube Shorts uploads disabled to focus on high-engagement feed posts.")
     
     print("✅ TRACK 1 STOCK CARD PIPELINE COMPLETED SUCCESSFULLY!")
     return True
@@ -419,17 +387,6 @@ def run_track_calendar():
             "Welchen Wert hast du bereits im Depot? Schreib es uns in die Kommentare und folge Schatzsuche vier punkt null!"
         )
 
-    # Render video with voiceover and subtitles
-    print("CALENDAR TRACK: Rendering Reel video with voiceover and subtitles...")
-    build_reel_mp4(
-        script_text=calendar_script,
-        background_image_path=image_path,
-        output_mp4_path=video_path,
-        silent=False,
-        duration=12.0,
-        mood="happy"
-    )
-    
     # Captions & Text
     payout_mentions = ", ".join([p["symbol"] for p in payouts if p["symbol"] != "DUMMY"])
     caption = (
@@ -446,7 +403,7 @@ def run_track_calendar():
         "https://schatzsuche40.de/dividendenkalender/\n\n"
         "Verpasse keine Ausschüttungen mehr!"
     )
-    
+
     # 3. Publish
     print("CALENDAR TRACK: Publishing to socials...")
     run_social_sync(
@@ -457,30 +414,10 @@ def run_track_calendar():
         wp_img_url=None,
         title="Dividendenkalender der Woche",
         comment_text=comment_text,
-        skip_instagram=True
+        skip_instagram=False
     )
     
-    print("CALENDAR TRACK: Publishing Video to Instagram Reels...")
-    post_instagram_reel(caption, video_filename, comment_text)
-    
-    # 4. YouTube Shorts Upload (Video)
-    print("CALENDAR TRACK: Uploading Video to YouTube Shorts...")
-    youtube_meta = {
-        "title": "Dividendenkalender der Woche! 💰 #shorts #dividenden",
-        "description": caption + "\n\n#shorts #dividenden #aktien #finanzen #passiveseinkommen",
-        "tags": ["Dividenden", "Aktien", "Börse", "Finanzen", "Passives Einkommen", "Geldanlage"]
-    }
-    
-    try:
-        youtube_token = os.path.join(BASE_DIR, 'token_finance.pickle')
-        youtube_upload_video(
-            video_file=video_path,
-            metadata_dict=youtube_meta,
-            privacy_status='public',
-            token_file=youtube_token
-        )
-    except Exception as yt_err:
-        print(f"CALENDAR TRACK: Warning: YouTube upload failed: {yt_err}")
+    print("CALENDAR TRACK: Reel video and YouTube Shorts uploads disabled to focus on high-engagement feed posts.")
     
     print("✅ TRACK 2 DIVIDEND CALENDAR PIPELINE COMPLETED SUCCESSFULLY!")
     return True
