@@ -193,7 +193,7 @@
         // Preload stocks array client-side for autocomplete in less than 1ms
         async function loadDatabase() {
             try {
-                const res = await fetch('/api/dividenden-kalender');
+                const res = await fetch('/api/search-all');
                 const data = await res.json();
                 allStocks = data.stocks || [];
                 
@@ -205,12 +205,12 @@
                 const t1Val = document.getElementById('t1').value;
                 const t2Val = document.getElementById('t2').value;
                 if (t1Val) {
-                    const st = allStocks.find(s => s.symbol === t1Val);
-                    if (st) document.getElementById('search1').value = st.name;
+                    const st = allStocks.find(s => s.symbol.toUpperCase() === t1Val.toUpperCase());
+                    if (st) document.getElementById('search1').value = st.name ? `${st.symbol} – ${st.name}` : st.symbol;
                 }
                 if (t2Val) {
-                    const st = allStocks.find(s => s.symbol === t2Val);
-                    if (st) document.getElementById('search2').value = st.name;
+                    const st = allStocks.find(s => s.symbol.toUpperCase() === t2Val.toUpperCase());
+                    if (st) document.getElementById('search2').value = st.name ? `${st.symbol} – ${st.name}` : st.symbol;
                 }
             } catch (e) {
                 console.error("Could not load stocks database.", e);
@@ -223,6 +223,7 @@
             const hidden = document.getElementById(hiddenId);
 
             inp.addEventListener('input', () => {
+                hidden.value = ''; // Clear hidden input on type
                 const q = inp.value.trim().toLowerCase();
                 list.innerHTML = '';
                 if (!q) { list.style.display = 'none'; return; }
@@ -254,6 +255,78 @@
                 }
             });
         }
+
+        // Loader and Auto-Resolution on manual submit
+        document.getElementById('compareForm').addEventListener('submit', async function (e) {
+            const t1Input = document.getElementById('t1');
+            const t2Input = document.getElementById('t2');
+            const search1Input = document.getElementById('search1');
+            const search2Input = document.getElementById('search2');
+            
+            let t1Val = t1Input.value.trim();
+            let t2Val = t2Input.value.trim();
+            const s1Val = search1Input.value.trim();
+            const s2Val = search2Input.value.trim();
+
+            let needsResolve = (!t1Val && s1Val) || (!t2Val && s2Val);
+
+            if (needsResolve) {
+                e.preventDefault(); // Pause submit to resolve first
+                
+                // Helper to resolve one input
+                async function resolveInput(searchVal, hiddenInput) {
+                    let val = hiddenInput.value.trim();
+                    if (val) return val;
+                    if (!searchVal) return '';
+
+                    const parts = searchVal.split(' – ');
+                    if (parts.length > 1) {
+                        return parts[0].trim().toUpperCase();
+                    }
+
+                    const exactSym = allStocks.find(s => s.symbol && s.symbol.toUpperCase() === searchVal.toUpperCase());
+                    if (exactSym) return exactSym.symbol;
+
+                    const nameMatch = allStocks.find(s => s.name && s.name.toLowerCase() === searchVal.toLowerCase()) ||
+                                      allStocks.find(s => s.name && s.name.toLowerCase().includes(searchVal.toLowerCase()));
+                    if (nameMatch) return nameMatch.symbol;
+
+                    // Server fallback lookup
+                    try {
+                        const res = await fetch('/search?q=' + encodeURIComponent(searchVal));
+                        if (res.ok) {
+                            const matches = await res.json();
+                            if (matches.length > 0) return matches[0].symbol;
+                        }
+                    } catch(err) {
+                        console.error("Lookup error", err);
+                    }
+                    return searchVal; // fallback
+                }
+
+                t1Input.value = await resolveInput(s1Val, t1Input);
+                t2Input.value = await resolveInput(s2Val, t2Input);
+                
+                // Now submit form
+                this.submit();
+                return;
+            }
+
+            // Simple validation: both must be present
+            if (!t1Input.value || !t2Input.value) {
+                e.preventDefault();
+                alert('Bitte beide Aktien auswählen.');
+                return;
+            }
+
+            // UI animation on submit button
+            const btn = this.querySelector('button[type="submit"]');
+            if (btn) {
+                btn.innerHTML = 'Vergleichsgrafik erstellen... <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                btn.style.pointerEvents = 'none';
+                btn.style.opacity = '0.8';
+            }
+        });
 
         const preset = document.getElementById('presetSelect');
         const custom = document.getElementById('customInput');

@@ -458,7 +458,8 @@ def generate_image():
         flash(msg, "danger")
         return redirect(url_for('home'))
 
-    ticker = (request.form.get('ticker') or '').strip().upper().replace(' ', '')
+    raw_ticker = (request.form.get('ticker') or '').strip()
+    ticker = raw_ticker.upper().replace(' ', '')
     if not ticker:
         flash("Bitte einen Ticker eingeben.", "warning")
         return redirect(url_for('home'))
@@ -474,14 +475,14 @@ def generate_image():
         resolved = False
         for col in ['resolved_name', 'Security', 'Langname']:
             if col in df.columns:
-                match = df[df[col].str.contains(ticker, case=False, na=False)]
+                match = df[df[col].str.contains(raw_ticker, case=False, na=False)]
                 if not match.empty:
                     row = match.iloc[[0]]
                     ticker = row.iloc[0]['Symbol']
                     resolved = True
                     break
         if not resolved:
-            flash(f"Ticker '{ticker}' nicht gefunden.", "danger")
+            flash(f"Ticker '{raw_ticker}' nicht gefunden.", "danger")
             return redirect(url_for('home'))
 
     # Background override validation

@@ -304,13 +304,9 @@
       <!-- Suche / Ticker -->
       <div class="mb-4 position-relative">
         <label for="stock-search" class="form-label text-uppercase tracking-wider">Aktie suchen</label>
-        <input id="stock-search" type="text" class="form-control" placeholder="z.B. Apple, Microsoft, NVIDIA..." autocomplete="off">
+        <input id="stock-search" type="text" class="form-control" placeholder="z.B. Apple, Microsoft, NVIDIA..." autocomplete="off" value="{% if ticker %}{{ company_name or ticker }}{% endif %}">
         <ul id="suggestions" class="list-group position-absolute top-100 start-0 w-100 shadow-lg mt-1"></ul>
-      </div>
-
-      <div class="mb-4">
-        <label for="ticker" class="form-label text-uppercase tracking-wider">Ticker Symbol</label>
-        <input id="ticker" name="ticker" class="form-control fw-bold" value="{{ ticker if ticker else '' }}" placeholder="Ticker eingeben">
+        <input type="hidden" name="ticker" id="ticker" value="{{ ticker if ticker else '' }}">
       </div>
 
       <div class="row">
@@ -609,46 +605,69 @@
     }
 
     // Loader and Auto-Resolution on manual submit
-    document.getElementById('mainForm').addEventListener('submit', (e) => {
+    document.getElementById('mainForm').addEventListener('submit', async function (e) {
       const searchInput = document.getElementById('stock-search');
       const tickerInput = document.getElementById('ticker');
       
       const searchVal = searchInput ? searchInput.value.trim() : '';
-      const tickerVal = tickerInput ? tickerInput.value.trim() : '';
+      let tickerVal = tickerInput ? tickerInput.value.trim() : '';
       
-      // Case 1: Ticker is empty but search input has a name/symbol
+      // If ticker is empty but we have search text, try to resolve it
       if (!tickerVal && searchVal) {
-        const exactMatch = allStocks.find(s => 
-          (s.symbol && s.symbol.toUpperCase() === searchVal.toUpperCase()) || 
-          (s.name && s.name.toLowerCase() === searchVal.toLowerCase())
+        e.preventDefault(); // Stop normal submit to resolve first
+        
+        // 1. Check if format is "SYMBOL – NAME"
+        const parts = searchVal.split(' – ');
+        if (parts.length > 1) {
+          tickerInput.value = parts[0].trim().toUpperCase();
+          showLoader();
+          this.submit();
+          return;
+        }
+        
+        // 2. Exact symbol match in preloaded allStocks
+        const exactSym = allStocks.find(s => s.symbol && s.symbol.toUpperCase() === searchVal.toUpperCase());
+        if (exactSym) {
+          tickerInput.value = exactSym.symbol;
+          showLoader();
+          this.submit();
+          return;
+        }
+        
+        // 3. Name matches (exact, then partial) in preloaded allStocks
+        const nameMatch = allStocks.find(s => 
+          s.name && s.name.toLowerCase() === searchVal.toLowerCase()
+        ) || allStocks.find(s => 
+          s.name && s.name.toLowerCase().includes(searchVal.toLowerCase())
         );
-        if (exactMatch) {
-          tickerInput.value = exactMatch.symbol;
-        } else {
-          const partialMatch = allStocks.find(s => 
-            (s.symbol && String(s.symbol).toLowerCase().includes(searchVal.toLowerCase())) || 
-            (s.name && String(s.name).toLowerCase().includes(searchVal.toLowerCase()))
-          );
-          if (partialMatch) {
-            tickerInput.value = partialMatch.symbol;
-          } else {
-            tickerInput.value = searchVal;
-          }
+        
+        if (nameMatch) {
+          tickerInput.value = nameMatch.symbol;
+          showLoader();
+          this.submit();
+          return;
         }
-      }
-      // Case 2: Ticker is filled but might be a company name instead of a symbol
-      else if (tickerVal) {
-        const uppercaseTicker = tickerVal.toUpperCase();
-        const tickerExists = allStocks.some(s => s.symbol && s.symbol.toUpperCase() === uppercaseTicker);
-        if (!tickerExists) {
-          const nameMatch = allStocks.find(s => 
-            s.name && String(s.name).toLowerCase().includes(tickerVal.toLowerCase())
-          );
-          if (nameMatch) {
-            tickerInput.value = nameMatch.symbol;
-            if (searchInput) searchInput.value = `${nameMatch.symbol} – ${nameMatch.name}`;
+        
+        // 4. Server-side search API lookup as fallback
+        showLoader();
+        try {
+          const res = await fetch('/search?q=' + encodeURIComponent(searchVal));
+          if (res.ok) {
+            const matches = await res.json();
+            if (matches.length > 0) {
+              tickerInput.value = matches[0].symbol;
+              this.submit();
+              return;
+            }
           }
+        } catch (err) {
+          console.error("Submit search resolution failed", err);
         }
+        
+        // 5. Fallback: Use the raw query
+        tickerInput.value = searchVal;
+        this.submit();
+        return;
       }
       
       showLoader();
@@ -698,6 +717,17 @@
         
         // Handle incoming ticker search params if any
         handleUrlParams();
+
+        // Format pre-loaded raw tickers (e.g. from server-rendered value or direct input) into clean "SYMBOL – NAME"
+        const searchInput = document.getElementById('stock-search');
+        const tickerInput = document.getElementById('ticker');
+        if (searchInput && tickerInput && tickerInput.value && !searchInput.value.includes(' – ')) {
+          const symbol = tickerInput.value.trim().toUpperCase();
+          const stock = allStocks.find(s => s.symbol.toUpperCase() === symbol);
+          if (stock) {
+            searchInput.value = stock.name ? `${stock.symbol} – ${stock.name}` : stock.symbol;
+          }
+        }
       } catch (e) {
         console.error("Could not preload stocks array client side.", e);
       }
@@ -754,6 +784,7 @@
     const sugg = document.getElementById('suggestions');
 
     search.addEventListener('input', async e => {
+      ticker.value = '';
       const q = e.target.value.trim();
       sugg.innerHTML = '';
       if (!q) { sugg.style.display = 'none'; return; }
@@ -811,6 +842,7 @@
     const dTicker = document.getElementById('divSelectedTicker');
 
     dSearch.addEventListener('input', async e => {
+      dTicker.value = '';
       const q = e.target.value.trim();
       dSugg.innerHTML = '';
       if (!q) { dSugg.style.display = 'none'; return; }
