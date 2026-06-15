@@ -382,7 +382,9 @@ def search():
         if q_norm in item['norm_sym'] or q_norm in item['norm_name'] or q_norm in item['norm_lng']:
             candidates.append({
                 'symbol': item['symbol'], 
-                'name': item['name']
+                'name': item['name'],
+                'div_yield': item.get('div_yield', 0.0),
+                'sector': item.get('sector', '')
             })
         if len(candidates) >= 15: break
     return jsonify(candidates)

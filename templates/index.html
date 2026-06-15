@@ -753,28 +753,30 @@
     const ticker = document.getElementById('ticker');
     const sugg = document.getElementById('suggestions');
 
-    search.addEventListener('input', e => {
-      const q = e.target.value.trim().toLowerCase();
+    search.addEventListener('input', async e => {
+      const q = e.target.value.trim();
       sugg.innerHTML = '';
       if (!q) { sugg.style.display = 'none'; return; }
       
-      const matches = allStocks.filter(s => 
-        (s.symbol && String(s.symbol).toLowerCase().includes(q)) || 
-        (s.name && String(s.name).toLowerCase().includes(q))
-      ).slice(0, 10);
+      try {
+        const res = await fetch('/search?q=' + encodeURIComponent(q));
+        const matches = res.ok ? await res.json() : [];
 
-      let html = matches.map(o => `<li class='list-group-item' data-sym='${o.symbol}'>${o.symbol} – ${o.name || ''}</li>`).join('');
-      const canAdd = q.length >= 2 && /^[a-z0-9.\-]+$/.test(q);
-      
-      if (canAdd) {
-        html += `<li class='list-group-item text-center missing-ticker-btn font-weight-bold' style='color:var(--accent); cursor:pointer; background:rgba(201,162,39,0.06); border-top:1px solid rgba(201,162,39,0.15);' data-add-sym='${q.toUpperCase()}'>🔍 Ticker "${q.toUpperCase()}" hinzufügen ➕</li>`;
-      }
+        let html = matches.map(o => `<li class='list-group-item' data-sym='${o.symbol}' data-name='${o.name || ''}'>${o.symbol} – ${o.name || ''}</li>`).join('');
+        const canAdd = q.length >= 2 && /^[a-zA-Z0-9.\-]+$/.test(q);
+        
+        if (canAdd) {
+          html += `<li class='list-group-item text-center missing-ticker-btn font-weight-bold' style='color:var(--accent); cursor:pointer; background:rgba(201,162,39,0.06); border-top:1px solid rgba(201,162,39,0.15);' data-add-sym='${q.toUpperCase()}'>🔍 Ticker "${q.toUpperCase()}" hinzufügen ➕</li>`;
+        }
 
-      if (matches.length > 0 || canAdd) {
-        sugg.innerHTML = html;
-        sugg.style.display = 'block';
-      } else {
-        sugg.style.display = 'none';
+        if (matches.length > 0 || canAdd) {
+          sugg.innerHTML = html;
+          sugg.style.display = 'block';
+        } else {
+          sugg.style.display = 'none';
+        }
+      } catch (err) {
+        console.error("Search fetch failed", err);
       }
     });
 
@@ -793,10 +795,9 @@
       const li = e.target.closest('li[data-sym]');
       if (!li) return;
       const sym = li.dataset.sym;
+      const name = li.dataset.name;
       ticker.value = sym;
-      
-      const matched = allStocks.find(s => s.symbol === sym);
-      search.value = matched ? `${sym} – ${matched.name || ''}` : sym;
+      search.value = name ? `${sym} – ${name}` : sym;
       sugg.style.display = 'none';
     });
 
@@ -809,28 +810,30 @@
     const dSugg = document.getElementById('divSuggestions');
     const dTicker = document.getElementById('divSelectedTicker');
 
-    dSearch.addEventListener('input', e => {
-      const q = e.target.value.trim().toLowerCase();
+    dSearch.addEventListener('input', async e => {
+      const q = e.target.value.trim();
       dSugg.innerHTML = '';
       if (!q) { dSugg.style.display = 'none'; return; }
 
-      const matches = allStocks.filter(s => 
-        (s.symbol && String(s.symbol).toLowerCase().includes(q)) || 
-        (s.name && String(s.name).toLowerCase().includes(q))
-      ).slice(0, 8);
+      try {
+        const res = await fetch('/search?q=' + encodeURIComponent(q));
+        const matches = res.ok ? await res.json() : [];
 
-      let html = matches.map(o => `<div class='search-item' data-sym='${o.symbol}'><strong>${o.symbol}</strong> - ${o.name || ''} <span class="float-end text-success">${o.div_yield ? o.div_yield.toFixed(2) + '%' : '0.00%'}</span></div>`).join('');
-      const canAdd = q.length >= 2 && /^[a-z0-9.\-]+$/.test(q);
-      
-      if (canAdd) {
-        html += `<div class='search-item text-center missing-ticker-btn font-weight-bold' style='color:var(--accent); cursor:pointer; background:rgba(201,162,39,0.06); border-top:1px solid rgba(201,162,39,0.15);' data-add-sym='${q.toUpperCase()}'>🔍 Ticker "${q.toUpperCase()}" hinzufügen ➕</div>`;
-      }
+        let html = matches.map(o => `<div class='search-item' data-sym='${o.symbol}' data-name='${o.name || ''}' data-yield='${o.div_yield || 0.0}' data-sector='${o.sector || ''}'><strong>${o.symbol}</strong> - ${o.name || ''} <span class="float-end text-success">${o.div_yield ? o.div_yield.toFixed(2) + '%' : '0.00%'}</span></div>`).join('');
+        const canAdd = q.length >= 2 && /^[a-zA-Z0-9.\-]+$/.test(q);
+        
+        if (canAdd) {
+          html += `<div class='search-item text-center missing-ticker-btn font-weight-bold' style='color:var(--accent); cursor:pointer; background:rgba(201,162,39,0.06); border-top:1px solid rgba(201,162,39,0.15);' data-add-sym='${q.toUpperCase()}'>🔍 Ticker "${q.toUpperCase()}" hinzufügen ➕</div>`;
+        }
 
-      if (matches.length > 0 || canAdd) {
-        dSugg.innerHTML = html;
-        dSugg.style.display = 'block';
-      } else {
-        dSugg.style.display = 'none';
+        if (matches.length > 0 || canAdd) {
+          dSugg.innerHTML = html;
+          dSugg.style.display = 'block';
+        } else {
+          dSugg.style.display = 'none';
+        }
+      } catch (err) {
+        console.error("Calculator search fetch failed", err);
       }
     });
 
@@ -848,11 +851,13 @@
       const item = e.target.closest('.search-item[data-sym]');
       if (!item) return;
       
-      const symbol = item.dataset.sym;
-      const matched = allStocks.find(s => s.symbol === symbol);
-      if (matched) {
-        selectStock(matched);
-      }
+      const stock = {
+        symbol: item.dataset.sym,
+        name: item.dataset.name,
+        div_yield: parseFloat(item.dataset.yield) || 0.0,
+        sector: item.dataset.sector
+      };
+      selectStock(stock);
       dSugg.style.display = 'none';
     });
 
