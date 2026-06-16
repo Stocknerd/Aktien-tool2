@@ -21,28 +21,35 @@ META_INSTA_ID = os.getenv("META_INSTA_ID")
 
 
 def post_to_x(caption, image_path):
-    """Postet ein Bild mit Text auf X (Twitter)."""
+    """Postet ein Bild mit Text auf X (Twitter). Falls der Bildupload fehlschlägt (z.B. Free-Tier-Einschränkung), wird ein reiner Textpost gesendet."""
     if not all([X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET]):
         print("[SKIP] X-Credentials fehlen.")
         return False
         
     try:
-        # v1.1 Auth for Media Upload
-        auth = tweepy.OAuth1UserHandler(X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET)
-        api_v1 = tweepy.API(auth)
-        
         # v2 Client for Tweeting
         client_v2 = tweepy.Client(
             consumer_key=X_API_KEY, consumer_secret=X_API_SECRET,
             access_token=X_ACCESS_TOKEN, access_token_secret=X_ACCESS_SECRET
         )
         
-        # Upload media
-        media = api_v1.media_upload(filename=image_path)
-        media_id = media.media_id
+        media_id = None
+        if image_path and os.path.exists(image_path):
+            try:
+                # v1.1 Auth for Media Upload
+                auth = tweepy.OAuth1UserHandler(X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET)
+                api_v1 = tweepy.API(auth)
+                media = api_v1.media_upload(filename=image_path)
+                media_id = media.media_id
+            except Exception as media_err:
+                print(f"[WARN] X-Medien-Upload fehlgeschlagen (evtl. Free-Tier aktiv): {media_err}. Versuche reines Text-Posting...")
         
         # Create tweet
-        client_v2.create_tweet(text=caption, media_ids=[media_id])
+        if media_id:
+            client_v2.create_tweet(text=caption, media_ids=[media_id])
+        else:
+            client_v2.create_tweet(text=caption)
+            
         print(f"[OK] X: Post erfolgreich gesendet.")
         return True
     except Exception as e:
