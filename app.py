@@ -13,6 +13,20 @@ from PIL import Image
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-aktien-tool')
 
+
+@app.context_processor
+def inject_tracking_config():
+    premium_cta_url = os.environ.get('PREMIUM_CTA_URL', '').strip() or os.environ.get('NEWSLETTER_URL', '').strip() or 'https://schatzsuche40.de/newsletter/'
+    newsletter_url = os.environ.get('NEWSLETTER_URL', '').strip() or premium_cta_url
+    return {
+        'analytics_measurement_id': os.environ.get('GA_MEASUREMENT_ID', '').strip(),
+        'analytics_container_id': os.environ.get('GTM_CONTAINER_ID', '').strip(),
+        'consent_storage_key': os.environ.get('ANALYTICS_CONSENT_KEY', 'qc_cookie_consent').strip() or 'qc_cookie_consent',
+        'premium_cta_url': premium_cta_url,
+        'newsletter_url': newsletter_url,
+        'show_monetization_cta': os.environ.get('SHOW_CTA_BANNER', 'false').lower() == 'true',
+    }
+
 # SaaS Guest Auth
 GUEST_TOKEN = "b2831286e14844faa0782f69d4649825" # Standard Guest Token (Premium Tier)
 

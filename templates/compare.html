@@ -134,7 +134,7 @@
         {% endif %}
     </style>
 </head>
-<body>
+<body data-embedded="{{ '1' if is_embedded else '0' }}">
     <div class="container">
         {% if not is_embedded %}
         <!-- Unified Top Navigation Header -->
@@ -343,5 +343,6 @@
         // Load database on start
         loadDatabase();
     </script>
+    {% include '_tracking.html' %}
 </body>
 </html>

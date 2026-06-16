@@ -39,7 +39,9 @@ def check_freshness(df):
     print(f"Stale (>30 days): {len(stale)} / {total}")
     
     if not stale.empty:
-        print("   Sample stale tickers:", stale["valid_yahoo_ticker"].head(5).tolist())
+        ticker_col = "valid_yahoo_ticker" if "valid_yahoo_ticker" in stale.columns else "Symbol"
+        if ticker_col in stale.columns:
+            print("   Sample stale tickers:", stale[ticker_col].head(5).tolist())
 
 def check_completeness(df):
     print("\n--- 2. Data Completeness ---")
@@ -49,7 +51,7 @@ def check_completeness(df):
         if col not in df.columns:
             print(f"Column '{col}' missing")
             continue
-            
+
         missing = df[col].isna().sum()
         total = len(df)
         print(f"   {col}: {total - missing} present, {missing} missing ({missing/total:.1%})")
@@ -65,16 +67,21 @@ def check_coverage(df):
     # Check if 'SourceIndex' exists
     if "SourceIndex" in df_tickers.columns:
         indices = df_tickers["SourceIndex"].dropna().unique()
+        ticker_col = "valid_yahoo_ticker" if "valid_yahoo_ticker" in df.columns else "Symbol"
+        if ticker_col not in df.columns:
+            print("ticker column missing in stock CSV")
+            return
+
         for idx in indices:
             subset = df_tickers[df_tickers["SourceIndex"] == idx]
-            stock_subset = df[df["valid_yahoo_ticker"].isin(subset["valid_yahoo_ticker"])]
-            
+            stock_subset = df[df[ticker_col].isin(subset["valid_yahoo_ticker"])]
+
             total_idx = len(subset)
             found_in_csv = len(stock_subset)
-            
+
             # Check meaningful data (e.g. Price is set)
             valid_in_csv = stock_subset["Vortagesschlusskurs"].notna().sum() if "Vortagesschlusskurs" in stock_subset.columns else 0
-            
+
             print(f"   {idx}: {found_in_csv}/{total_idx} present in CSV. {valid_in_csv} have price data.")
     else:
         print("'SourceIndex' not available in ticker list.")

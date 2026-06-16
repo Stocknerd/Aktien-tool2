@@ -1,0 +1,195 @@
+<style>
+  .qc-consent-banner {
+    position: fixed;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    z-index: 10000;
+    width: min(960px, calc(100vw - 24px));
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    box-shadow: 0 16px 40px rgba(2, 6, 23, 0.45);
+    padding: 16px 18px;
+    color: #e2e8f0;
+    backdrop-filter: blur(16px);
+  }
+  .qc-consent-banner[hidden] { display: none !important; }
+  .qc-consent-inner {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .qc-consent-copy {
+    flex: 1 1 420px;
+    min-width: 0;
+  }
+  .qc-consent-copy strong {
+    display: block;
+    font-size: 0.95rem;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .qc-consent-copy p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+  .qc-consent-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .qc-consent-actions button {
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 700;
+    font-size: 0.86rem;
+  }
+  .qc-consent-actions .qc-accept {
+    background: linear-gradient(135deg, #10b981, #14b8a6);
+    color: #fff;
+  }
+  .qc-consent-actions .qc-reject {
+    background: rgba(148, 163, 184, 0.12);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+  .qc-consent-actions .qc-accept:hover,
+  .qc-consent-actions .qc-reject:hover { transform: translateY(-1px); }
+  @media (max-width: 640px) {
+    .qc-consent-banner { bottom: 12px; padding: 14px; }
+    .qc-consent-actions { width: 100%; justify-content: stretch; }
+    .qc-consent-actions button { flex: 1 1 0; }
+  }
+</style>
+
+<div id="qc-consent-banner" class="qc-consent-banner" hidden>
+  <div class="qc-consent-inner">
+    <div class="qc-consent-copy">
+      <strong>Cookies & Analyse</strong>
+      <p>Wir nutzen optionale Analyse-Cookies, um die Nutzung zu verstehen und die Seite zu verbessern. Du kannst Analyse zulassen oder nur notwendige Cookies verwenden.</p>
+    </div>
+    <div class="qc-consent-actions">
+      <button type="button" class="qc-reject" data-qc-consent="denied">Nur notwendige</button>
+      <button type="button" class="qc-accept" data-qc-consent="granted">Analyse erlauben</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const banner = document.getElementById('qc-consent-banner');
+  if (!banner || document.body.dataset.embedded === '1') return;
+
+  const storageKey = {{ consent_storage_key|default('qc_cookie_consent')|tojson }};
+  const gaId = {{ analytics_measurement_id|default('')|tojson }};
+  const gtmId = {{ analytics_container_id|default('')|tojson }};
+  const hasAnalyticsConfig = Boolean(gaId || gtmId);
+
+  const cookieMatch = document.cookie.match(new RegExp('(?:^|; )' + storageKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+  const storedConsent = localStorage.getItem(storageKey) || (cookieMatch ? decodeURIComponent(cookieMatch[1]) : '');
+
+  const setCookie = (value) => {
+    document.cookie = `${storageKey}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
+  };
+
+  function ensureDataLayer() {
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+  }
+
+  function buildConsentPayload(value) {
+    const granted = value === 'granted';
+    return {
+      ad_storage: granted ? 'granted' : 'denied',
+      analytics_storage: granted ? 'granted' : 'denied',
+      functionality_storage: 'granted',
+      personalization_storage: granted ? 'granted' : 'denied',
+      security_storage: 'granted'
+    };
+  }
+
+  function broadcastWordPressConsent(value) {
+    const state = value === 'granted' ? 'allow' : 'deny';
+    const detail = {
+      statistics: state,
+      marketing: state,
+      functional: state,
+      preferences: state
+    };
+
+    document.dispatchEvent(new CustomEvent('wp_consent_type_defined', { detail }));
+    document.dispatchEvent(new CustomEvent('wp_listen_for_consent_change', { detail }));
+  }
+
+  function applyConsentMode(value) {
+    ensureDataLayer();
+    const payload = buildConsentPayload(value);
+
+    window.gtag('consent', 'default', payload);
+    if (value === 'granted') {
+      window.gtag('consent', 'update', payload);
+    }
+
+    broadcastWordPressConsent(value);
+  }
+
+  function injectScript(src, id, attrs = {}) {
+    if (id && document.getElementById(id)) return;
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = src;
+    if (id) script.id = id;
+    Object.entries(attrs).forEach(([key, value]) => script.setAttribute(key, value));
+    document.head.appendChild(script);
+  }
+
+  function loadAnalytics() {
+    if (!hasAnalyticsConfig || window.__qcAnalyticsLoaded) return;
+    window.__qcAnalyticsLoaded = true;
+    ensureDataLayer();
+
+    if (gtmId) {
+      window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+      injectScript(`https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(gtmId)}`, 'qc-gtm-script');
+    }
+
+    if (gaId) {
+      injectScript(`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`, 'qc-ga-script', { referrerpolicy: 'no-referrer-when-downgrade' });
+      window.gtag('js', new Date());
+      window.gtag('config', gaId, {
+        anonymize_ip: true,
+        send_page_view: true
+      });
+    }
+  }
+
+  function setConsent(value) {
+    localStorage.setItem(storageKey, value);
+    setCookie(value);
+    banner.hidden = true;
+    applyConsentMode(value);
+    if (value === 'granted') loadAnalytics();
+  }
+
+  banner.hidden = false;
+  applyConsentMode(storedConsent === 'granted' ? 'granted' : 'denied');
+
+  if (storedConsent === 'granted') {
+    banner.hidden = true;
+    loadAnalytics();
+  } else if (storedConsent === 'denied') {
+    banner.hidden = true;
+  }
+
+  banner.querySelectorAll('[data-qc-consent]').forEach((button) => {
+    button.addEventListener('click', () => setConsent(button.dataset.qcConsent));
+  });
+})();
+</script>

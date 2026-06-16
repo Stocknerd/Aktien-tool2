@@ -325,11 +325,11 @@ def main() -> None:
                     old = old.drop_duplicates("valid_yahoo_ticker", keep="last")
                     merged = df.merge(old, on="valid_yahoo_ticker", how="left", suffixes=("", "_old"))
 
-                # Wenn neue Werte fehlen, alte behalten
+                # Wenn neue Werte fehlen, alte behalten (ohne combine_first-Warnung)
                 for col in SPALTEN_KENNZAHLEN + META_SPALTEN:
                     old_col = f"{col}_old"
                     if old_col in merged.columns:
-                        merged[col] = merged[col].combine_first(merged[old_col])
+                        merged[col] = merged[col].where(~merged[col].isna(), merged[old_col])
                         merged.drop(columns=[old_col], inplace=True)
                 df = merged
             else:
