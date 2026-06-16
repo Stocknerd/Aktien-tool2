@@ -45,8 +45,17 @@ jobs:
     - name: Run tests
       timeout-minutes: 3
       run: |
-        pytest tests/ -v
+        pytest tests/ -v > test_results.log 2>&1
       env:
         SECRET_KEY: testing-secret-ci
         SENTRY_DSN: ""
         OPENAI_API_KEY: "sk-test-dummy-key-for-ci-only"
+
+    - name: Commit test failure logs
+      if: failure()
+      run: |
+        git config --global user.name "CI Bot"
+        git config --global user.email "ci-bot@example.com"
+        git add test_results.log
+        git commit -m "ci: test failure log [skip ci]"
+        git push origin main
