@@ -269,7 +269,8 @@ def run_track_stock():
         wp_img_url=None,
         title=names,
         comment_text=comment_text,
-        skip_instagram=False
+        skip_instagram=False,
+        strip_links_on_x=True
     )
     
     print("STOCK TRACK: Reel video and YouTube Shorts uploads disabled to focus on high-engagement feed posts.")
@@ -414,7 +415,8 @@ def run_track_calendar():
         wp_img_url=None,
         title="Dividendenkalender der Woche",
         comment_text=comment_text,
-        skip_instagram=False
+        skip_instagram=False,
+        strip_links_on_x=True
     )
     
     print("CALENDAR TRACK: Reel video and YouTube Shorts uploads disabled to focus on high-engagement feed posts.")
@@ -507,7 +509,8 @@ def run_track_ai(topic=None):
         wp_img_url=None,
         title=content.get("headline", "Finanz-Fakten"),
         comment_text="👉 Folge @schatzsuche40 für dein tägliches Finanzwissen! 🚀",
-        skip_instagram=True
+        skip_instagram=True,
+        strip_links_on_x=True
     )
     
     # 5. Instagram Reels Upload (Video)

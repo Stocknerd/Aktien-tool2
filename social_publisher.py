@@ -386,12 +386,25 @@ def post_facebook_reel(caption, video_path):
         return False
 
 
-def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None, title=None, comment_text=None, skip_instagram=False):
+def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None, title=None, comment_text=None, skip_instagram=False, strip_links_on_x=None):
     """Hier erfolgt der koordinierte Social-Media-Push."""
     print(f"Bündele Social-Media-Push für {symbol}...")
     
+    if strip_links_on_x is None:
+        strip_links_on_x = os.getenv("STRIP_LINKS_ON_X", "True").lower() == "true"
+
     # 1. X (Twitter)
-    post_to_x(caption, image_path)
+    x_caption = caption
+    if strip_links_on_x:
+        import re
+        # Replace HTTP/HTTPS URLs with "Link im Profil"
+        x_caption = re.sub(r'https?://\S+', 'Link im Profil', x_caption)
+        # Replace raw domain names like schatzsuche40.de
+        x_caption = re.sub(r'\b([a-zA-Z0-9-]+\.)?schatzsuche40\.de\b', 'unserem Profil', x_caption)
+        # Clean up spacing
+        x_caption = re.sub(r'\s+', ' ', x_caption).strip()
+        
+    post_to_x(x_caption, image_path)
     
     # 2. Facebook (Offizielle API)
     post_to_facebook_page(caption, image_path, link_url=blog_url, comment_text=comment_text)

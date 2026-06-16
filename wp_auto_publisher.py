@@ -421,7 +421,7 @@ def generate_blog_post():
                 except Exception as upload_err:
                     print(f"[ERR] WordPress Asset Upload gescheitert: {upload_err}")
                     
-                run_social_sync("MARKET-UPDATE", social_caption, public_path_sq, blog_url=blog_url, wp_img_url=sq_wp_img_url, title=title)
+                run_social_sync("MARKET-UPDATE", social_caption, public_path_sq, blog_url=blog_url, wp_img_url=sq_wp_img_url, title=title, strip_links_on_x=False)
             except Exception as e:
                 print(f"Fehler bei Social-Push (Artikel-Ebene): {e}")
         else:
