@@ -461,18 +461,30 @@ def run_track_ai(topic=None):
     
     # 2. Render Hybrid Image (AI Background Illustration + Programmatic Text Overlay & Logos)
     bg_path = os.path.join(public_dir, f"ai_bg_{timestamp}.png")
+    bg_success = False
     try:
         from src.graphic_generator import generate_dalle_image
         print("AI TRACK: Generating AI background illustration...")
         bg_img = generate_dalle_image(content.get("dalle_prompt", "Abstract finance background in gold and dark petrol"), aspect_ratio="9:16")
-        bg_img.save(bg_path)
-        print(f"AI TRACK: Background saved at {bg_path}")
+        # Check if gpt-image-2 returned a successful vertical image (1024x1792) instead of the 800x800 fallback
+        if bg_img and bg_img.size == (1024, 1792):
+            bg_img.save(bg_path)
+            print(f"AI TRACK: Background saved at {bg_path}")
+            bg_success = True
+        else:
+            print("AI TRACK: Background generation returned fallback or invalid size image.")
+            bg_path = None
     except Exception as e:
         print(f"AI TRACK: Warning: Background generation failed: {e}")
         bg_path = None
 
-    print("AI TRACK: Rendering programmatic infographic list on background...")
-    render_viral_list(content, image_path, bg_image_path=bg_path)
+    if bg_success and bg_path and os.path.exists(bg_path):
+        import shutil
+        shutil.copy(bg_path, image_path)
+        print(f"AI TRACK: Using raw AI infographic directly (no programmatic overlay): {image_path}")
+    else:
+        print("AI TRACK: Rendering programmatic infographic list on fallback background...")
+        render_viral_list(content, image_path, bg_image_path=None)
     print(f"AI TRACK: Image saved at {image_path}")
     
     # Determine content-aware background music mood
