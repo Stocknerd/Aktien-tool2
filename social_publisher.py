@@ -25,7 +25,10 @@ def post_to_x(caption, image_path):
     if not all([X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET]):
         print("[SKIP] X-Credentials fehlen.")
         return False
-        
+    # Auto-truncate caption to 280 characters to comply with X API constraints
+    if caption and len(caption) > 280:
+        caption = caption[:277] + "..."
+
     try:
         # v2 Client for Tweeting
         client_v2 = tweepy.Client(
