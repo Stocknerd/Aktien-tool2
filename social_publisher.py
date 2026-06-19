@@ -25,9 +25,9 @@ def post_to_x(caption, image_path):
     if not all([X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET]):
         print("[SKIP] X-Credentials fehlen.")
         return False
-    # Auto-truncate caption to 280 characters to comply with X API constraints
-    if caption and len(caption) > 280:
-        caption = caption[:277] + "..."
+    # Auto-truncate caption to 240 characters to comply with X API weighted constraints (emojis count as 2)
+    if caption and len(caption) > 240:
+        caption = caption[:237] + "..."
 
     try:
         # v2 Client for Tweeting
