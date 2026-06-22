@@ -313,7 +313,7 @@ def run_track_calendar():
                     yield_str = "--"
                     if pd.notna(yield_val):
                         try:
-                            yield_str = f"{float(yield_val) * 100:.1f}%"
+                            yield_str = f"{float(yield_val):.1f}%"
                         except:
                             yield_str = str(yield_val)
                             
