@@ -325,9 +325,11 @@ def run_track_calendar():
                     if div_str != "--" and symbol_currency in ["$", "€"]:
                         div_str = f"{div_str}{symbol_currency}"
                     
+                    name_val = row.get("Security")
+                    name_str = str(name_val) if pd.notna(name_val) and str(name_val).strip() != "" else str(row["valid_yahoo_ticker"])
                     valid_payouts.append({
                         "symbol": str(row["valid_yahoo_ticker"]),
-                        "name": str(row.get("Security", row["valid_yahoo_ticker"])),
+                        "name": name_str,
                         "ex_date": date_str,
                         "dividend": div_str,
                         "yield": yield_str,
