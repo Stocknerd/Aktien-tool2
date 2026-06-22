@@ -317,15 +317,17 @@ def render_pure_ai_infographic(content, output_path):
     Generates a complete 9:16 vertical infographic image purely using SOTA gpt-image-2.
     It embeds all copywriting, text layouts, and brand identity elements directly into the prompt.
     """
-    headline = content.get("headline", "").upper()
-    subheadline = content.get("subheadline", "")
-    points = content.get("card_points", [])
-    
-    pts_prompt = ""
-    for i, pt in enumerate(points[:3]):
-        pts_prompt += f"\n- Point {i+1}: \"{pt}\""
+    prompt = content.get("image_prompt") or content.get("dalle_prompt")
+    if not prompt:
+        headline = content.get("headline", "").upper()
+        subheadline = content.get("subheadline", "")
+        points = content.get("card_points", [])
         
-    prompt = f"""
+        pts_prompt = ""
+        for i, pt in enumerate(points[:3]):
+            pts_prompt += f"\n- Point {i+1}: \"{pt}\""
+            
+        prompt = f"""
     Create an ultra-premium, modern 9:16 vertical infographic Instagram card designed specifically for the brand "SCHATZSUCHE 4.0".
     
     Visual Identity & Branding:

@@ -36,23 +36,27 @@ def generate_structured_content(topic, template_type="evergreen"):
     if template_type == "viral_list":
         system_prompt = f"""
         Du bist der Elite-Finanz-Content-Strategist für die deutsche Marke '{BRAND_PROFILE.get('brand_name', 'Schatzsuche 4.0')}' (Webseite: {BRAND_PROFILE.get('website', 'schatzsuche40.de')}).
-        Deine Aufgabe ist es, für das Thema "{topic}" ein hochprofessionelles, visuell und inhaltlich konsistentes Infografik- und Reel-Inhaltspaket im Format einer **Faktenliste mit Highlight-Box** (Elterngeld-Stil) zu erstellen.
+        Deine Aufgabe ist es, für das Thema "{topic}" ein hochprofessionelles, visuell und inhaltlich konsistentes Infografik- und Reel-Inhaltspaket zu schnüren. 
+        Die Infografik muss als extrem detaillierter Prompt für das Modell `image-2` (gpt-image-2) unter `image_prompt` beschrieben werden, so dass das Bild in einem Rutsch vollkommen lesbar, strukturiert und fehlerfrei generiert wird.
         
         {brand_context}
         
         {portfolio_rules}
         
-        WICHTIGE ANFORDERUNGEN AN DIE GRAFIK-ELEMENTE (Faktenliste-Stil):
-        - Die Headline (Überschrift ganz oben) muss extrem knackig sein (max. 40 Zeichen, z. B. 'Elterngeld Kürzungen 2026').
-        - Die Subheadline (Kategorie/Sektionstext direkt unter H1) darf max. 30 Zeichen lang sein (z. B. 'Hypothetisches Sparpaket').
-        - Die Zentral-Highlight-Box zeigt eine markante, emotionale oder wichtige Kennzahl:
-          - highlight_value: Eine sehr große, fette Zahl oder ein Wert (max. 15 Zeichen, z. B. '350 MIO. €' oder '100.000 €').
-          - highlight_label: Ein kurzes Schlagwort darunter (max. 15 Zeichen, z. B. 'WENIGER?' oder 'IM DEPOT?').
-        - Die Fakten-Liste (card_points) MUSS GENAU 5 reichhaltige, extrem aussagekräftige und hoch-informative Punkte enthalten.
-          - JEDER Punkt muss im exakten Format '"Titel: Beschreibung"' ausgegeben werden!
-          - Der Titel (vor dem Doppelpunkt) ist fett gedruckt, extrem knackig und enthält oft Geldbeträge oder kurze Kernaussagen (max. 30 Zeichen, z. B. '100 € weniger/Monat' oder '70% in Welt-ETFs').
-          - Die Beschreibung (nach dem Doppelpunkt) liefert den konkreten Kontext, ist informativ und fachlich tief (max. 150 Zeichen, z. B. 'wenn der Höchstbetrag von 1.800€ auf 1.700€ sinkt und dadurch Familien massiv finanziell entlastet werden, um private Altersvorsorge zu stärken').
-          - Das System ordnet jedem Punkt automatisch ein passendes Icon (euro, calendar, time, percent, people, star) zu.
+        WICHTIGE ANFORDERUNGEN AN DIE GRAFIK-ELEMENTE (PROMPT FÜR image-2):
+        - Der Prompt beschreibt eine komplette, hoch-informative 9:16 Hochformat-Infografik für Instagram.
+        - Farben: Dunkel-Petrol (#0B1E21) als Hintergrund, warmes Gold (#C9A227) und Off-white (#F7F7F7) als Text- und Elementfarben.
+        - Aufbau der Grafik von oben nach unten:
+          1. Brand-Header & Thema: Ganz oben links steht "Schatzsuche 4.0 - [Dynamic Category]" in Gold. Daneben ein kleiner Navigator-Kompass. Darunter die Haupt-Headline (große, fette weiße Buchstaben) und eine Subheadline (in Gold). Rechts oben befindet sich ein glühendes, dreidimensionales Icon passend zum Thema (z.B. eine Goldmünze für ETFs, eine Zapfsäule für CO2-Preise).
+          2. Fünf strukturierte, nummerierte Sektionen (1 bis 5), untereinander gestapelt in eleganten, goldumrandeten, teiltransparenten Karten:
+             - Sektion 1: Ein thematischer Einstieg (z.B. "WAS BESCHLOSSEN IST"). Enthält 3-4 prägnante Stichpunkte mit Checkmark-Häkchen und eine hervorgehobene Kernaussage am Ende.
+             - Sektion 2: Detaillierte Zahlen, Spalten oder Fakten (z.B. "SO HOCH IST DER ZUSCHUSS"). Zeigt strukturierte Spalten mit Werten (z.B. Zulagen, Boni) und passenden kleinen Symbolen (Münze, Kind, Geschenk).
+             - Sektion 3: Ein anschauliches Rechenbeispiel oder konkretes Szenario (z.B. "BEISPIEL FAMILIE"). Zeigt eine saubere mathematische Auflistung (z.B. '+ 150 € Spar-Zuschuss', '= 1.050 € Jahreszufluss') mit einem großen goldenen Kreis auf der rechten Seite, der das Gesamtergebnis (z.B. '1.050 € pro Jahr') fett hervorhebt.
+             - Sektion 4: Ein Haken, Risiko oder wichtiges Detail (z.B. "DER STEUER-HAKEN" oder "WO DER AUFREGER LIEGT"). Eine nummerierte Liste (1 bis 4) mit rechtlichen oder steuerlichen Fallstricken, rechts daneben ein passendes Symbol (z.B. Sanduhr oder Steuerschild), und eine hervorgehobene Warnbox am Ende.
+             - Sektion 5: "MEIN FAZIT". Enthält 2 prägnante Fazit-Punkte mit Haken und ein symbolisches Icon (z.B. glühende Glühbirne oder eine Waage).
+          3. Interaktiver Footer: Eine Sektion am unteren Ende mit einer Sprechblase und der Frage "WAS DENKST DU: [Themenspezifische Frage, z.B. ECHTER FORTSCHRITT ODER NUR RIESTER 2.0?]" in großen, weißen Buchstaben.
+          4. Ganz unten steht im eleganten Gold-Design: "SCHATZSUCHE 4.0" und rechts "Stand: Juni 2026".
+        - Der Prompt muss alle Texte, Überschriften, Zahlenwerte und Formeln exakt in deutschem Text vorgeben und anweisen, dass diese von `image-2` in sauberer, geometrischer, serifenloser Schriftart (ähnlich Outfit und Inter) komplett fehlerfrei gezeichnet werden müssen.
         
         WICHTIGE ANFORDERUNGEN AN DAS REEL:
         - Der gesprochene Reel-Sprechtext (reel_script) muss exakt 60-80 Wörter umfassen (für 30-45 Sekunden Video). Keine Szenenüberschriften, reiner gesprochener Text.
@@ -71,7 +75,7 @@ def generate_structured_content(topic, template_type="evergreen"):
             "Titel 4 (max 30 Chars): Beschreibung 4 (max 150 Chars)",
             "Titel 5 (max 30 Chars): Beschreibung 5 (max 150 Chars)"
           ],
-          "dalle_prompt": "Detaillierter Prompt für ein 9:16 Bild (max. 3 Farbnuancen: warmes Gold, dunkles Petrol, Offwhite). Keine Menschen, keine Gesichter.",
+          "image_prompt": "Der extrem detaillierte und strukturierte Prompt für gpt-image-2 (9:16 Format), der die komplette Infografik mit allen Sektionen, deutschen Texten, Zahlen, Formeln und Icons beschreibt. Keine Platzhalter, sondern den vollen Text ausschreiben!",
           "caption_ig": "Instagram-Caption, die direkt mit einer extrem packenden Frage oder These (Hook) beginnt, um Kommentare zu provozieren, gefolgt von strukturierten Absätzen, Emojis, Hashtags, CTA und dem rechtlichen Disclaimer.",
           "caption_tiktok": "Kurze, knackige TikTok-Caption.",
           "caption_shorts": "Spannende YouTube Shorts Caption.",
@@ -82,19 +86,20 @@ def generate_structured_content(topic, template_type="evergreen"):
         system_prompt = f"""
         Du bist der Elite-Finanz-Content-Strategist für die deutsche Marke '{BRAND_PROFILE.get('brand_name', 'Schatzsuche 4.0')}'.
         Deine Aufgabe ist es, für das Thema "{topic}" ein hochprofessionelles, visuell und inhaltlich konsistentes Infografik- und Reel-Inhaltspaket zu schnüren.
+        Die Infografik muss als detaillierter Prompt für das Modell `image-2` (gpt-image-2) unter `image_prompt` beschrieben werden, so dass das Bild in einem Rutsch generiert wird.
         
         {brand_context}
         
         {portfolio_rules}
         
-        WICHTIGE ANFORDERUNGEN AN DIE GRAFIK-ELEMENTE:
-        - Die Headline (Überschrift) muss extrem knackig und aussagekräftig sein. Sie darf maximal 40 Zeichen lang sein!
-        - Die Subheadline darf maximal 60 Zeichen lang sein.
-        - Die 3 Kernaussagen (card_points) müssen kurz und präzise sein (maximal 105 Zeichen pro Punkt!). Sie beschreiben die wichtigsten Lektionen oder Schritte zum Thema.
+        WICHTIGE ANFORDERUNGEN AN DIE GRAFIK-ELEMENTE (PROMPT FÜR image-2):
+        - Der Prompt beschreibt eine komplette 9:16 Hochformat-Infografik für Instagram.
+        - Er verwendet eine ästhetische Finanz-Metapher in warmem Gold und dunklem Petrol (keine echten Gesichter/Menschen).
+        - Er muss alle Überschriften und Kernbotschaften exakt in deutschem Text vorgeben, damit diese von `image-2` fehlerfrei gezeichnet werden.
         
         WICHTIGE ANFORDERUNGEN AN DAS REEL:
-        - Der gesprochene Reel-Text (reel_script) muss exakt 60-80 Wörter umfassen (ideal für ein 30-45 Sekunden Reel). Er muss fesselnd sein, ohne Abschnitte oder Szenenüberschriften im Text. Es muss reines gesprochenes Deutsch sein.
-        - HOOK-REGEL: Der Text MUSS direkt mit einem extrem fesselnden Satz beginnen (z. B. eine provokante Frage oder schockierende Statistik). Es darf ABSOLUT KEINE Begrüßung enthalten sein (z. B. KEIN 'Willkommen bei...', 'Hallo...', 'In diesem Video...', 'Heute schauen wir uns...').
+        - Der gesprochene Reel-Text (reel_script) muss exakt 60-80 Wörter umfassen. Er muss fesselnd sein, reines gesprochenes Deutsch, ohne Begrüßung.
+        - HOOK-REGEL: Der Text MUSS direkt mit einem extrem fesselnden Satz beginnen.
         
         Antworte AUSSCHLIESSLICH im folgenden validen JSON-Format:
         {{
@@ -105,7 +110,7 @@ def generate_structured_content(topic, template_type="evergreen"):
             "Punkt 2 (max 105 Zeichen, faktenbasiert, verständlich)",
             "Punkt 3 (max 105 Zeichen, handlungsauffordernd)"
           ],
-          "dalle_prompt": "Detaillierter Prompt für ein 9:16 Bild. Beschreibe eine ästhetische, leicht geheimnisvolle oder hochmoderne Finanz-Metapher. Verwende Farben wie warmes Gold und dunkles Petrol. KEINE Menschen, KEINE Gesichter. Nur hochwertige, dreidimensionale, filmisch beleuchtete Konzeptkunst.",
+          "image_prompt": "Detaillierter Prompt für gpt-image-2 (9:16 Format), der das ästhetische Bild mit deutschem Text beschreibt.",
           "caption_ig": "Instagram-Caption, die direkt mit einer extrem packenden Frage oder These (Hook) beginnt, um Kommentare zu provozieren, gefolgt von strukturierten Absätzen, Emojis, Hashtags, CTA und dem rechtlichen Disclaimer am Ende.",
           "caption_tiktok": "Kurze, knackige TikTok-Caption mit Hook, Emojis und Top-Hashtags.",
           "caption_shorts": "Spannende YouTube Shorts Caption inklusive kurzer Beschreibung.",

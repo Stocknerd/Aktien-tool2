@@ -467,7 +467,8 @@ def run_track_ai(topic=None):
     try:
         from src.graphic_generator import generate_dalle_image
         print("AI TRACK: Generating AI background illustration...")
-        bg_img = generate_dalle_image(content.get("dalle_prompt", "Abstract finance background in gold and dark petrol"), aspect_ratio="9:16")
+        image_prompt_text = content.get("image_prompt") or content.get("dalle_prompt") or "Abstract finance background in gold and dark petrol"
+        bg_img = generate_dalle_image(image_prompt_text, aspect_ratio="9:16")
         # Check if gpt-image-2 returned a successful vertical image (1024x1792) instead of the 800x800 fallback
         if bg_img and bg_img.size == (1024, 1792):
             bg_img.save(bg_path)
