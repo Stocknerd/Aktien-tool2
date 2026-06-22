@@ -16,7 +16,7 @@ echo ========================================================================= >
 
 :: 1. Lokales yfinance Update
 echo [%date% %time%] 📈 [1/3] Starte yfinance update_csv_local.py... >> "%LOGFILE%"
-.\.venv\Scripts\python.exe update_csv_local.py >> "%LOGFILE%" 2>&1
+.\.venv\Scripts\python.exe -u update_csv_local.py >> "%LOGFILE%" 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo ❌ [%date% %time%] ERROR: Lokales Datenupdate fehlgeschlagen! >> "%LOGFILE%"

@@ -514,8 +514,17 @@ def render_dividend_calendar(payouts, output_path):
         logo_drawn = False
         if symbol != "DUMMY" and os.path.exists(logo_path):
             try:
+                # Draw white rounded rectangle badge for the logo to guarantee perfect contrast
+                cx = box_left + int(box_w / 2)
+                cy = box_top + 90
+                badge_l = cx - 55
+                badge_t = cy - 55
+                badge_r = cx + 55
+                badge_b = cy + 55
+                draw.rounded_rectangle([badge_l, badge_t, badge_r, badge_b], radius=16, fill="#FFFFFF")
+
                 logo_img = Image.open(logo_path)
-                logo_img.thumbnail((100, 100), Image.Resampling.LANCZOS)
+                logo_img.thumbnail((90, 90), Image.Resampling.LANCZOS)
                 
                 lw, lh = logo_img.size
                 lx = box_left + int((box_w - lw) / 2)
