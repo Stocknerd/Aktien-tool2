@@ -331,7 +331,7 @@ def run_track_calendar():
                         "ex_date": date_str,
                         "dividend": div_str,
                         "yield": yield_str,
-                        "market_cap": pd.to_numeric(str(row.get("Marktkapitalisierung", "0")).replace(r'[^\d.]', '', regex=True), errors='coerce')
+                        "market_cap": pd.to_numeric("".join(c for c in str(row.get("Marktkapitalisierung", "0")) if c.isdigit() or c == '.'), errors='coerce')
                     })
             except Exception as ex:
                 continue
