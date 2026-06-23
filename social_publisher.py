@@ -25,9 +25,20 @@ def post_to_x(caption, image_path):
     if not all([X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET]):
         print("[SKIP] X-Credentials fehlen.")
         return False
-    # Auto-truncate caption to 240 characters to comply with X API weighted constraints (emojis count as 2)
-    if caption and len(caption) > 240:
-        caption = caption[:237] + "..."
+    # Smart-truncate caption to 270 characters to comply with X API weighted constraints (emojis count as 2)
+    if caption and len(caption) > 270:
+        trimmed = caption[:267]
+        # Find the last sentence end (. ! ?) in the latter part of the tweet
+        last_punctuation = max(trimmed.rfind('.'), trimmed.rfind('!'), trimmed.rfind('?'))
+        if last_punctuation > 180:
+            caption = trimmed[:last_punctuation + 1]
+        else:
+            # Fallback to word boundary
+            last_space = trimmed.rfind(' ')
+            if last_space > 180:
+                caption = trimmed[:last_space] + "..."
+            else:
+                caption = trimmed + "..."
 
     try:
         # v2 Client for Tweeting
@@ -404,8 +415,11 @@ def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None,
         x_caption = re.sub(r'https?://\S+', 'Link im Profil', x_caption)
         # Replace raw domain names like schatzsuche40.de
         x_caption = re.sub(r'\b([a-zA-Z0-9-]+\.)?schatzsuche40\.de\b', 'unserem Profil', x_caption)
-        # Clean up spacing
-        x_caption = re.sub(r'\s+', ' ', x_caption).strip()
+        # Clean up spacing while preserving newlines
+        lines = [re.sub(r'[ \t]+', ' ', line).strip() for line in x_caption.split('\n')]
+        x_caption = '\n'.join(lines).strip()
+        # Limit consecutive newlines to at most a double newline
+        x_caption = re.sub(r'\n{3,}', '\n\n', x_caption)
         
     post_to_x(x_caption, image_path)
     
