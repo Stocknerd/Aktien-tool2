@@ -107,28 +107,59 @@ EVERGREEN_FINANCIAL_TOPICS = [
     "Aktien im Betriebsvermögen: Wann lohnt sich eine vermögensverwaltende GmbH?"
 ]
 
+def fetch_current_market_news() -> str:
+    """Fetches current headlines from Boerse Frankfurt feed to inject real-world context."""
+    import requests
+    url = "https://api.boerse-frankfurt.de/v1/feeds/news.rss"
+    try:
+        r = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        if r.status_code == 200:
+            data = r.json()
+            items = data.get("items", [])
+            headlines = []
+            for item in items[:12]:
+                title = item.get("title")
+                if title:
+                    headlines.append(f"- {title}")
+            return "\n".join(headlines)
+    except Exception as e:
+        print(f"TREND DETECTOR: Warning: Failed to fetch current market news: {e}")
+    return ""
+
 def get_dynamic_trending_topic() -> str:
     """Uses GPT to suggest an extremely high-trending, current financial or macroeconomic topic of the week."""
     try:
         from openai import OpenAI
+        from datetime import datetime
         client = OpenAI()
         model_name = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o")
-        prompt = (
-            "Du bist ein Top-Finanzblogger in Deutschland. Nenne mir EIN einziges extrem aktuelles, "
-            "hochgradig virales Finanz-, Börsen- oder makroökonomisches Thema für diese Woche "
-            "(z. B. eine aktuelle Leitzinsentscheidung der Fed/EZB, ein neuer Hype wie AI-Aktien, "
-            "die neuesten Inflationsdaten, Krypto-Trends oder Marktvolatilitäten). "
-            "Das Thema muss perfekt geeignet sein, um es als Infografik-Liste für Privatanleger verständlich zu erklären.\n\n"
-            "Gib mir AUSSCHLIESSLICH das Thema als kurzen, knackigen Titel (max. 50 Zeichen) aus. "
-            "Kein Präfix, kein Suffix, kein Punkt am Ende, keine Anführungszeichen."
-        )
+        
+        current_date_str = datetime.now().strftime("%d. %B %Y")
+        news_context = fetch_current_market_news()
+        
+        prompt = f"""
+        Du bist ein führender deutscher Finanzblogger und Börsen-Experte.
+        Heute ist der {current_date_str} (aktuelles Jahr ist {datetime.now().year}).
+        
+        Hier sind einige aktuelle Schlagzeilen und Marktthemen von heute:
+        {news_context if news_context else "Keine aktuellen News-Meldungen verfügbar."}
+        
+        Nenne mir EIN einziges extrem aktuelles, hochgradig virales Finanz-, Börsen- oder makroökonomisches Thema für diese Woche, das auf den obigen Marktdaten oder der aktuellen Lage im Jahr {datetime.now().year} basiert. 
+        WICHTIG:
+        - Wähle KEINE veralteten Themen aus der Vergangenheit (z. B. KEINE Zinsentscheidungen oder Krisen von 2023 oder früher). 
+        - Das Thema muss perfekt geeignet sein, um es als Infografik-Liste für Privatanleger verständlich und spannend zu erklären (z. B. 'Zinswende der EZB', 'Steigender Goldpreis', 'Krypto-Regulierung', 'Umgang mit Marktvolatilität').
+        
+        Gib mir AUSSCHLIESSLICH das Thema als kurzen, knackigen Titel (max. 50 Zeichen) aus.
+        Kein Präfix, kein Suffix, kein Punkt am Ende, keine Anführungszeichen.
+        """
+        
         response = client.chat.completions.create(
             model=model_name,
             messages=[
                 {"role": "system", "content": "Du bist ein präziser Finanz-Experte."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.85
+            temperature=0.75
         )
         topic = response.choices[0].message.content.strip()
         # Clean quotes
