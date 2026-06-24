@@ -55,7 +55,8 @@ def generate_structured_content(topic, template_type="evergreen"):
              - Sektion 4: Ein Haken, Risiko oder wichtiges Detail (z.B. "DER STEUER-HAKEN" oder "WO DER AUFREGER LIEGT"). Eine nummerierte Liste (1 bis 4) mit rechtlichen oder steuerlichen Fallstricken, rechts daneben ein passendes Symbol (z.B. Sanduhr oder Steuerschild), und eine hervorgehobene Warnbox am Ende.
              - Sektion 5: "MEIN FAZIT". Enthält 2 prägnante Fazit-Punkte mit Haken und ein symbolisches Icon (z.B. glühende Glühbirne oder eine Waage).
           3. Interaktiver Footer: Eine Sektion am unteren Ende mit einer Sprechblase und der Frage "WAS DENKST DU: [Themenspezifische Frage, z.B. ECHTER FORTSCHRITT ODER NUR RIESTER 2.0?]" in großen, weißen Buchstaben.
-          4. Ganz unten steht im eleganten Gold-Design: "SCHATZSUCHE 4.0" und rechts "Stand: Juni 2026".
+          4. Ganz unten steht im eleganten Gold-Design: "SCHATZSUCHE 4.0" (vollkommen ohne Datums-, Monats- oder Jahresangaben).
+        - WICHTIGE REGEL FÜR ZEITLOSIGKEIT (EVERGREENS): Nenne niemals Jahreszahlen (wie 2023, 2024, 2026) oder konkrete Monate in den Texten, Grafiken oder Captions für zeitlose Themen (wie Zinseszins, ETF-Sparpläne, Diversifikation), damit diese dauerhaft aktuell bleiben. Nur bei hochaktuellen, nachrichtenbasierten Themen der laufenden Woche darf ein zeitlicher Bezug genommen werden.
         - Der Prompt muss alle Texte, Überschriften, Zahlenwerte und Formeln exakt in deutschem Text vorgeben und anweisen, dass diese von `image-2` in sauberer, geometrischer, serifenloser Schriftart (ähnlich Outfit und Inter) komplett fehlerfrei gezeichnet werden müssen.
         
         WICHTIGE ANFORDERUNGEN AN DAS REEL:
