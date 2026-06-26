@@ -533,13 +533,13 @@ def run_track_ai(topic=None):
         detected_mood = "chill"
     print(f"AI TRACK: Dynamic background music mood detected: {detected_mood}")
 
-    # 3. Render Reel Video with Voiceover and Karaoke Subtitles (Option A: Silent Reel)
-    print("AI TRACK: Rendering Reel video with voiceover and subtitles (silent)...")
+    # 3. Render Reel Video with Voiceover and Karaoke Subtitles
+    print("AI TRACK: Rendering Reel video with voiceover and karaoke subtitles...")
     build_reel_mp4(
         script_text=content.get("reel_script"),
         background_image_path=image_path,
         output_mp4_path=video_path,
-        silent=True,
+        silent=False,
         duration=15.0,
         mood=detected_mood
     )

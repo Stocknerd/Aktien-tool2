@@ -57,6 +57,7 @@ def generate_structured_content(topic, template_type="evergreen"):
           3. Interaktiver Footer: Eine Sektion am unteren Ende mit einer Sprechblase und der Frage "WAS DENKST DU: [Themenspezifische Frage, z.B. ECHTER FORTSCHRITT ODER NUR RIESTER 2.0?]" in großen, weißen Buchstaben.
           4. Ganz unten steht im eleganten Gold-Design: "SCHATZSUCHE 4.0" (vollkommen ohne Datums-, Monats- oder Jahresangaben).
         - WICHTIGE REGEL FÜR ZEITLOSIGKEIT (EVERGREENS): Nenne niemals Jahreszahlen (wie 2023, 2024, 2026) oder konkrete Monate in den Texten, Grafiken oder Captions für zeitlose Themen (wie Zinseszins, ETF-Sparpläne, Diversifikation), damit diese dauerhaft aktuell bleiben. Nur bei hochaktuellen, nachrichtenbasierten Themen der laufenden Woche darf ein zeitlicher Bezug genommen werden.
+        - ANFORDERUNG AN INHALTLICHE TIEFE: Die beschriebene Grafik muss sehr detailliert, faktenreich und tiefgründig sein. Keine simplen Worthülsen oder extrem kurze Auflistungen. Jede der 5 Sektionen muss exakte Erklärungen, mathematische/steuerliche Logiken, Fachbegriffe und fundiertes Wissen vermitteln, sodass der Leser die Grafik als extrem nützlichen Spickzettel (Cheat Sheet) abspeichert.
         - Der Prompt muss alle Texte, Überschriften, Zahlenwerte und Formeln exakt in deutschem Text vorgeben und anweisen, dass diese von `image-2` in sauberer, geometrischer, serifenloser Schriftart (ähnlich Outfit und Inter) komplett fehlerfrei gezeichnet werden müssen.
         
         WICHTIGE ANFORDERUNGEN AN DAS REEL:
