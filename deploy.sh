@@ -18,6 +18,10 @@ mkdir -p "$BACKUP_DIR"
 # Exclusion of heavy or unnecessary dirs
 rsync -a --delete --exclude 'venv' --exclude 'backups' --exclude 'data/raw' --exclude '.git' "$PROJECT_DIR/" "$BACKUP_DIR/"
 
+# Keep only the last 3 backups to prevent remote disk bloat
+echo "🧹 Aufräumen: Behalte nur die letzten 3 Backups..."
+ls -td "$BACKUP_ROOT"/monorepo-* 2>/dev/null | tail -n +4 | xargs rm -rf 2>/dev/null || true
+
 echo "🔄 Git Pull ($BRANCH)"
 cd "$PROJECT_DIR"
 git fetch origin "$BRANCH"
