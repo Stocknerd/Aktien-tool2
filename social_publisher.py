@@ -501,15 +501,6 @@ def post_facebook_reel(caption, video_path):
 
 def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None, title=None, comment_text=None, skip_instagram=False, strip_links_on_x=None):
     """Hier erfolgt der koordinierte Social-Media-Push."""
-    if PREPARE_MANUAL_UPLOAD:
-        return save_for_manual_upload(
-            post_type="feed_image",
-            title=title or f"Aktienanalyse: {symbol}",
-            caption=caption,
-            asset_path=image_path,
-            comment_text=comment_text
-        )
-        
     print(f"Bündele Social-Media-Push für {symbol}...")
     
     if strip_links_on_x is None:
