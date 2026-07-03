@@ -37,7 +37,10 @@ def get_drive_service():
             print("GOOGLE DRIVE OAUTH CONFIGURATION")
             print("="*80)
             print("Click the link below, authorize the Google App, and paste the code back:")
-            creds = flow.run_local_server(port=0, open_browser=False)
+            try:
+                creds = flow.run_local_server(port=8080, open_browser=False)
+            except Exception:
+                creds = flow.run_local_server(port=0, open_browser=False)
             
         with open(token_path, 'wb') as token:
             pickle.dump(creds, token)
