@@ -17,7 +17,92 @@ META_PAGE_ACCESS_TOKEN = os.getenv("META_PAGE_ACCESS_TOKEN")
 META_USER_TOKEN = os.getenv("META_USER_TOKEN") or os.getenv("USER_TOKEN")
 # Instagram Business Account ID
 META_INSTA_ID = os.getenv("META_INSTA_ID")
+# Mode Switch: set to True to prepare assets locally for manual upload instead of hitting the live social APIs
+PREPARE_MANUAL_UPLOAD = os.getenv("PREPARE_MANUAL_UPLOAD", "True").lower() == "true"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+def save_for_manual_upload(post_type, title, caption, asset_path, comment_text=None, tags=None):
+    """
+    Saves the media asset (image/video) and metadata in a local folder 
+    for easy manual uploading, instead of pushing it via APIs.
+    """
+    import shutil
+    from datetime import datetime
+    
+    # 1. Create directory structure (supports external cloud sync paths)
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    sanitized_title = "".join([c if c.isalnum() or c in ['-', '_'] else '_' for c in (title or "post")])
+    folder_name = f"{timestamp}_{post_type}_{sanitized_title[:30]}"
+    
+    uploads_base = os.getenv("MANUAL_UPLOADS_DIR")
+    if not uploads_base:
+        uploads_base = os.path.join(BASE_DIR, "manual_uploads")
+    else:
+        uploads_base = os.path.expandvars(uploads_base).replace('"', '').replace("'", "").strip()
+        
+    target_dir = os.path.join(uploads_base, folder_name)
+    os.makedirs(target_dir, exist_ok=True)
+    
+    # 2. Copy the asset
+    target_asset_path = None
+    if asset_path and os.path.exists(asset_path):
+        ext = os.path.splitext(asset_path)[1]
+        target_asset_name = f"media{ext}"
+        target_asset_path = os.path.join(target_dir, target_asset_name)
+        try:
+            shutil.copy2(asset_path, target_asset_path)
+        except Exception as e:
+            print(f"[MANUAL UPLOAD] Warning: Failed to copy asset: {e}")
+    
+    # 3. Create details txt file
+    details_path = os.path.join(target_dir, "post_details.txt")
+    with open(details_path, "w", encoding="utf-8") as f:
+        f.write("=" * 60 + "\n")
+        f.write(f"MANUAL UPLOAD DETAILS - {post_type.upper()}\n")
+        f.write("=" * 60 + "\n\n")
+        f.write(f"📁 Asset-Pfad: {target_asset_path}\n")
+        f.write(f"📌 Titel: {title or 'N/A'}\n\n")
+        
+        # Smart-truncated tweet caption
+        import re
+        x_caption = caption or ""
+        if len(x_caption) > 270:
+            trimmed = x_caption[:267]
+            last_punctuation = max(trimmed.rfind('.'), trimmed.rfind('!'), trimmed.rfind('?'))
+            if last_punctuation > 180:
+                x_caption = trimmed[:last_punctuation + 1]
+            else:
+                last_space = trimmed.rfind(' ')
+                x_caption = trimmed[:last_space] + "..." if last_space > 180 else trimmed + "..."
+        x_caption = re.sub(r'https?://\S+', 'Link im Profil', x_caption)
+        x_caption = re.sub(r'\b([a-zA-Z0-9-]+\.)?schatzsuche40\.de\b', 'unserem Profil', x_caption)
+        x_caption = '\n'.join([re.sub(r'[ \t]+', ' ', line).strip() for line in x_caption.split('\n')]).strip()
+        x_caption = re.sub(r'\n{3,}', '\n\n', x_caption)
+        
+        f.write(f"📝 CAPTION (Instagram / Facebook / Pinterest):\n{'-'*30}\n{caption}\n{'-'*30}\n\n")
+        f.write(f"🐦 CAPTION (X / Twitter - link-free & truncated):\n{'-'*30}\n{x_caption}\n{'-'*30}\n\n")
+        if comment_text:
+            f.write(f"💬 ERSTER KOMMENTAR (Instagram / YouTube):\n{comment_text}\n\n")
+        if tags:
+            f.write(f"🏷️ EMPFOHLENE TAGS:\n{', '.join(tags) if isinstance(tags, list) else tags}\n\n")
+            
+        f.write("💡 TIPPS FÜR DEN HOCHLAD-VORGANG:\n")
+        f.write("- Instagram Reels: Wähle beim Upload einen passenden Trend-Sound aus der Musikbibliothek.\n")
+        f.write("- YouTube Shorts: Verwende den Titel mit #shorts und füge ein passendes YouTube-Audio hinzu.\n")
+        f.write("- Pinterest: Nutze das Bild und verlinke direkt auf https://schatzsuche40.de\n")
+        
+    print(f"\n[MANUAL UPLOAD] Directory created for manual upload: {target_dir}")
+    print("                Asset and text details file copied. Check 'post_details.txt'!")
+    
+    # 4. Trigger Google Drive API Push if configured
+    if os.getenv("UPLOAD_TO_GDRIVE", "False").lower() == "true":
+        try:
+            from google_drive_uploader import push_folder_to_drive
+            push_folder_to_drive(target_dir)
+        except Exception as gd_err:
+            print(f"[MANUAL UPLOAD] Warning: Google Drive API upload failed: {gd_err}")
+            
+    return True
 
 
 def post_to_x(caption, image_path):
@@ -220,6 +305,16 @@ def post_instagram_reel(caption, video_filename, comment_text=None):
     Der Video-Pfad muss im Nginx static directory liegen: /static/temp_social/{video_filename}
     sodass er unter https://tool.schatzsuche40.de/static/temp_social/{video_filename} öffentlich erreichbar ist.
     """
+    if PREPARE_MANUAL_UPLOAD:
+        video_path = os.path.join(BASE_DIR, "static", "temp_social", video_filename)
+        return save_for_manual_upload(
+            post_type="instagram_reel",
+            title="Instagram Reel",
+            caption=caption,
+            asset_path=video_path,
+            comment_text=comment_text
+        )
+        
     PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
     META_INSTA_ID = os.environ.get("META_INSTA_ID")
     if not (META_INSTA_ID and PAGE_TOKEN):
@@ -343,6 +438,10 @@ def post_to_pinterest(title, description, image_path, link_url=None):
 
 def post_facebook_reel(caption, video_path):
     """Postet ein Video als Facebook Reel auf die Facebook-Page (Schatzsuche 4.0)."""
+    if PREPARE_MANUAL_UPLOAD:
+        print("[SKIP] Facebook Reel: manual upload assets already created via post_instagram_reel.")
+        return True
+        
     PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
     META_PAGE_ID = os.environ.get("META_PAGE_ID")
     
@@ -402,6 +501,15 @@ def post_facebook_reel(caption, video_path):
 
 def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None, title=None, comment_text=None, skip_instagram=False, strip_links_on_x=None):
     """Hier erfolgt der koordinierte Social-Media-Push."""
+    if PREPARE_MANUAL_UPLOAD:
+        return save_for_manual_upload(
+            post_type="feed_image",
+            title=title or f"Aktienanalyse: {symbol}",
+            caption=caption,
+            asset_path=image_path,
+            comment_text=comment_text
+        )
+        
     print(f"Bündele Social-Media-Push für {symbol}...")
     
     if strip_links_on_x is None:

@@ -85,6 +85,16 @@ def upload_video(video_file, metadata_dict, privacy_status='public', publish_at=
         print(f"ERROR: Video-Datei nicht gefunden: {video_file}")
         return False
 
+    from social_publisher import PREPARE_MANUAL_UPLOAD, save_for_manual_upload
+    if PREPARE_MANUAL_UPLOAD:
+        return save_for_manual_upload(
+            post_type="youtube_shorts",
+            title=metadata_dict.get('title', 'AI Video Automation'),
+            caption=metadata_dict.get('description', 'Automatisch generiertes Video.'),
+            asset_path=video_file,
+            tags=metadata_dict.get('tags', [])
+        )
+
     title = metadata_dict.get('title', 'AI Video Automation')
     description = metadata_dict.get('description', 'Automatisch generiertes Video.')
     tags = sanitize_tags(metadata_dict.get('tags', []))
