@@ -91,7 +91,7 @@
             background: var(--accent-soft);
         }
 
-        .container { max-width: 1750px; margin: 0 auto; padding: 30px 24px; display: flex; flex-direction: column; gap: 20px; }
+        .container { max-width: 100% !important; margin: 0 auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
         
         /* Hero */
         .hero { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 4px;}
@@ -177,9 +177,56 @@
         .filter-label { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
         .filter-val-display { color: var(--accent); font-weight: 800; }
         
-        .range-slider { -webkit-appearance: none; width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.06); outline: none; margin-bottom: 6px; }
-        .range-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 10px rgba(201, 162, 39, 0.4); }
-        .range-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #fff; }
+        .range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 24px;
+            background: transparent;
+            outline: none;
+            margin-bottom: 2px;
+            cursor: pointer;
+        }
+        .range-slider::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 3px;
+        }
+        .range-slider::-moz-range-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 3px;
+        }
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2.5px solid #fff;
+            box-shadow: 0 0 10px rgba(201, 162, 39, 0.5);
+            margin-top: -8px;
+        }
+        .range-slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2.5px solid #fff;
+            box-shadow: 0 0 10px rgba(201, 162, 39, 0.5);
+        }
+        .range-scale {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: -2px;
+            margin-bottom: 12px;
+        }
         
         .filter-input { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: white; font-size: 0.8rem; font-family: inherit; transition: border-color 0.2s; }
         .filter-input:focus { outline: none; border-color: var(--accent); }
@@ -457,21 +504,31 @@
             <div class="filter-group">
                 <div class="filter-label"><span>KGV (Maximal)</span> <span class="filter-val-display" id="kgvVal">50</span></div>
                 <input type="range" class="range-slider" id="kgvFilter" min="1" max="100" value="50">
+                <div class="range-scale"><span>1</span><span>100</span></div>
             </div>
 
             <div class="filter-group">
                 <div class="filter-label"><span>Dividendenrendite (Minimal)</span> <span class="filter-val-display" id="divVal">0 %</span></div>
                 <input type="range" class="range-slider" id="divFilter" min="0" max="15" step="0.5" value="0">
+                <div class="range-scale"><span>0 %</span><span>15 %</span></div>
             </div>
 
             <div class="filter-group">
                 <div class="filter-label"><span>Nettomarge (Minimal)</span> <span class="filter-val-display" id="marginVal">-20 %</span></div>
                 <input type="range" class="range-slider" id="marginFilter" min="-20" max="60" step="1" value="-20">
+                <div class="range-scale"><span>-20 %</span><span>60 %</span></div>
             </div>
             
             <div class="filter-group">
                 <div class="filter-label"><span>Umsatzwachstum (Minimal)</span> <span class="filter-val-display" id="growthVal">-20 %</span></div>
                 <input type="range" class="range-slider" id="growthFilter" min="-20" max="60" step="1" value="-20">
+                <div class="range-scale"><span>-20 %</span><span>60 %</span></div>
+            </div>
+            
+            <div class="filter-group">
+                <div class="filter-label"><span>Marktkapitalisierung (Min)</span> <span class="filter-val-display" id="mcapVal">Alle</span></div>
+                <input type="range" class="range-slider" id="mcapFilter" min="0" max="250" step="5" value="0">
+                <div class="range-scale"><span>Alle</span><span>250 Mrd. $</span></div>
             </div>
 
             <div class="filter-group" style="margin-top: 30px;">
@@ -620,6 +677,7 @@ const ui = {
     div: $('divFilter'), divVal: $('divVal'),
     margin: $('marginFilter'), marginVal: $('marginVal'),
     growth: $('growthFilter'), growthVal: $('growthVal'),
+    mcap: $('mcapFilter'), mcapVal: $('mcapVal'),
     body: $('tbody'), loader: $('loader'), table: $('tableContent'),
     footer: $('tableFooter'), pgInfo: $('footerInfo'), pgBtns: $('pagination'),
     totCount: $('totalCount'), filtCount: $('filteredCount'),
@@ -675,6 +733,11 @@ function setupEvents() {
     ui.div.addEventListener('input', e => { ui.divVal.textContent = e.target.value + " %"; applyFilters(); });
     ui.margin.addEventListener('input', e => { ui.marginVal.textContent = e.target.value + " %"; applyFilters(); });
     ui.growth.addEventListener('input', e => { ui.growthVal.textContent = e.target.value + " %"; applyFilters(); });
+    ui.mcap.addEventListener('input', e => {
+        let v = parseFloat(e.target.value);
+        ui.mcapVal.textContent = v === 0 ? "Alle" : `> ${v} Mrd. $`;
+        applyFilters();
+    });
     
     // Drawer Sliders
     ui.onceSlider.addEventListener('input', e => {
@@ -703,6 +766,7 @@ function resetFilters() {
     ui.div.value = 0; ui.divVal.textContent = "0 %";
     ui.margin.value = -20; ui.marginVal.textContent = "-20 %";
     ui.growth.value = -20; ui.growthVal.textContent = "-20 %";
+    ui.mcap.value = 0; ui.mcapVal.textContent = "Alle";
     applyFilters();
 }
 
@@ -713,6 +777,7 @@ function applyFilters() {
     const minDiv = parseFloat(ui.div.value);
     const minMargin = parseFloat(ui.margin.value);
     const minGrowth = parseFloat(ui.growth.value);
+    const minMcapUsd = parseFloat(ui.mcap.value) * 1e9;
 
     filteredData = allData.filter(d => {
         if (q && !d.name.toLowerCase().includes(q) && !d.symbol.toLowerCase().includes(q)) return false;
@@ -721,6 +786,7 @@ function applyFilters() {
         if (minDiv > 0 && (d.div_yield == null || d.div_yield < minDiv)) return false;
         if (minMargin > -20 && (d.netto_marge == null || d.netto_marge < minMargin)) return false;
         if (minGrowth > -20 && (d.umsatz_wachstum == null || d.umsatz_wachstum < minGrowth)) return false;
+        if (minMcapUsd > 0 && (d.mcap_usd == null || d.mcap_usd < minMcapUsd)) return false;
         return true;
     });
 

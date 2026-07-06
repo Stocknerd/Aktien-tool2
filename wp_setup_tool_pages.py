@@ -20,8 +20,32 @@ def make_iframe_block(slug, title, height):
     url = f"{TOOL_BASE_URL}/?embed=1" if slug == "aktien-tool" else f"{TOOL_BASE_URL}/{slug}?embed=1"
     if slug == "aktien-vergleichstool":
         url = f"{TOOL_BASE_URL}/compare?embed=1"
+        
+    css_fix = (
+        '<style>\n'
+        '.entry-content { margin-top: 80px !important; }\n'
+        '@media (max-width: 768px) { .entry-content { margin-top: 100px !important; } }\n'
+        'header, .site-header, #masthead, .navigation-bar, .main-navigation, .sticky-header {\n'
+        '    background-color: #0B1E21 !important;\n'
+        '    opacity: 1 !important;\n'
+        '    z-index: 9999 !important;\n'
+        '}\n'
+        '/* Full-width container overrides for Betheme */\n'
+        '.entry-content .section_wrapper,\n'
+        '.entry-content .container,\n'
+        '.entry-content .the_content_wrapper {\n'
+        '    max-width: 100% !important;\n'
+        '    width: 100% !important;\n'
+        '    padding-left: 0 !important;\n'
+        '    padding-right: 0 !important;\n'
+        '    margin-left: 0 !important;\n'
+        '    margin-right: 0 !important;\n'
+        '}\n'
+        '</style>\n'
+    )
     
     return (
+        css_fix +
         f'<!-- wp:html -->\n'
         f'<div style="margin:24px 0;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">'
         f'<iframe id="{iframe_id}" src="{url}" width="100%" height="{height}" frameborder="0" '
