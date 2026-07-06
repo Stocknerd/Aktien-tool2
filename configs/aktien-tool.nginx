@@ -16,6 +16,13 @@ server {
     # Security: Hide X-Frame-Options from backend to avoid conflicts
     proxy_hide_header X-Frame-Options;
 
+    # Gzip Compression
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
     location /static/ {
         alias /home/ubuntu/aktien-tool2/static/;
         expires 30d;

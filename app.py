@@ -1,5 +1,5 @@
 from flask import (
-    Flask, render_template, request, jsonify,
+    Flask, render_template, request, jsonify, Response,
     redirect, url_for, send_from_directory, flash, render_template_string
 )
 import os, pandas as pd, io, time
@@ -89,6 +89,22 @@ def get_related_stocks(ticker, limit=4):
         })
     return res
 
+# Thread-safe in-memory cache definitions
+import threading
+import json
+
+_DIV_CAL_CACHE_DATA = None
+_DIV_CAL_CACHE_MTIME = 0.0
+_div_cal_cache_lock = threading.Lock()
+
+_SCREENER_CACHE_DATA = None
+_SCREENER_CACHE_MTIME = 0.0
+_screener_cache_lock = threading.Lock()
+
+_SEARCH_ALL_CACHE_DATA = None
+_SEARCH_ALL_CACHE_MTIME = 0.0
+_search_all_cache_lock = threading.Lock()
+
 # ─── Regular Routes ──────────────────────────────────────────
 
 @app.route('/')
@@ -131,84 +147,113 @@ def dividend_calendar_page():
 
 @app.route('/api/dividenden-kalender')
 def api_dividend_calendar():
-    df = core.load_df()
+    global _DIV_CAL_CACHE_DATA, _DIV_CAL_CACHE_MTIME
+    mtime = os.path.getmtime(core.CSV_FILE) if os.path.exists(core.CSV_FILE) else 0.0
     
-    # Helper to safely convert to float (must reject inf/nan for JSON)
-    import math
-    def safe_float(val, default=0):
-        try:
-            if pd.notna(val):
-                v = float(str(val).replace(',', '.'))
-                if math.isfinite(v):
-                    return round(v, 2)
-        except:
-            pass
-        return default
-    
-    # Show ALL dividend-paying stocks (yield > 0), not just those with ex-date
-    dy_col = pd.to_numeric(df.get('Dividendenrendite', pd.Series(dtype=float)), errors='coerce')
-    df_div = df[dy_col > 0].copy()
-    
-    # Sort: stocks with upcoming ex-dates first, then by yield
-    has_ex = df_div['Ex-Dividenden-Datum'].notna() if 'Ex-Dividenden-Datum' in df_div.columns else pd.Series(False, index=df_div.index)
-    df_div['_sort_key'] = (~has_ex).astype(int)
-    df_div = df_div.sort_values(['_sort_key', 'Ex-Dividenden-Datum'], ascending=[True, True])
-    
-    results = []
-    for _, r in df_div.iterrows():
-        dy = safe_float(r.get('Dividendenrendite'))
-        if dy <= 0:
-            continue
+    if _DIV_CAL_CACHE_DATA is not None and mtime == _DIV_CAL_CACHE_MTIME:
+        return Response(_DIV_CAL_CACHE_DATA, mimetype='application/json')
         
-        amt = safe_float(r.get('Dividenden-Betrag'))
-        kgv = safe_float(r.get('KGV'), None)
-        kuv = safe_float(r.get('KUV'), None)
-        mcap = safe_float(r.get('Marktkapitalisierung'), None)
+    with _div_cal_cache_lock:
+        if _DIV_CAL_CACHE_DATA is not None and mtime == _DIV_CAL_CACHE_MTIME:
+            return Response(_DIV_CAL_CACHE_DATA, mimetype='application/json')
+            
+        df = core.load_df()
         
-        ex_date = ''
-        ex_month = 0
-        if 'Ex-Dividenden-Datum' in r.index and pd.notna(r.get('Ex-Dividenden-Datum')):
-            ex_raw = str(r['Ex-Dividenden-Datum'])
-            if len(ex_raw) >= 10 and ex_raw[4] == '-':
-                ex_date = ex_raw
-                try:
-                    ex_month = int(ex_raw[5:7])
-                except:
-                    pass
+        # Helper to safely convert to float (must reject inf/nan for JSON)
+        import math
+        def safe_float(val, default=0):
+            try:
+                if pd.notna(val):
+                    v = float(str(val).replace(',', '.'))
+                    if math.isfinite(v):
+                        return round(v, 2)
+            except:
+                pass
+            return default
         
-        # Normalize sector names
-        sector = str(r.get('Sektor', '')) if pd.notna(r.get('Sektor')) else ''
+        # Show ALL dividend-paying stocks (yield > 0), not just those with ex-date
+        dy_col = pd.to_numeric(df.get('Dividendenrendite', pd.Series(dtype=float)), errors='coerce')
+        df_div = df[dy_col > 0].copy()
         
-        results.append({
-            'symbol': str(r['Symbol']),
-            'name': core.get_clean_name(r),
-            'ex_date': ex_date,
-            'ex_month': ex_month,
-            'div_yield': dy,
-            'amount': amt,
-            'currency': str(r.get('Währung', 'EUR')) if pd.notna(r.get('Währung')) else 'USD',
-            'sector': sector,
-            'region': str(r.get('Region', '')) if pd.notna(r.get('Region')) else '',
-            'kgv': kgv,
-            'kuv': kuv,
-            'mcap': mcap,
-        })
-    
-    # Deduplicate sectors and sort
-    all_sectors = sorted(set(s for s in df[df['Sektor'].notna()]['Sektor'].unique() if s))
-    
-    return jsonify({'stocks': results, 'sectors': all_sectors, 'total': len(results)})
+        # Sort: stocks with upcoming ex-dates first, then by yield
+        has_ex = df_div['Ex-Dividenden-Datum'].notna() if 'Ex-Dividenden-Datum' in df_div.columns else pd.Series(False, index=df_div.index)
+        df_div['_sort_key'] = (~has_ex).astype(int)
+        df_div = df_div.sort_values(['_sort_key', 'Ex-Dividenden-Datum'], ascending=[True, True])
+        
+        results = []
+        for _, r in df_div.iterrows():
+            dy = safe_float(r.get('Dividendenrendite'))
+            if dy <= 0:
+                continue
+            
+            amt = safe_float(r.get('Dividenden-Betrag'))
+            kgv = safe_float(r.get('KGV'), None)
+            kuv = safe_float(r.get('KUV'), None)
+            mcap = safe_float(r.get('Marktkapitalisierung'), None)
+            
+            ex_date = ''
+            ex_month = 0
+            if 'Ex-Dividenden-Datum' in r.index and pd.notna(r.get('Ex-Dividenden-Datum')):
+                ex_raw = str(r['Ex-Dividenden-Datum'])
+                if len(ex_raw) >= 10 and ex_raw[4] == '-':
+                    ex_date = ex_raw
+                    try:
+                        ex_month = int(ex_raw[5:7])
+                    except:
+                        pass
+            
+            # Normalize sector names
+            sector = str(r.get('Sektor', '')) if pd.notna(r.get('Sektor')) else ''
+            
+            results.append({
+                'symbol': str(r['Symbol']),
+                'name': core.get_clean_name(r),
+                'ex_date': ex_date,
+                'ex_month': ex_month,
+                'div_yield': dy,
+                'amount': amt,
+                'currency': str(r.get('Währung', 'EUR')) if pd.notna(r.get('Währung')) else 'USD',
+                'sector': sector,
+                'region': str(r.get('Region', '')) if pd.notna(r.get('Region')) else '',
+                'kgv': kgv,
+                'kuv': kuv,
+                'mcap': mcap,
+            })
+        
+        # Deduplicate sectors and sort
+        all_sectors = sorted(set(s for s in df[df['Sektor'].notna()]['Sektor'].unique() if s))
+        
+        json_payload = json.dumps({'stocks': results, 'sectors': all_sectors, 'total': len(results)})
+        _DIV_CAL_CACHE_DATA = json_payload
+        _DIV_CAL_CACHE_MTIME = mtime
+        
+    return Response(json_payload, mimetype='application/json')
 
 @app.route('/api/search-all')
 def api_search_all():
-    index = core.get_search_index()
-    results = [{
-        'symbol': item['symbol'],
-        'name': item['name'],
-        'div_yield': item.get('div_yield', 0.0),
-        'sector': item.get('sector', '')
-    } for item in index]
-    return jsonify({'stocks': results})
+    global _SEARCH_ALL_CACHE_DATA, _SEARCH_ALL_CACHE_MTIME
+    mtime = os.path.getmtime(core.CSV_FILE) if os.path.exists(core.CSV_FILE) else 0.0
+    
+    if _SEARCH_ALL_CACHE_DATA is not None and mtime == _SEARCH_ALL_CACHE_MTIME:
+        return Response(_SEARCH_ALL_CACHE_DATA, mimetype='application/json')
+        
+    with _search_all_cache_lock:
+        if _SEARCH_ALL_CACHE_DATA is not None and mtime == _SEARCH_ALL_CACHE_MTIME:
+            return Response(_SEARCH_ALL_CACHE_DATA, mimetype='application/json')
+            
+        index = core.get_search_index()
+        results = [{
+            'symbol': item['symbol'],
+            'name': item['name'],
+            'div_yield': item.get('div_yield', 0.0),
+            'sector': item.get('sector', '')
+        } for item in index]
+        
+        json_payload = json.dumps({'stocks': results})
+        _SEARCH_ALL_CACHE_DATA = json_payload
+        _SEARCH_ALL_CACHE_MTIME = mtime
+        
+    return Response(json_payload, mimetype='application/json')
 
 # ─── Aktien-Screener ─────────────────────────────────────────
 @app.route('/screener')
@@ -263,93 +308,104 @@ def p2p_dashboard():
 
 @app.route('/api/screener')
 def api_screener():
-    df = core.load_df()
+    global _SCREENER_CACHE_DATA, _SCREENER_CACHE_MTIME
+    mtime = os.path.getmtime(core.CSV_FILE) if os.path.exists(core.CSV_FILE) else 0.0
     
-    import math
-    def safe_float(val, default=None):
-        try:
-            if pd.notna(val):
-                v = float(str(val).replace(',', '.'))
-                if math.isfinite(v):
-                    return round(v, 2)
-        except:
-            pass
-        return default
-
-    def safe_float_pct(val, default=None):
-        try:
-            if pd.notna(val):
-                v = float(str(val).replace(',', '.'))
-                if math.isfinite(v):
-                    return round(v * 100.0, 2)
-        except:
-            pass
-        return default
-
-    EXCHANGE_RATES_TO_USD = {
-        'USD': 1.0,
-        'EUR': 1.08,
-        'CHF': 1.10,
-        'GBP': 1.27,
-        'JPY': 0.0064,
-        'CAD': 0.73,
-        'AUD': 0.66,
-        'HKD': 0.128,
-        'INR': 0.012,
-        'SEK': 0.095,
-        'DKK': 0.145,
-        'NOK': 0.093,
-        'BRL': 0.19,
-        'CNY': 0.14,
-        'TWD': 0.031,
-        'KRW': 0.00073,
-        'SGD': 0.74,
-        'MXN': 0.059,
-        'ZAR': 0.054
-    }
-
-    results = []
-    # Using specific columns to keep payload small
-    for _, r in df.iterrows():
-        # Only include stocks that have at least a Symbol
-        if pd.isna(r.get('Symbol')):
-            continue
+    if _SCREENER_CACHE_DATA is not None and mtime == _SCREENER_CACHE_MTIME:
+        return Response(_SCREENER_CACHE_DATA, mimetype='application/json')
+        
+    with _screener_cache_lock:
+        if _SCREENER_CACHE_DATA is not None and mtime == _SCREENER_CACHE_MTIME:
+            return Response(_SCREENER_CACHE_DATA, mimetype='application/json')
             
-        sector = str(r.get('Sektor', '')) if pd.notna(r.get('Sektor')) else ''
-        region = str(r.get('Region', '')) if pd.notna(r.get('Region')) else ''
+        df = core.load_df()
         
-        mcap = safe_float(r.get('Marktkapitalisierung'))
-        # Support both German/English column naming variations for Währung
-        currency = str(r.get('Währung') or r.get('W\u00e4hrung') or 'USD').strip().upper()
-        if not currency or currency == 'NAN':
-            currency = 'USD'
-            
-        mcap_usd = None
-        if mcap is not None:
-            rate = EXCHANGE_RATES_TO_USD.get(currency, 1.0)
-            mcap_usd = round(mcap * rate, 2)
-        
-        results.append({
-            'symbol': str(r['Symbol']),
-            'name': core.get_clean_name(r),
-            'sector': sector,
-            'region': region,
-            'kgv': safe_float(r.get('KGV')),
-            'div_yield': safe_float(r.get('Dividendenrendite')),
-            'umsatz_wachstum': safe_float_pct(r.get('Umsatzwachstum 3J (erwartet)')),
-            'netto_marge': safe_float_pct(r.get('Nettomarge')) if pd.notna(r.get('Nettomarge')) else safe_float_pct(r.get('Operative Marge')),
-            'op_marge': safe_float_pct(r.get('Operative Marge')),
-            'roe': safe_float_pct(r.get('Eigenkapitalrendite')),
-            'kbv': safe_float(r.get('KBV')),
-            'mcap': mcap,
-            'mcap_usd': mcap_usd,
-            'currency': currency,
-            'rating': str(r.get('Recommendation Key', '')) if pd.notna(r.get('Recommendation Key')) else ''
-        })
-        
-    all_sectors = sorted(set(s for s in df[df['Sektor'].notna()]['Sektor'].unique() if s))
+        import math
+        def safe_float(val, default=None):
+            try:
+                if pd.notna(val):
+                    v = float(str(val).replace(',', '.'))
+                    if math.isfinite(v):
+                        return round(v, 2)
+            except:
+                pass
+            return default
     
-    return jsonify({'stocks': results, 'sectors': all_sectors, 'total': len(results)})
+        def safe_float_pct(val, default=None):
+            try:
+                if pd.notna(val):
+                    v = float(str(val).replace(',', '.'))
+                    if math.isfinite(v):
+                        return round(v * 100.0, 2)
+            except:
+                pass
+            return default
+    
+        EXCHANGE_RATES_TO_USD = {
+            'USD': 1.0,
+            'EUR': 1.08,
+            'CHF': 1.10,
+            'GBP': 1.27,
+            'JPY': 0.0064,
+            'CAD': 0.73,
+            'AUD': 0.66,
+            'HKD': 0.128,
+            'INR': 0.012,
+            'SEK': 0.095,
+            'DKK': 0.145,
+            'NOK': 0.093,
+            'BRL': 0.19,
+            'CNY': 0.14,
+            'TWD': 0.031,
+            'KRW': 0.00073,
+            'SGD': 0.74,
+            'MXN': 0.059,
+            'ZAR': 0.054
+        }
+    
+        results = []
+        for _, r in df.iterrows():
+            if pd.isna(r.get('Symbol')):
+                continue
+                
+            sector = str(r.get('Sektor', '')) if pd.notna(r.get('Sektor')) else ''
+            region = str(r.get('Region', '')) if pd.notna(r.get('Region')) else ''
+            
+            mcap = safe_float(r.get('Marktkapitalisierung'))
+            currency = str(r.get('Währung') or r.get('W\u00e4hrung') or 'USD').strip().upper()
+            if not currency or currency == 'NAN':
+                currency = 'USD'
+                
+            mcap_usd = None
+            if mcap is not None:
+                rate = EXCHANGE_RATES_TO_USD.get(currency, 1.0)
+                mcap_usd = round(mcap * rate, 2)
+            
+            results.append({
+                'symbol': str(r['Symbol']),
+                'name': core.get_clean_name(r),
+                'sector': sector,
+                'region': region,
+                'kgv': safe_float(r.get('KGV')),
+                'div_yield': safe_float(r.get('Dividendenrendite')),
+                'umsatz_wachstum': safe_float_pct(r.get('Umsatzwachstum 3J (erwartet)')),
+                'netto_marge': safe_float_pct(r.get('Nettomarge')) if pd.notna(r.get('Nettomarge')) else safe_float_pct(r.get('Operative Marge')),
+                'op_marge': safe_float_pct(r.get('Operative Marge')),
+                'roe': safe_float_pct(r.get('Eigenkapitalrendite')),
+                'kbv': safe_float(r.get('KBV')),
+                'mcap': mcap,
+                'mcap_usd': mcap_usd,
+                'currency': currency,
+                'rating': str(r.get('Recommendation Key', '')) if pd.notna(r.get('Recommendation Key')) else ''
+            })
+            
+        all_sectors = sorted(set(s for s in df[df['Sektor'].notna()]['Sektor'].unique() if s))
+        
+        json_payload = json.dumps({'stocks': results, 'sectors': all_sectors, 'total': len(results)})
+        _SCREENER_CACHE_DATA = json_payload
+        _SCREENER_CACHE_MTIME = mtime
+        
+    return Response(json_payload, mimetype='application/json')
 
 @app.route('/analyse/<ticker>')
 @app.route('/<ticker>')
@@ -756,8 +812,8 @@ def api_add_ticker():
             return jsonify({"status": "error", "message": "Kein Ticker angegeben."}), 400
             
         import re
-        if not re.match(r'^[A-Z0-9.\-]+$', ticker_symbol):
-            return jsonify({"status": "error", "message": "Ungültiger Ticker. Erlaubt sind Buchstaben, Zahlen, Punkte und Bindestriche."}), 400
+        if not re.match(r'^[A-Z0-9.\-\s]+$', ticker_symbol):
+            return jsonify({"status": "error", "message": "Ungültiger Ticker. Erlaubt sind Buchstaben, Zahlen, Punkte, Bindestriche und Leerzeichen."}), 400
             
         df_existing = core.load_df()
         if not df_existing.empty and ticker_symbol in df_existing['Symbol'].astype(str).str.upper().values:
@@ -787,6 +843,24 @@ def api_add_ticker():
         session = curl_requests.Session(impersonate="chrome")
         ticker_obj = yf.Ticker(ticker_symbol, session=session)
         info = ticker_obj.info
+        
+        # If direct lookup fails, try search resolution
+        if not info or not info.get('symbol') or (not info.get('shortName') and not info.get('longName')):
+            try:
+                search = yf.Search(ticker_symbol, max_results=5)
+                results = search.quotes
+                if results:
+                    for res in results:
+                        if res.get('quoteType') == 'EQUITY' or res.get('typeDisp') == 'Equity':
+                            resolved_symbol = res.get('symbol')
+                            if resolved_symbol and resolved_symbol.upper() != ticker_symbol:
+                                ticker_symbol = resolved_symbol.upper()
+                                # Retry lookup with resolved symbol
+                                ticker_obj = yf.Ticker(ticker_symbol, session=session)
+                                info = ticker_obj.info
+                                break
+            except Exception as search_err:
+                print(f"Search resolution error for '{ticker_symbol}': {search_err}")
         
         if not info or not info.get('symbol') or (not info.get('shortName') and not info.get('longName')):
             return jsonify({"status": "error", "message": f"Ticker '{ticker_symbol}' wurde auf Yahoo Finance nicht gefunden."}), 404
