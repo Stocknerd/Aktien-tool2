@@ -111,8 +111,18 @@ def load_df():
         if _CACHED_DF is not None and mtime == _CACHED_MTIME:
             return _CACHED_DF
             
-        try:
             df = pd.read_csv(CSV_FILE)
+            # Normalize column names with encoding anomalies
+            rename_map = {}
+            for col in df.columns:
+                if "hrung" in col:
+                    rename_map[col] = "Währung"
+                elif "ttungsquote" in col:
+                    rename_map[col] = "Ausschüttungsquote"
+                elif "qualit" in col or "qualit" in col.lower():
+                    rename_map[col] = "Datenqualität"
+            if rename_map:
+                df = df.rename(columns=rename_map)
             _CACHED_DF = df
             _CACHED_MTIME = mtime
             

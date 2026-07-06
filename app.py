@@ -346,6 +346,7 @@ def api_screener():
             'EUR': 1.08,
             'CHF': 1.10,
             'GBP': 1.27,
+            'GBp': 1.27,     # UK stocks use GBp currency, but market cap numbers are in GBP
             'JPY': 0.0064,
             'CAD': 0.73,
             'AUD': 0.66,
@@ -353,14 +354,37 @@ def api_screener():
             'INR': 0.012,
             'SEK': 0.095,
             'DKK': 0.145,
-            'NOK': 0.093,
-            'BRL': 0.19,
-            'CNY': 0.14,
-            'TWD': 0.031,
-            'KRW': 0.00073,
+            'NOK': 0.094,
+            'BRL': 0.18,
+            'CNY': 0.138,
+            'TWD': 0.031,    # Taiwan Dollar
+            'KRW': 0.00073,  # South Korean Won
             'SGD': 0.74,
-            'MXN': 0.059,
-            'ZAR': 0.054
+            'MXN': 0.055,
+            'ZAR': 0.054,
+            'ZAc': 0.054,    # South African cents (database values are in Rand ZAR)
+            'SAR': 0.27,     # Saudi Riyal
+            'IDR': 0.000061, # Indonesian Rupiah
+            'PLN': 0.25,     # Polish Zloty
+            'CLP': 0.0011,   # Chilean Peso
+            'KWF': 3.25,     # Kuwaiti Dinar
+            'QAR': 0.27,     # Qatari Riyal
+            'MYR': 0.21,     # Malaysian Ringgit
+            'ILA': 0.27,     # Israeli Agora (database values are in ILS Shekel)
+            'ILS': 0.27,     # Israeli Shekel
+            'AED': 0.27,     # UAE Dirham
+            'HUF': 0.0028,   # Hungarian Forint
+            'NZD': 0.61,     # New Zealand Dollar
+            'USX': 1.0,      # US cents
+            'CZK': 0.043,    # Czech Koruna
+            'THB': 0.027,    # Thai Baht
+            'ARS': 0.0011,   # Argentine Peso
+            'EGP': 0.021,    # Egyptian Pound
+            'NGN': 0.00067,  # Nigerian Naira
+            'PHP': 0.017,    # Philippine Peso
+            'TRY': 0.031,    # Turkish Lira
+            'RUB': 0.011,    # Russian Ruble
+            'BTC': 60000.0,  # Bitcoin
         }
     
         results = []
