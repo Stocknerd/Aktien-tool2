@@ -474,6 +474,16 @@ header, .site-header, #masthead, .navigation-bar, .main-navigation, .sticky-head
     </a>
   </div>
 
+  <!-- Featured Guide Section -->
+  <div class="s40-depot-banner" style="background: rgba(201, 162, 39, 0.03); border: 1px solid rgba(201, 162, 39, 0.15); margin: 40px 0 0 0;">
+    <div class="s40-depot-info">
+      <span class="s40-depot-badge" style="background: rgba(201, 162, 39, 0.1); color: #C9A227; border: 1px solid rgba(201, 162, 39, 0.25);">🔥 Beliebter Ratgeber</span>
+      <h3 style="margin-top: 8px;">Dividendenwachstum-Strategie: Der ultimative Guide</h3>
+      <p>Lerne Schritt für Schritt, wie du mit stetig wachsenden Ausschüttungen ein krisensicheres passives Einkommen aufbaust und den Zinseszinseffekt maximal nutzt.</p>
+    </div>
+    <a href="https://schatzsuche40.de/dividendenwachstum-strategie-guide/" class="s40-depot-btn" style="background: transparent; border: 1px solid #C9A227; color: #C9A227 !important;">Leitfaden lesen &rarr;</a>
+  </div>
+
   <!-- Newsletter / Lead Magnet -->
   <div class="s40-newsletter">
     <h3>&#128216; Gratis: Leitfaden Aktienbewertung</h3>
