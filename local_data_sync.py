@@ -71,11 +71,11 @@ def main():
     
     if res.returncode == 0:
         print("\n" + "="*40)
-        print("✅ SUCCESS: Data updated and deployed to server!")
+        print("SUCCESS: Data updated and deployed to server!")
         print("="*40)
     else:
         print("\n" + "="*40)
-        print("❌ FAILED: Deployment trigger failed.")
+        print("FAILED: Deployment trigger failed.")
         print("="*40)
 
 if __name__ == "__main__":
