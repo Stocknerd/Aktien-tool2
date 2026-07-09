@@ -111,6 +111,7 @@ def load_df():
         if _CACHED_DF is not None and mtime == _CACHED_MTIME:
             return _CACHED_DF
             
+        try:
             df = pd.read_csv(CSV_FILE)
             # Normalize column names with encoding anomalies
             rename_map = {}
