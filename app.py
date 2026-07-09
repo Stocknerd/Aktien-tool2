@@ -400,6 +400,14 @@ def api_screener():
             if not currency or currency == 'NAN':
                 currency = 'USD'
                 
+            # Normalize minor/cents currencies to major currencies (e.g. ZAC -> ZAR, ILA -> ILS, USX -> USD)
+            if currency == 'ZAC':
+                currency = 'ZAR'
+            elif currency == 'ILA':
+                currency = 'ILS'
+            elif currency == 'USX':
+                currency = 'USD'
+                
             mcap_usd = None
             if mcap is not None:
                 rate = EXCHANGE_RATES_TO_USD.get(currency, 1.0)
