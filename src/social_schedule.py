@@ -126,7 +126,7 @@ def main() -> int:
 
     backup_dir = Path(args.project_dir) / "logs"
     backup_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
     backup_path = backup_dir / f"crontab_before_social_optimization_{timestamp}.txt"
     backup_path.write_text(existing, encoding="utf-8")
     subprocess.run(["crontab", "-"], input=rendered, text=True, check=True)
