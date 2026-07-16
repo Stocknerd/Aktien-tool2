@@ -4,6 +4,7 @@ import sys
 import time
 import random
 import argparse
+import math
 import pandas as pd
 from datetime import datetime, timedelta
 
@@ -14,11 +15,32 @@ from src.config import BASE_DIR, COLORS, COLORS_HEX
 from src.graphic_generator import render_viral_list, render_dividend_calendar, render_pure_ai_infographic
 from src.reel_generator import build_reel_mp4
 from src.content_generator import generate_structured_content
+from src.content_strategy import PRIORITY_EVERGREEN_TOPICS, choose_automated_topic
+from src.canva_packet import create_personal_canva_packet_from_json
+from src.news_sources import (
+    filter_fresh_headlines,
+    first_news_title,
+    format_news_context,
+    parse_rss_headlines,
+)
 from src.youtube_uploader import upload_video as youtube_upload_video
 
+from src.publishing_safety import (
+    content_dispatch_allowed,
+    dispatch_or_prepare,
+    external_transfer_enabled,
+    review_metadata_for_content,
+    validate_calendar_entries,
+)
 from core import render_stock_card, render_compare, CSV_FILE
 from ai_logic import get_tool_promotion_caption, get_ai_verdict, get_ai_comparison_verdict
-from social_publisher import run_social_sync, post_instagram_reel, post_facebook_reel
+from social_publisher import (
+    live_public_dispatch_enabled,
+    post_facebook_reel,
+    post_instagram_reel,
+    run_social_sync,
+    save_for_manual_upload,
+)
 
 ## A deep and structured list of 80 evergreen financial topics for Track 3 (AI Infographics)
 EVERGREEN_FINANCIAL_TOPICS = [
@@ -107,68 +129,40 @@ EVERGREEN_FINANCIAL_TOPICS = [
     "Aktien im Betriebsvermögen: Wann lohnt sich eine vermögensverwaltende GmbH?"
 ]
 
+# Backward-compatible name for old diagnostics; the runtime and legacy helpers
+# both consume the same performance-based, family-finance-focused topic pool.
+EVERGREEN_FINANCIAL_TOPICS = list(PRIORITY_EVERGREEN_TOPICS)
+
 def fetch_current_market_news() -> str:
-    """Fetches current headlines from Boerse Frankfurt feed to inject real-world context."""
+    """Fetch and parse current Boerse Frankfurt RSS headlines with source metadata."""
     import requests
+
     url = "https://api.boerse-frankfurt.de/v1/feeds/news.rss"
     try:
-        r = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
-        if r.status_code == 200:
-            data = r.json()
-            items = data.get("items", [])
-            headlines = []
-            for item in items[:12]:
-                title = item.get("title")
-                if title:
-                    headlines.append(f"- {title}")
-            return "\n".join(headlines)
-    except Exception as e:
-        print(f"TREND DETECTOR: Warning: Failed to fetch current market news: {e}")
-    return ""
+        response = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        response.raise_for_status()
+        items = parse_rss_headlines(response.content, limit=12)
+        fresh_items = filter_fresh_headlines(items, max_age_hours=48)
+        if not fresh_items:
+            print("TREND DETECTOR: No fresh, dated HTTPS headlines passed validation.")
+            return ""
+        return format_news_context(fresh_items)
+    except Exception as error:
+        print(f"TREND DETECTOR: Warning: Failed to fetch current market news: {error}")
+        return ""
 
-def get_dynamic_trending_topic() -> str:
-    """Uses GPT to suggest an extremely high-trending, current financial or macroeconomic topic of the week."""
-    try:
-        from openai import OpenAI
-        from datetime import datetime
-        client = OpenAI()
-        model_name = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o")
-        
-        current_date_str = datetime.now().strftime("%d. %B %Y")
-        news_context = fetch_current_market_news()
-        
-        prompt = f"""
-        Du bist ein führender deutscher Finanzblogger und Börsen-Experte.
-        Heute ist der {current_date_str} (aktuelles Jahr ist {datetime.now().year}).
-        
-        Hier sind einige aktuelle Schlagzeilen und Marktthemen von heute:
-        {news_context if news_context else "Keine aktuellen News-Meldungen verfügbar."}
-        
-        Nenne mir EIN einziges extrem aktuelles, hochgradig virales Finanz-, Börsen- oder makroökonomisches Thema für diese Woche, das auf den obigen Marktdaten oder der aktuellen Lage im Jahr {datetime.now().year} basiert. 
-        WICHTIG:
-        - Wähle KEINE veralteten Themen aus der Vergangenheit (z. B. KEINE Zinsentscheidungen oder Krisen von 2023 oder früher). 
-        - Das Thema muss perfekt geeignet sein, um es als Infografik-Liste für Privatanleger verständlich und spannend zu erklären (z. B. 'Zinswende der EZB', 'Steigender Goldpreis', 'Krypto-Regulierung', 'Umgang mit Marktvolatilität').
-        
-        Gib mir AUSSCHLIESSLICH das Thema als kurzen, knackigen Titel (max. 50 Zeichen) aus.
-        Kein Präfix, kein Suffix, kein Punkt am Ende, keine Anführungszeichen.
-        """
-        
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": "Du bist ein präziser Finanz-Experte."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.75
-        )
-        topic = response.choices[0].message.content.strip()
-        # Clean quotes
-        if (topic.startswith('"') and topic.endswith('"')) or (topic.startswith("'") and topic.endswith("'")):
-            topic = topic[1:-1]
-        return topic
-    except Exception as e:
-        print(f"TREND DETECTOR: Warning: Failed to fetch dynamic topic: {e}")
+def get_dynamic_trending_topic(news_context: str | None = None) -> str | None:
+    """Select the first already-validated source headline without another model call."""
+
+    context = news_context or fetch_current_market_news()
+    if not context:
+        print("TREND DETECTOR: No sourced headlines available; using curated evergreen fallback.")
         return None
+    topic = first_news_title(context)
+    if not topic:
+        print("TREND DETECTOR: Source context was invalid; using curated evergreen fallback.")
+        return None
+    return topic
 
 def load_stock_database():
     """Loads the main stock CSV database."""
@@ -311,9 +305,9 @@ def run_track_stock():
 
 def run_track_calendar():
     """
-    Track 2: Dividend Calendar (Weekly on Sundays at 6:00 PM).
-    Filters upcoming ex-dividend dates, renders a 2x3 logo grid,
-    synthesizes a Silent Reel, and posts it.
+    Track 2: Dividend Calendar (weekly).
+    Filters complete sourced ex-dividend rows, renders a 2x3 grid and prepares
+    or publishes the feed image through the central gate.
     """
     print("🚀 TRACK 2: RUNNING WEEKLY DIVIDEND CALENDAR PIPELINE...")
     
@@ -339,58 +333,63 @@ def run_track_calendar():
             try:
                 dt = datetime.strptime(date_str, "%Y-%m-%d")
                 if heute - timedelta(days=1) <= dt <= upcoming_limit:
-                    # Parse dividend yield format
-                    yield_val = row.get("Dividendenrendite", pd.NA)
-                    yield_str = "--"
-                    if pd.notna(yield_val):
-                        try:
-                            yield_str = f"{float(yield_val):.1f}%"
-                        except:
-                            yield_str = str(yield_val)
-                            
-                    div_val = row.get("Dividenden-Betrag", pd.NA)
-                    div_str = f"{float(div_val):.2f}" if pd.notna(div_val) and isinstance(div_val, (int, float)) else str(div_val) if pd.notna(div_val) else "--"
-                    
-                    currency = str(row.get("Währung", "EUR"))
-                    symbol_currency = "$" if "USD" in currency else "€" if "EUR" in currency else currency
-                    if div_str != "--" and symbol_currency in ["$", "€"]:
-                        div_str = f"{div_str}{symbol_currency}"
-                    
-                    name_val = row.get("Security")
-                    name_str = str(name_val) if pd.notna(name_val) and str(name_val).strip() != "" else str(row["valid_yahoo_ticker"])
+                    # Validate source facts before adding display formatting.
+                    try:
+                        yield_float = float(str(row.get("Dividendenrendite", pd.NA)))
+                        dividend_float = float(str(row.get("Dividenden-Betrag", pd.NA)))
+                    except (TypeError, ValueError):
+                        continue
+                    if (
+                        not math.isfinite(yield_float)
+                        or not math.isfinite(dividend_float)
+                        or not 0 < yield_float <= 100
+                        or dividend_float <= 0
+                    ):
+                        continue
+
+                    currency_val = row.get("Währung", pd.NA)
+                    if pd.isna(currency_val) or not str(currency_val).strip():
+                        continue
+                    currency = str(currency_val).strip().upper()
+
+                    name_val = row.get("Security", pd.NA)
+                    if pd.isna(name_val) or not str(name_val).strip():
+                        continue
+                    name_str = str(name_val).strip()
+                    yield_str = f"{yield_float:.1f}%"
+                    div_str = f"{dividend_float:.2f} {currency}"
+                    market_cap = pd.to_numeric(
+                        "".join(
+                            character
+                            for character in str(row.get("Marktkapitalisierung", "0"))
+                            if character.isdigit() or character == "."
+                        ),
+                        errors="coerce",
+                    )
+                    if pd.isna(market_cap):
+                        market_cap = 0.0
                     valid_payouts.append({
                         "symbol": str(row["valid_yahoo_ticker"]),
                         "name": name_str,
                         "ex_date": date_str,
                         "dividend": div_str,
                         "yield": yield_str,
-                        "market_cap": pd.to_numeric("".join(c for c in str(row.get("Marktkapitalisierung", "0")) if c.isdigit() or c == '.'), errors='coerce')
+                        "currency": currency,
+                        "market_cap": float(market_cap),
                     })
-            except Exception as ex:
+            except Exception:
                 continue
                 
         # Sort by Ex-Date and then Market Cap to keep well-known high cap stocks first
         valid_payouts = sorted(valid_payouts, key=lambda x: (x["ex_date"], -x["market_cap"]))
         payouts = valid_payouts[:6]
 
-    # Fallback to high-quality dividend stocks if CSV data is sparse or outdated
-    if len(payouts) < 6:
-        print("CALENDAR TRACK: Warning: Sparse future ex-dividend dates in CSV. Falling back to premier dividend stocks.")
-        fallbacks = [
-            {"symbol": "AAPL", "name": "Apple Inc.", "dividend": "0.25$", "yield": "0.5%"},
-            {"symbol": "MSFT", "name": "Microsoft Corp.", "dividend": "0.75$", "yield": "0.7%"},
-            {"symbol": "O", "name": "Realty Income", "dividend": "0.26$", "yield": "5.8%"},
-            {"symbol": "KO", "name": "Coca-Cola Co.", "dividend": "0.48$", "yield": "3.1%"},
-            {"symbol": "JNJ", "name": "Johnson & Johnson", "dividend": "1.24$", "yield": "3.2%"},
-            {"symbol": "T", "name": "AT&T Inc.", "dividend": "0.28$", "yield": "6.2%"}
-        ]
-        # Set realistic ex-dividend dates (upcoming weekdays)
-        for i, f in enumerate(fallbacks):
-            ex_dt = datetime.today() + timedelta(days=i+2)
-            f["ex_date"] = ex_dt.strftime("%Y-%m-%d")
-            payouts.append(f)
-            
-        payouts = payouts[:6]
+    # Never invent calendar dates, dividends or yields to fill the layout.
+    try:
+        payouts = validate_calendar_entries(payouts, minimum=6)
+    except ValueError as error:
+        print(f"CALENDAR TRACK: Skip publication because verified source data is incomplete: {error}")
+        return False
 
     print(f"CALENDAR TRACK: Rendering calendar with {len(payouts)} payouts:")
     for p in payouts:
@@ -398,31 +397,13 @@ def run_track_calendar():
 
     # Render image
     image_filename = f"calendar_{timestamp}.png"
-    video_filename = f"calendar_{timestamp}.mp4"
     image_path = os.path.join(public_dir, image_filename)
-    video_path = os.path.join(public_dir, video_filename)
     
     render_dividend_calendar(payouts, image_path)
     print(f"CALENDAR TRACK: Image saved at {image_path}")
     
-    # Construct dynamic speaker script for calendar
-    valid_payout_names = [p["name"] for p in payouts if p["name"] != "DUMMY" and p["symbol"] != "DUMMY"]
-    top_3_payouts = valid_payout_names[:3]
-    if top_3_payouts:
-        calendar_script = (
-            f"Der Dividenden-Kalender für diese Woche! Im Fokus stehen diesmal: {', '.join(top_3_payouts)}. "
-            "Wer diese Aktien rechtzeitig vor dem Ex-Tag im Depot hat, sichert sich die nächste Ausschüttung. "
-            "Welchen Dividenden-Zahler hast du bereits im Depot? Schreib es uns in die Kommentare und folge Schatzsuche vier punkt null für tägliches Finanzwissen!"
-        )
-    else:
-        calendar_script = (
-            "Der wöchentliche Dividenden-Kalender ist da! Hier siehst du die ex-dividend Termine für die kommenden Tage. "
-            "Wer diese Aktien rechtzeitig im Depot hat, sichert sich die nächste Ausschüttung! "
-            "Welchen Wert hast du bereits im Depot? Schreib es uns in die Kommentare und folge Schatzsuche vier punkt null!"
-        )
-
     # Captions & Text
-    payout_mentions = ", ".join([p["symbol"] for p in payouts if p["symbol"] != "DUMMY"])
+    payout_mentions = ", ".join(p["symbol"] for p in payouts)
     caption = (
         "📈 DER WÖCHENTLICHE DIVIDENDEN-KALENDER IST DA! 📈\n\n"
         "Hier sind die ex-dividend Termine für die kommenden Tage. "
@@ -433,7 +414,7 @@ def run_track_calendar():
         "#dividenden #aktien #geldanlage #passiveseinkommen #etf #finanzen #investieren #boerse #reichwerden"
     )
     comment_text = (
-        "💡 Alle Ex-Dividenden Termine im Jahr 2026 findest du in unserem kostenlosen Dividendenkalender:\n"
+        f"💡 Alle Ex-Dividenden-Termine im Jahr {datetime.today().year} findest du in unserem kostenlosen Dividendenkalender:\n"
         "https://schatzsuche40.de/dividendenkalender/\n\n"
         "Verpasse keine Ausschüttungen mehr!"
     )
@@ -466,21 +447,36 @@ def run_track_ai(topic=None):
     """
     print("🚀 TRACK 3: RUNNING AI INFOGRAPHIC (EVERGREEN) PIPELINE...")
     
-    if not topic:
-        # 50% chance of a highly trending topic, 50% chance of a deep evergreen topic
-        if random.random() < 0.5:
-            print("AI TRACK: Fetching dynamic trending topic via GPT...")
-            topic = get_dynamic_trending_topic()
-            
-        if not topic:
-            # Fallback or standard choice from the deep evergreen topic pool
-            print("AI TRACK: Selecting from the evergreen topic pool...")
-            topic = random.choice(EVERGREEN_FINANCIAL_TOPICS)
-        
+    source_context = None
+    if topic:
+        content_pillar = "manual_override"
+    else:
+        # Performance audit: current financial changes materially outperform
+        # generic automated clips. Always try a sourced fresh topic first and
+        # only then fall back to a curated family-finance evergreen pool.
+        print("AI TRACK: Fetching current finance headlines...")
+        source_context = fetch_current_market_news()
+        dynamic_topic = get_dynamic_trending_topic(source_context)
+        topic, content_pillar = choose_automated_topic(
+            dynamic_topic=dynamic_topic,
+            evergreen_topics=PRIORITY_EVERGREEN_TOPICS,
+        )
+        if content_pillar != "current_finance_news":
+            source_context = None
+
     print(f"AI TRACK: Chosen Topic: '{topic}'")
-    
+    print(f"AI TRACK: Content Pillar: {content_pillar}")
+
     # 1. GPT Copywriting
-    content = generate_structured_content(topic, template_type="viral_list")
+    content = generate_structured_content(
+        topic,
+        template_type="viral_list",
+        source_context=source_context,
+    )
+    if content_pillar == "manual_override":
+        content["requires_manual_review"] = True
+        content["publishing_allowed"] = False
+    review_metadata = review_metadata_for_content(content, content_pillar=content_pillar)
     
     public_dir = os.path.join(BASE_DIR, "static", "temp_social")
     os.makedirs(public_dir, exist_ok=True)
@@ -544,71 +540,138 @@ def run_track_ai(topic=None):
         mood=detected_mood
     )
     
-    # 4. Social posting to X, FB, Pinterest (Image)
+    # 4. Route all preparation/publication through one central fail-closed gate.
     caption_ig = content.get("caption_ig", "")
-    print("AI TRACK: Publishing Image to standard socials...")
-    run_social_sync(
-        symbol="FINANZ-TIPP",
-        caption=caption_ig,
-        image_path=image_path,
-        blog_url="https://schatzsuche40.de",
-        wp_img_url=None,
-        title=content.get("headline", "Finanz-Fakten"),
-        comment_text="👉 Folge @schatzsuche40 für dein tägliches Finanzwissen! 🚀",
-        skip_instagram=True,
-        strip_links_on_x=True
-    )
-    
-    # 5. Instagram Reels Upload (Video)
-    print("AI TRACK: Publishing Video to Instagram Reels...")
-    post_instagram_reel(caption_ig, video_filename, "👉 Folge @schatzsuche40 für dein tägliches Finanzwissen! 🚀")
-    
-    # 5b. Facebook Reels Upload (Video)
-    print("AI TRACK: Publishing Video to Facebook Reels...")
-    post_facebook_reel(caption_ig, video_path)
-    
-    # 6. YouTube Shorts Upload (Video)
-    print("AI TRACK: Uploading Video to YouTube Shorts...")
+    comment_text = "👉 Folge @schatzsuche40 für dein tägliches Finanzwissen! 🚀"
     youtube_meta = {
         "title": (content.get("headline", "")[:70] + " #shorts #finanzen"),
-        "description": content.get("caption_shorts", "Lerne clever investieren mit Schatzsuche 4.0!") + "\n\n#finanzen #shorts #aktien #sparen",
-        "tags": ["Finanzen", "Investieren", "Geld anlegen", "ETFs", "Zinseszins", "Sparen"]
+        "description": content.get(
+            "caption_shorts", "Lerne clever investieren mit Schatzsuche 4.0!"
+        )
+        + "\n\n#finanzen #shorts #aktien #sparen",
+        "tags": ["Finanzen", "Investieren", "Geld anlegen", "ETFs", "Zinseszins", "Sparen"],
     }
-    
-    # Call youtube uploader with custom token_finance.pickle
-    youtube_token = os.path.join(BASE_DIR, 'token_finance.pickle')
-    youtube_upload_video(
-        video_file=video_path,
-        metadata_dict=youtube_meta,
-        privacy_status='public',
-        token_file=youtube_token
-    )
-    
-    # 7. TikTok Upload (Video - Optional plug-and-play)
-    tiktok_token = os.path.join(BASE_DIR, 'token_tiktok.pickle')
-    if os.path.exists(tiktok_token):
-        print("AI TRACK: token_tiktok.pickle found. Publishing Video to TikTok...")
+
+    def prepare_bundle():
+        return save_for_manual_upload(
+            post_type="ai_reel_bundle",
+            title=content.get("headline", "Finanz-Fakten"),
+            caption=caption_ig,
+            asset_path=video_path,
+            comment_text=comment_text,
+            tags=youtube_meta["tags"],
+            additional_assets=[image_path],
+            review_metadata=review_metadata,
+        )
+
+    def dispatch_feed():
+        print("AI TRACK: Publishing image to standard socials...")
+        return run_social_sync(
+            symbol="FINANZ-TIPP",
+            caption=caption_ig,
+            image_path=image_path,
+            blog_url="https://schatzsuche40.de",
+            wp_img_url=None,
+            title=content.get("headline", "Finanz-Fakten"),
+            comment_text=comment_text,
+            skip_instagram=True,
+            strip_links_on_x=True,
+        )
+
+    def dispatch_instagram_reel():
+        print("AI TRACK: Publishing video to Instagram Reels...")
+        return post_instagram_reel(caption_ig, video_filename, comment_text)
+
+    def dispatch_facebook_reel():
+        print("AI TRACK: Publishing video to Facebook Reels...")
+        return post_facebook_reel(caption_ig, video_path)
+
+    def dispatch_youtube_short():
+        print("AI TRACK: Uploading video to YouTube Shorts...")
+        return youtube_upload_video(
+            video_file=video_path,
+            metadata_dict=youtube_meta,
+            privacy_status="public",
+            token_file=os.path.join(BASE_DIR, "token_finance.pickle"),
+        )
+
+    def dispatch_tiktok():
+        tiktok_token = os.path.join(BASE_DIR, "token_tiktok.pickle")
+        if not os.path.exists(tiktok_token):
+            print("TIKTOK: Skip. token_tiktok.pickle not found on server.")
+            return False
         try:
             from src.tiktok_uploader import upload_video_to_tiktok
+
             tiktok_key = os.getenv("TIKTOK_CLIENT_KEY")
             tiktok_secret = os.getenv("TIKTOK_CLIENT_SECRET")
-            if tiktok_key and tiktok_secret:
-                upload_video_to_tiktok(
-                    video_path=video_path,
-                    caption=content.get("caption_tiktok", caption_ig),
-                    client_key=tiktok_key,
-                    client_secret=tiktok_secret,
-                    token_file=tiktok_token
-                )
-            else:
-                print("TIKTOK: Skip. TIKTOK_CLIENT_KEY or TIKTOK_CLIENT_SECRET missing in .env.")
-        except Exception as tk_err:
-            print(f"TIKTOK: Warning: Upload failed: {tk_err}")
-    else:
-        print("TIKTOK: Skip. token_tiktok.pickle not found on server (optional plug-and-play).")
-    
+            if not tiktok_key or not tiktok_secret:
+                print("TIKTOK: Skip. Client key or secret missing.")
+                return False
+            return upload_video_to_tiktok(
+                video_path=video_path,
+                caption=content.get("caption_tiktok", caption_ig),
+                client_key=tiktok_key,
+                client_secret=tiktok_secret,
+                token_file=tiktok_token,
+            )
+        except Exception as error:
+            print(f"TIKTOK: Warning: Upload failed: {error}")
+            return False
+
+    distribution = dispatch_or_prepare(
+        prepare_only=(
+            not content_dispatch_allowed(content)
+            or not live_public_dispatch_enabled()
+        ),
+        prepare=prepare_bundle,
+        dispatchers=(
+            ("feed", dispatch_feed),
+            ("instagram_reel", dispatch_instagram_reel),
+            ("facebook_reel", dispatch_facebook_reel),
+            ("youtube_short", dispatch_youtube_short),
+            ("tiktok", dispatch_tiktok),
+        ),
+    )
+    if distribution["mode"] == "prepared":
+        print(
+            "AI TRACK: Preparation/review gate stopped every external dispatcher; "
+            f"bundle: {distribution['artifact']}"
+        )
+
     print("✅ TRACK 3 AI INFOGRAPHIC PIPELINE COMPLETED SUCCESSFULLY!")
     return True
+
+
+def run_track_personal(input_file, output_dir=None):
+    """Create a Canva-ready personal post packet without publishing it."""
+
+    if not input_file:
+        raise ValueError("PERSONAL TRACK: --input is required")
+
+    uploads_base = output_dir or os.getenv("MANUAL_UPLOADS_DIR")
+    if not uploads_base:
+        uploads_base = os.path.join(BASE_DIR, "manual_uploads")
+
+    print("🎨 PERSONAL TRACK: Creating factual Canva Bulk Create packet...")
+    packet_dir = create_personal_canva_packet_from_json(input_file, uploads_base)
+    print(f"PERSONAL TRACK: Canva packet created at {packet_dir}")
+    print("PERSONAL TRACK: No social post was published; manual Canva export and approval are required.")
+
+    if external_transfer_enabled(
+        requested=os.getenv("UPLOAD_TO_GDRIVE", "False").lower() == "true",
+        allowed=os.getenv("GDRIVE_TRANSFER_ALLOWED", "False").lower() == "true",
+    ):
+        try:
+            from google_drive_uploader import push_folder_to_drive
+
+            if not push_folder_to_drive(str(packet_dir)):
+                print("PERSONAL TRACK: Warning: Google Drive upload did not complete.")
+        except Exception as drive_error:
+            print(f"PERSONAL TRACK: Warning: Google Drive upload failed: {drive_error}")
+
+    return str(packet_dir)
+
 
 if __name__ == "__main__":
     # Set resource memory limit to 1000MB (soft) / 1250MB (hard) to prevent swap-thrashing on AWS micro instance
@@ -623,10 +686,14 @@ if __name__ == "__main__":
         pass
 
     parser = argparse.ArgumentParser(description="Schatzsuche 4.0 Social Media Autoposter Controller")
-    parser.add_argument("--track", type=str, choices=["stock", "calendar", "ai"], required=True,
-                        help="Select the content track/säule to execute: 'stock' (Track 1), 'calendar' (Track 2), or 'ai' (Track 3)")
+    parser.add_argument("--track", type=str, choices=["stock", "calendar", "ai", "personal"], required=True,
+                        help="Select: stock feed, dividend calendar, current-topic AI draft, or personal Canva packet")
     parser.add_argument("--topic", type=str, default=None,
-                        help="Optional: Explicit topic override for Track 3 (AI Infographics)")
+                        help="Optional: Explicit topic override for the AI track")
+    parser.add_argument("--input", type=str, default=None,
+                        help="Required for personal: path to a factual personal-post JSON brief")
+    parser.add_argument("--output-dir", type=str, default=None,
+                        help="Optional output directory for the personal Canva packet")
     
     args = parser.parse_args()
     
@@ -639,6 +706,8 @@ if __name__ == "__main__":
             run_track_calendar()
         elif args.track == "ai":
             run_track_ai(args.topic)
+        elif args.track == "personal":
+            run_track_personal(args.input, args.output_dir)
             
         print(f"🎬 Done! Execution took {time.time() - start_time:.1f} seconds.")
     except Exception as e:

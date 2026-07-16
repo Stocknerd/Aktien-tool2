@@ -1,7 +1,11 @@
 import os
+import json
+import hashlib
 import requests
 import tweepy
 from dotenv import load_dotenv
+
+from src.publishing_safety import explicit_public_dispatch_enabled, external_transfer_enabled
 
 load_dotenv()
 
@@ -17,11 +21,35 @@ META_PAGE_ACCESS_TOKEN = os.getenv("META_PAGE_ACCESS_TOKEN")
 META_USER_TOKEN = os.getenv("META_USER_TOKEN") or os.getenv("USER_TOKEN")
 # Instagram Business Account ID
 META_INSTA_ID = os.getenv("META_INSTA_ID")
-# Mode Switch: set to True to prepare assets locally for manual upload instead of hitting the live social APIs
-PREPARE_MANUAL_UPLOAD = os.getenv("PREPARE_MANUAL_UPLOAD", "True").lower() == "true"
+# Two independent, strictly parsed switches are required for public API dispatch.
+PREPARE_MANUAL_UPLOAD = os.getenv("PREPARE_MANUAL_UPLOAD", "true")
+PUBLIC_PUBLISHING_ALLOWED = os.getenv("PUBLIC_PUBLISHING_ALLOWED", "false")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-def save_for_manual_upload(post_type, title, caption, asset_path, comment_text=None, tags=None):
+
+def live_public_dispatch_enabled():
+    return explicit_public_dispatch_enabled(
+        PREPARE_MANUAL_UPLOAD,
+        PUBLIC_PUBLISHING_ALLOWED,
+    )
+
+
+def live_gdrive_transfer_enabled():
+    return external_transfer_enabled(
+        requested=os.getenv("UPLOAD_TO_GDRIVE", "False").lower() == "true",
+        allowed=os.getenv("GDRIVE_TRANSFER_ALLOWED", "False").lower() == "true",
+    )
+
+def save_for_manual_upload(
+    post_type,
+    title,
+    caption,
+    asset_path,
+    comment_text=None,
+    tags=None,
+    additional_assets=None,
+    review_metadata=None,
+):
     """
     Saves the media asset (image/video) and metadata in a local folder 
     for easy manual uploading, instead of pushing it via APIs.
@@ -43,16 +71,28 @@ def save_for_manual_upload(post_type, title, caption, asset_path, comment_text=N
     target_dir = os.path.join(uploads_base, folder_name)
     os.makedirs(target_dir, exist_ok=True)
     
-    # 2. Copy the asset
+    # 2. Copy the primary asset and optional companion assets into one packet.
     target_asset_path = None
+    copied_assets = []
     if asset_path and os.path.exists(asset_path):
         ext = os.path.splitext(asset_path)[1]
         target_asset_name = f"media{ext}"
         target_asset_path = os.path.join(target_dir, target_asset_name)
         try:
             shutil.copy2(asset_path, target_asset_path)
+            copied_assets.append(target_asset_path)
         except Exception as e:
             print(f"[MANUAL UPLOAD] Warning: Failed to copy asset: {e}")
+    for index, companion in enumerate(additional_assets or [], start=1):
+        if not companion or not os.path.exists(companion):
+            continue
+        extension = os.path.splitext(companion)[1]
+        companion_target = os.path.join(target_dir, f"media_{index}{extension}")
+        try:
+            shutil.copy2(companion, companion_target)
+            copied_assets.append(companion_target)
+        except Exception as error:
+            print(f"[MANUAL UPLOAD] Warning: Failed to copy companion asset: {error}")
     
     # 3. Create details txt file
     details_path = os.path.join(target_dir, "post_details.txt")
@@ -60,7 +100,12 @@ def save_for_manual_upload(post_type, title, caption, asset_path, comment_text=N
         f.write("=" * 60 + "\n")
         f.write(f"MANUAL UPLOAD DETAILS - {post_type.upper()}\n")
         f.write("=" * 60 + "\n\n")
-        f.write(f"📁 Asset-Pfad: {target_asset_path}\n")
+        f.write(f"📁 Primär-Asset: {target_asset_path}\n")
+        companion_assets = copied_assets[1:]
+        if companion_assets:
+            f.write("📦 Begleit-Assets:\n")
+            for copied_asset in companion_assets:
+                f.write(f"   - {copied_asset}\n")
         f.write(f"📌 Titel: {title or 'N/A'}\n\n")
         
         # Smart-truncated tweet caption
@@ -85,17 +130,57 @@ def save_for_manual_upload(post_type, title, caption, asset_path, comment_text=N
             f.write(f"💬 ERSTER KOMMENTAR (Instagram / YouTube):\n{comment_text}\n\n")
         if tags:
             f.write(f"🏷️ EMPFOHLENE TAGS:\n{', '.join(tags) if isinstance(tags, list) else tags}\n\n")
+        if isinstance(review_metadata, dict):
+            f.write("🔎 REVIEW-STATUS:\n")
+            f.write(f"- Manuelle Prüfung erforderlich: {review_metadata.get('requires_manual_review', True)}\n")
+            f.write(f"- Veröffentlichung erlaubt: {review_metadata.get('publishing_allowed', False)}\n")
+            f.write(f"- Generiert: {review_metadata.get('generated_at') or 'N/A'}\n")
+            f.write(f"- Review-Frist: {review_metadata.get('review_expires_at') or 'N/A'}\n")
+            sources = review_metadata.get("source_records")
+            if isinstance(sources, list) and sources:
+                f.write("- Quellen:\n")
+                for source in sources:
+                    if isinstance(source, dict):
+                        f.write(
+                            f"  - {source.get('title', 'Ohne Titel')} | "
+                            f"{source.get('published', 'ohne Datum')} | {source.get('url', 'ohne URL')}\n"
+                        )
+            f.write("\n")
             
         f.write("💡 TIPPS FÜR DEN HOCHLAD-VORGANG:\n")
         f.write("- Instagram Reels: Wähle beim Upload einen passenden Trend-Sound aus der Musikbibliothek.\n")
         f.write("- YouTube Shorts: Verwende den Titel mit #shorts und füge ein passendes YouTube-Audio hinzu.\n")
         f.write("- Pinterest: Nutze das Bild und verlinke direkt auf https://schatzsuche40.de\n")
+
+    if isinstance(review_metadata, dict):
+        manifest = dict(review_metadata)
+        manifest.update({"post_type": post_type, "title": title, "assets": []})
+        for copied_asset in copied_assets:
+            digest = hashlib.sha256()
+            with open(copied_asset, "rb") as asset_handle:
+                for chunk in iter(lambda: asset_handle.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            manifest["assets"].append(
+                {"path": os.path.basename(copied_asset), "sha256": digest.hexdigest()}
+            )
+        manifest_path = os.path.join(target_dir, "review_manifest.json")
+        temporary_manifest = manifest_path + ".tmp"
+        with open(temporary_manifest, "w", encoding="utf-8") as manifest_handle:
+            json.dump(manifest, manifest_handle, ensure_ascii=False, indent=2)
+            manifest_handle.flush()
+            os.fsync(manifest_handle.fileno())
+        os.replace(temporary_manifest, manifest_path)
+        directory_fd = os.open(target_dir, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
         
     print(f"\n[MANUAL UPLOAD] Directory created for manual upload: {target_dir}")
     print("                Asset and text details file copied. Check 'post_details.txt'!")
     
     # 4. Trigger Google Drive API Push if configured
-    if os.getenv("UPLOAD_TO_GDRIVE", "False").lower() == "true":
+    if live_gdrive_transfer_enabled():
         try:
             from google_drive_uploader import push_folder_to_drive
             push_folder_to_drive(target_dir)
@@ -106,7 +191,9 @@ def save_for_manual_upload(post_type, title, caption, asset_path, comment_text=N
 
 
 def post_to_x(caption, image_path):
-    """Postet ein Bild mit Text auf X (Twitter). Falls der Bildupload fehlschlägt (z.B. Free-Tier-Einschränkung), wird ein reiner Textpost gesendet."""
+    """Post an image/text to X, unless manual preparation mode is active."""
+    if not live_public_dispatch_enabled():
+        return save_for_manual_upload("x_post", "X Post", caption, image_path)
     if not all([X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET]):
         print("[SKIP] X-Credentials fehlen.")
         return False
@@ -156,7 +243,10 @@ def post_to_x(caption, image_path):
         return False
 
 def post_comment(post_id, comment_text):
-    """Postet einen Kommentar unter einen Facebook- oder Instagram-Post."""
+    """Post a comment below Facebook/Instagram media when live mode is enabled."""
+    if not live_public_dispatch_enabled():
+        print("[SKIP] Comment API disabled in manual preparation mode.")
+        return True
     PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
     if not PAGE_TOKEN or not post_id:
         return False
@@ -180,10 +270,9 @@ def post_comment(post_id, comment_text):
         return False
 
 def post_to_facebook_page(message, image_path=None, link_url=None, comment_text=None):
-    """
-    Postet auf die Facebook-Unternehmensseite (Schatzsuche 4.0).
-    Nutzt den never-expiring PAGE_TOKEN.
-    """
+    """Post to the Facebook page when live mode is enabled."""
+    if not live_public_dispatch_enabled():
+        return save_for_manual_upload("facebook_feed", "Facebook Feed", message, image_path, comment_text)
     PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
     META_PAGE_ID = os.environ.get("META_PAGE_ID")
     
@@ -224,7 +313,9 @@ def post_to_facebook_page(message, image_path=None, link_url=None, comment_text=
         return False
 
 def post_to_instagram_feed(caption, image_path, wp_img_url=None, link_url=None, comment_text=None):
-    """Postet ein Bild auf den Instagram Business Feed (Offizielle API)."""
+    """Post to the Instagram Business feed when live mode is enabled."""
+    if not live_public_dispatch_enabled():
+        return save_for_manual_upload("instagram_feed", "Instagram Feed", caption, image_path, comment_text)
     PAGE_TOKEN = os.environ.get("PAGE_TOKEN")
     if not (META_INSTA_ID and PAGE_TOKEN):
         print("[SKIP] Instagram Business ID oder Token fehlt.")
@@ -305,7 +396,7 @@ def post_instagram_reel(caption, video_filename, comment_text=None):
     Der Video-Pfad muss im Nginx static directory liegen: /static/temp_social/{video_filename}
     sodass er unter https://tool.schatzsuche40.de/static/temp_social/{video_filename} öffentlich erreichbar ist.
     """
-    if PREPARE_MANUAL_UPLOAD:
+    if not live_public_dispatch_enabled():
         video_path = os.path.join(BASE_DIR, "static", "temp_social", video_filename)
         return save_for_manual_upload(
             post_type="instagram_reel",
@@ -382,7 +473,9 @@ def post_instagram_reel(caption, video_filename, comment_text=None):
         return False
 
 def post_to_pinterest(title, description, image_path, link_url=None):
-    """Postet ein Bild auf Pinterest über die offizielle Pinterest v5 API."""
+    """Post to Pinterest when live mode is enabled."""
+    if not live_public_dispatch_enabled():
+        return save_for_manual_upload("pinterest_pin", title, description, image_path)
     PIN_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN")
     BOARD_ID = os.environ.get("PINTEREST_BOARD_ID")
     
@@ -438,7 +531,7 @@ def post_to_pinterest(title, description, image_path, link_url=None):
 
 def post_facebook_reel(caption, video_path):
     """Postet ein Video als Facebook Reel auf die Facebook-Page (Schatzsuche 4.0)."""
-    if PREPARE_MANUAL_UPLOAD:
+    if not live_public_dispatch_enabled():
         print("[SKIP] Facebook Reel: manual upload assets already created via post_instagram_reel.")
         return True
         
@@ -500,8 +593,17 @@ def post_facebook_reel(caption, video_path):
 
 
 def run_social_sync(symbol, caption, image_path, blog_url=None, wp_img_url=None, title=None, comment_text=None, skip_instagram=False, strip_links_on_x=None):
-    """Hier erfolgt der koordinierte Social-Media-Push."""
+    """Coordinate a social push or create one consolidated manual-upload packet."""
     print(f"Bündele Social-Media-Push für {symbol}...")
+
+    if not live_public_dispatch_enabled():
+        return save_for_manual_upload(
+            post_type="social_feed",
+            title=title or str(symbol),
+            caption=caption,
+            asset_path=image_path,
+            comment_text=comment_text,
+        )
     
     if strip_links_on_x is None:
         strip_links_on_x = os.getenv("STRIP_LINKS_ON_X", "True").lower() == "true"

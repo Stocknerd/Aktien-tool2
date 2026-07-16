@@ -76,7 +76,7 @@ def sanitize_tags(tags):
             
     return final_tags
 
-def upload_video(video_file, metadata_dict, privacy_status='public', publish_at=None, token_file='token_finance.pickle', thumbnail_file=None):
+def upload_video(video_file, metadata_dict, privacy_status='private', publish_at=None, token_file='token_finance.pickle', thumbnail_file=None):
     """
     Lädt ein Video auf YouTube hoch unter Verwendung der Metadaten-Dict.
     publish_at erwartet ein ISO 8601 Datum (z.B. '2025-12-01T15:00:00Z').
@@ -85,8 +85,8 @@ def upload_video(video_file, metadata_dict, privacy_status='public', publish_at=
         print(f"ERROR: Video-Datei nicht gefunden: {video_file}")
         return False
 
-    from social_publisher import PREPARE_MANUAL_UPLOAD, save_for_manual_upload
-    if PREPARE_MANUAL_UPLOAD:
+    from social_publisher import live_public_dispatch_enabled, save_for_manual_upload
+    if not live_public_dispatch_enabled():
         return save_for_manual_upload(
             post_type="youtube_shorts",
             title=metadata_dict.get('title', 'AI Video Automation'),

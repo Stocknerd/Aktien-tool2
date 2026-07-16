@@ -1,0 +1,25 @@
+{
+  "content_type": "depot_update",
+  "period": "Monat/Jahr",
+  "headline": "Mein Depot-Update",
+  "subheadline": "Was gut lief und was ich ändere",
+  "facts": [
+    {
+      "label": "Kennzahl 1",
+      "value": "Echten Wert eintragen",
+      "context": "kurzer Kontext"
+    },
+    {
+      "label": "Kennzahl 2",
+      "value": "Echten Wert eintragen",
+      "context": "Vergleich zum Vormonat"
+    }
+  ],
+  "lesson": "Eigene Erkenntnis eintragen.",
+  "question": "Welche Kennzahl soll ich beim nächsten Update zeigen?",
+  "canva_template_url": "",
+  "targets": [
+    "youtube",
+    "meta_facebook"
+  ]
+}

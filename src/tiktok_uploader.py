@@ -117,6 +117,11 @@ def upload_video_to_tiktok(video_path, caption, client_key, client_secret, token
     if not os.path.exists(video_path):
         print(f"TIKTOK: Video file not found: {video_path}")
         return False
+
+    from social_publisher import live_public_dispatch_enabled
+    if not live_public_dispatch_enabled():
+        print("TIKTOK: Public upload blocked by the central publishing gate.")
+        return False
         
     # Fallback path for server
     if not os.path.exists(token_file):

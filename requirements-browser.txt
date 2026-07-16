@@ -1,0 +1,4 @@
+# Optional local dependency for the visible-Chrome/CDP native publisher.
+# Chrome is launched externally with the persistent signed-in profile;
+# `playwright install` is not required for connect_over_cdp.
+playwright>=1.50,<2

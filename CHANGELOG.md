@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-07-16
+### Added
+- Schema-2 Canva queue with reviewed-export approval, media checksum and explicit platform contracts.
+- Fail-closed native browser publisher for YouTube-private and Facebook-draft actions, including target verification, persisted-result checks, packet locking and duplicate fingerprints.
+- Optional `requirements-browser.txt` and executable workflow documentation.
+
+### Changed
+- Public social API dispatch now requires both `PREPARE_MANUAL_UPLOAD=False` and `PUBLIC_PUBLISHING_ALLOWED=True`.
+- Google Drive transfers separately require both `UPLOAD_TO_GDRIVE=True` and `GDRIVE_TRANSFER_ALLOWED=True`.
+- Current-news drafts accept only fresh, dated HTTPS source records, preserve provenance and always remain review-only.
+- Generated content is schema-, length-, disclaimer- and voiceover-validated before image or video rendering.
+- The quality-first Europe/Berlin cron mix is rendered directly from the performance schedule and installed fail-closed with a backup.
+- AI output preparation is centrally short-circuited before every external dispatcher.
+- Dividend calendars skip publication instead of filling missing source data with synthetic dates, currencies, yields or payouts.
+
 ## [1.1.0] - 2026-03-05
 ### Added
 - **Core (Phase 1A)**: Retry and backoff logic for CSV pipelines. Improved ticker normalization (`.B` to `-B`), global data freshness metrics in the UI, and data quality checks script exporting to `logs/`.
