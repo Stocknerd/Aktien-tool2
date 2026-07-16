@@ -37,8 +37,14 @@ def optimized_social_cron_lines(project_dir: str, python_path: str) -> tuple[str
 
     def line(minute: int, hour: int, days: tuple[str, ...], track: str, log_name: str) -> str:
         log_path = shlex.quote(str(logs / log_name))
+        # Debian cron uses the server timezone (UTC) and does not support CRON_TZ.
+        # Run at both possible UTC hours, then let exactly one Europe/Berlin
+        # wall-clock guard pass across CET and CEST.
+        utc_hours = f"{(hour - 2) % 24},{(hour - 1) % 24}"
+        local_hour_guard = f'[ "$(TZ=Europe/Berlin date +\\%H)" = "{hour:02d}" ]'
         return (
-            f"{minute} {hour} * * {_cron_days(days)} {prefix} --track {track} "
+            f"{minute} {utc_hours} * * {_cron_days(days)} cd {project} && "
+            f"{local_hour_guard} && {prefix.removeprefix(f'cd {project} && ')} --track {track} "
             f">> {log_path} 2>&1"
         )
 
@@ -89,7 +95,6 @@ def render_optimized_crontab(existing: str, *, project_dir: str, python_path: st
     kept.extend(
         [
             BLOCK_START,
-            "CRON_TZ=Europe/Berlin",
             BLOCK_HEADER,
             *optimized_social_cron_lines(project_dir, python_path),
             BLOCK_END,

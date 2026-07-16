@@ -203,11 +203,12 @@ def test_crontab_renderer_replaces_old_social_jobs_and_preserves_other_jobs():
 
     assert "/usr/local/bin/cleanup" in rendered
     assert rendered.count("--track stock") == 1
-    assert "0 16 * * 1,3,5" in rendered
+    assert "0 14,15 * * 1,3,5" in rendered
+    assert "TZ=Europe/Berlin date +\\%H" in rendered
     assert rendered.count("--track ai") == 1
-    assert "0 18 * * 2,4" in rendered
+    assert "0 16,17 * * 2,4" in rendered
     assert rendered.count("--track calendar") == 1
-    assert "0 18 * * 0" in rendered
+    assert "0 16,17 * * 0" in rendered
 
 
 def test_drive_transfer_requires_a_separate_explicit_gate():
@@ -320,7 +321,8 @@ def test_cron_renderer_is_quoted_timezone_bound_and_idempotent():
     first = render_optimized_crontab("", project_dir="/app", python_path="/app/venv/bin/python")
     second = render_optimized_crontab(first, project_dir="/app", python_path="/app/venv/bin/python")
     assert second.count("# Schatzsuche 4.0: quality-first social queue") == 1
-    assert second.count("CRON_TZ=Europe/Berlin") == 1
+    assert "CRON_TZ=" not in second
+    assert second.count("TZ=Europe/Berlin date +\\%H") == 3
     assert first == second
 
 

@@ -45,7 +45,7 @@ Dieses öffentliche API-Gate ist vom nativen Browser-Publisher getrennt. Der Bro
 
 ## Performance-basierten Cronplan prüfen
 
-Der Scheduler rendert seinen Wochenmix direkt aus `recommended_weekly_schedule()` und ersetzt nur den markierten Schatzsuche-Social-Block. Fremde Cronjobs bleiben erhalten. Alle Zeiten gelten durch `CRON_TZ=Europe/Berlin` in Berliner Lokalzeit.
+Der Scheduler rendert seinen Wochenmix direkt aus `recommended_weekly_schedule()` und ersetzt nur den markierten Schatzsuche-Social-Block. Fremde Cronjobs bleiben erhalten. Da Debian/Ubuntu-Cron auf diesem Server keine benutzerspezifischen `CRON_TZ`-Zeitpläne unterstützt, werden pro Termin beide möglichen UTC-Stunden eingetragen; ein `TZ=Europe/Berlin`-Stunden-Guard lässt bei CET/CEST jeweils nur den korrekten Lauf durch.
 
 Read-only ausgeben:
 
