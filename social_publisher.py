@@ -1,11 +1,14 @@
 import os
-import json
-import hashlib
 import requests
 import tweepy
 from dotenv import load_dotenv
 
 from src.publishing_safety import explicit_public_dispatch_enabled, external_transfer_enabled
+from src.review_packets import (
+    TEXT_ONLY_POST_TYPES,
+    build_review_manifest,
+    write_review_manifest,
+)
 
 load_dotenv()
 
@@ -56,9 +59,15 @@ def save_for_manual_upload(
     """
     import shutil
     from datetime import datetime
+
+    if asset_path:
+        if not os.path.isfile(asset_path) or os.path.islink(asset_path):
+            raise ValueError("primary media asset is missing or unsafe")
+    elif post_type not in TEXT_ONLY_POST_TYPES:
+        raise ValueError(f"{post_type} requires a primary media asset")
     
     # 1. Create directory structure (supports external cloud sync paths)
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f")
     sanitized_title = "".join([c if c.isalnum() or c in ['-', '_'] else '_' for c in (title or "post")])
     folder_name = f"{timestamp}_{post_type}_{sanitized_title[:30]}"
     
@@ -69,7 +78,7 @@ def save_for_manual_upload(
         uploads_base = os.path.expandvars(uploads_base).replace('"', '').replace("'", "").strip()
         
     target_dir = os.path.join(uploads_base, folder_name)
-    os.makedirs(target_dir, exist_ok=True)
+    os.makedirs(target_dir, exist_ok=False)
     
     # 2. Copy the primary asset and optional companion assets into one packet.
     target_asset_path = None
@@ -81,18 +90,21 @@ def save_for_manual_upload(
         try:
             shutil.copy2(asset_path, target_asset_path)
             copied_assets.append(target_asset_path)
-        except Exception as e:
-            print(f"[MANUAL UPLOAD] Warning: Failed to copy asset: {e}")
+        except Exception:
+            shutil.rmtree(target_dir, ignore_errors=True)
+            raise
     for index, companion in enumerate(additional_assets or [], start=1):
-        if not companion or not os.path.exists(companion):
-            continue
+        if not companion or not os.path.isfile(companion) or os.path.islink(companion):
+            shutil.rmtree(target_dir, ignore_errors=True)
+            raise ValueError(f"companion media asset {index} is missing or unsafe")
         extension = os.path.splitext(companion)[1]
         companion_target = os.path.join(target_dir, f"media_{index}{extension}")
         try:
             shutil.copy2(companion, companion_target)
             copied_assets.append(companion_target)
-        except Exception as error:
-            print(f"[MANUAL UPLOAD] Warning: Failed to copy companion asset: {error}")
+        except Exception:
+            shutil.rmtree(target_dir, ignore_errors=True)
+            raise
     
     # 3. Create details txt file
     details_path = os.path.join(target_dir, "post_details.txt")
@@ -101,6 +113,7 @@ def save_for_manual_upload(
         f.write(f"MANUAL UPLOAD DETAILS - {post_type.upper()}\n")
         f.write("=" * 60 + "\n\n")
         f.write(f"📁 Primär-Asset: {target_asset_path}\n")
+        f.write("🔐 Freigabe: review_manifest.json (anfangs immer needs_review)\n")
         companion_assets = copied_assets[1:]
         if companion_assets:
             f.write("📦 Begleit-Assets:\n")
@@ -152,29 +165,17 @@ def save_for_manual_upload(
         f.write("- YouTube Shorts: Verwende den Titel mit #shorts und füge ein passendes YouTube-Audio hinzu.\n")
         f.write("- Pinterest: Nutze das Bild und verlinke direkt auf https://schatzsuche40.de\n")
 
-    if isinstance(review_metadata, dict):
-        manifest = dict(review_metadata)
-        manifest.update({"post_type": post_type, "title": title, "assets": []})
-        for copied_asset in copied_assets:
-            digest = hashlib.sha256()
-            with open(copied_asset, "rb") as asset_handle:
-                for chunk in iter(lambda: asset_handle.read(1024 * 1024), b""):
-                    digest.update(chunk)
-            manifest["assets"].append(
-                {"path": os.path.basename(copied_asset), "sha256": digest.hexdigest()}
-            )
-        manifest_path = os.path.join(target_dir, "review_manifest.json")
-        temporary_manifest = manifest_path + ".tmp"
-        with open(temporary_manifest, "w", encoding="utf-8") as manifest_handle:
-            json.dump(manifest, manifest_handle, ensure_ascii=False, indent=2)
-            manifest_handle.flush()
-            os.fsync(manifest_handle.fileno())
-        os.replace(temporary_manifest, manifest_path)
-        directory_fd = os.open(target_dir, os.O_RDONLY)
-        try:
-            os.fsync(directory_fd)
-        finally:
-            os.close(directory_fd)
+    manifest = build_review_manifest(
+        packet_dir=target_dir,
+        post_type=post_type,
+        title=title,
+        caption=caption,
+        comment_text=comment_text,
+        tags=tags,
+        copied_assets=copied_assets,
+        review_metadata=review_metadata,
+    )
+    write_review_manifest(os.path.join(target_dir, "review_manifest.json"), manifest)
         
     print(f"\n[MANUAL UPLOAD] Directory created for manual upload: {target_dir}")
     print("                Asset and text details file copied. Check 'post_details.txt'!")

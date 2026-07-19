@@ -43,6 +43,48 @@ Dieses öffentliche API-Gate ist vom nativen Browser-Publisher getrennt. Der Bro
 
 Öffentliche Browserveröffentlichung, Scheduling und Instagram-Publishing sind nicht implementiert.
 
+## Einheitliches Review-Manifest für Stock, Kalender und AI
+
+Jedes durch `save_for_manual_upload` erzeugte Paket enthält unabhängig vom Track ein
+`review_manifest.json` im eigenständigen Schema 3 (bewusst getrennt vom Canva-Schema 2). Es ist anfangs immer fail-closed:
+
+- `status=needs_review`
+- `requires_manual_approval=true`
+- `publishing.allowed=false`
+- SHA-256 für jedes Primär- und Begleit-Asset
+- stabile Ziel-IDs für die unterstützten Schatzsuche-Kanäle
+- standardmäßig 72 Stunden Review-Gültigkeit; eine explizite kürzere Quellenfrist gewinnt
+
+X, Pinterest und TikTok bleiben im Manifest blockiert, solange keine stabile Zielidentität
+im Vertrag hinterlegt ist. Eine Freigabe führt selbst **keine** Plattformaktion aus.
+
+Read-only vorprüfen:
+
+```bash
+python -m src.approve_review_packet \
+  --manifest /pfad/zum/paket/review_manifest.json \
+  --approved-by Frank \
+  --target meta_facebook
+```
+
+Nach persönlicher Prüfung exakt dieses Assets und Ziels atomar freigeben:
+
+```bash
+python -m src.approve_review_packet \
+  --manifest /pfad/zum/paket/review_manifest.json \
+  --approved-by Frank \
+  --target meta_facebook \
+  --approve
+```
+
+Für mehrere freigegebene Ziele wird `--target` wiederholt. Die Freigabe speichert
+Zeitstempel, freigebende Person, Zielauswahl, die erneut berechneten Asset-Hashes und
+einen kanonischen Payload-Hash über Texte, Quellen, Assets und Zielverträge.
+Nicht ausgewählte Ziele werden aus dem ausführbaren Vertrag entfernt. Veränderte,
+abgelaufene, fehlende oder außerhalb des Paketordners liegende Assets sowie nicht
+angeforderte Ziele werden abgewiesen. Erst ein separater, weiterhin gesperrter
+Publisher darf dieses Manifest später konsumieren und muss den Payload-Hash erneut prüfen.
+
 ## Performance-basierten Cronplan prüfen
 
 Der Scheduler rendert seinen Wochenmix direkt aus `recommended_weekly_schedule()` und ersetzt nur den markierten Schatzsuche-Social-Block. Fremde Cronjobs bleiben erhalten. Da Debian/Ubuntu-Cron auf diesem Server keine benutzerspezifischen `CRON_TZ`-Zeitpläne unterstützt, werden pro Termin beide möglichen UTC-Stunden eingetragen; ein `TZ=Europe/Berlin`-Stunden-Guard lässt bei CET/CEST jeweils nur den korrekten Lauf durch.
