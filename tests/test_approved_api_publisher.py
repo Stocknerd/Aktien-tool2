@@ -10,6 +10,7 @@ from src.approved_api_publisher import (
     PublicationBlocked,
     PublisherJournal,
     _gate_enabled,
+    _platform_copy_matches,
     build_publish_plan,
     execute_plan,
     scan_approved_packets,
@@ -64,6 +65,14 @@ def _approved_packet(
         now=base_now,
     )
     return path
+
+
+def test_platform_copy_match_allows_only_whitespace_normalization():
+    expected = "Erster Absatz.  \nMehr erfahren 👉 Link"
+
+    assert _platform_copy_matches(expected, "Erster Absatz. \nMehr erfahren 👉 Link") is True
+    assert _platform_copy_matches(expected, "Erster Absatz. Mehr erfahren Link") is False
+    assert _platform_copy_matches(expected, "Erster Absatz. Mehr erfahren 👉 anderer Link") is False
 
 
 def _inspector(kind):

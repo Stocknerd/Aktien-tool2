@@ -100,6 +100,12 @@ def _publication_evidence(plan: PublishPlan, message: str) -> list[str]:
     return evidence
 
 
+def _platform_copy_matches(expected: str, persisted: str) -> bool:
+    """Accept platform whitespace normalization, never content changes."""
+
+    return " ".join(expected.split()) == " ".join(persisted.split())
+
+
 def _canonical_sha256(value: Mapping[str, Any]) -> str:
     encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
@@ -928,7 +934,7 @@ class OfficialApiAdapter:
             if (
                 owner.get("id") != account_id
                 or not verified.get("permalink")
-                or verified.get("caption") != plan.caption
+                or not _platform_copy_matches(plan.caption, str(verified.get("caption") or ""))
                 or verified.get("media_type") != expected_media_type
             ):
                 raise ApiPublishError("Instagram persisted owner, copy, media type or permalink differs")
