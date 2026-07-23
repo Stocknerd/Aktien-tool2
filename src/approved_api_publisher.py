@@ -22,7 +22,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping, Protocol
 from urllib.parse import urlparse
@@ -44,6 +44,7 @@ DEFAULT_GRAPH_VERSION = "v24.0"
 DEFAULT_STATE_DB = Path("state/schatzsuche_publisher.sqlite3")
 DEFAULT_PACKET_ROOT = Path("manual_uploads")
 PUBLIC_GATE = "APPROVED_PACKET_PUBLISHING_ALLOWED"
+REEL_MIN_GAP = timedelta(hours=24)
 
 _MEDIA_RULES: dict[tuple[str, str], str] = {
     ("social_feed", "meta_facebook"): "image",
@@ -360,6 +361,16 @@ class PublisherJournal:
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS reel_cooldowns (
+                target TEXT PRIMARY KEY,
+                reserved_at TEXT NOT NULL,
+                packet_id TEXT NOT NULL,
+                fingerprint TEXT NOT NULL
+            )
+            """
+        )
         connection.commit()
         try:
             os.chmod(self.path, 0o600)
@@ -408,9 +419,17 @@ class PublisherJournal:
             connection.commit()
         return self.get(plan) or {}
 
-    def _transition(self, plan: PublishPlan, state: str, **fields: Any) -> None:
+    def _transition(
+        self,
+        plan: PublishPlan,
+        state: str,
+        *,
+        reserve_reel: bool = False,
+        **fields: Any,
+    ) -> None:
+        transition_time = datetime.now(timezone.utc).isoformat()
         assignments = ["state=?", "updated_at=?"]
-        values: list[Any] = [state, datetime.now(timezone.utc).isoformat()]
+        values: list[Any] = [state, transition_time]
         for name in ("external_id", "external_url", "result_json", "error_class"):
             if name in fields:
                 assignments.append(f"{name}=?")
@@ -424,13 +443,44 @@ class PublisherJournal:
             )
             if cursor.rowcount != 1:
                 raise PublicationBlocked("journal operation is missing or changed")
+            if reserve_reel:
+                connection.execute(
+                    """
+                    INSERT INTO reel_cooldowns (target,reserved_at,packet_id,fingerprint)
+                    VALUES (?,?,?,?)
+                    ON CONFLICT(target) DO UPDATE SET
+                        reserved_at=excluded.reserved_at,
+                        packet_id=excluded.packet_id,
+                        fingerprint=excluded.fingerprint
+                    """,
+                    (plan.target, transition_time, plan.packet_id, plan.fingerprint),
+                )
             connection.commit()
+
+    def latest_reel_reservation(self, target: str) -> datetime | None:
+        if not self.path.exists():
+            return None
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT reserved_at FROM reel_cooldowns WHERE target=?",
+                (target,),
+            ).fetchone()
+        if not row:
+            return None
+        parsed = datetime.fromisoformat(str(row["reserved_at"]).replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            raise PublicationBlocked("journal reel cooldown timestamp is timezone-less")
+        return parsed.astimezone(timezone.utc)
 
     def mark_started(self, plan: PublishPlan) -> None:
         row = self.get(plan)
         if not row or row["state"] != "prepared":
             raise PublicationBlocked("only a prepared operation may start")
-        self._transition(plan, "mutation_started")
+        reserve_reel = (
+            plan.media_kind == "video"
+            and plan.target in {"meta_facebook", "meta_instagram"}
+        )
+        self._transition(plan, "mutation_started", reserve_reel=reserve_reel)
 
     def mark_unknown(self, plan: PublishPlan, error: BaseException | str) -> None:
         self._transition(plan, "unknown", error_class=type(error).__name__ if isinstance(error, BaseException) else str(error))
@@ -451,7 +501,11 @@ class PublisherJournal:
 def _operation_lock(state_dir: Path, plan: PublishPlan) -> Iterator[None]:
     lock_dir = state_dir / "locks"
     lock_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
-    lock_path = lock_dir / f"{plan.packet_id}.{plan.target}.lock"
+    if plan.media_kind == "video" and plan.target in {"meta_facebook", "meta_instagram"}:
+        lock_name = f"reel.{plan.target}.lock"
+    else:
+        lock_name = f"{plan.packet_id}.{plan.target}.lock"
+    lock_path = lock_dir / lock_name
     flags = os.O_RDWR | os.O_CREAT
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
@@ -575,7 +629,6 @@ def execute_plan(
                 )
             journal.prepare(plan)
 
-        adapter.preflight(plan)
         spool_path = _make_spool(plan, state_root)
         try:
             try:
@@ -588,6 +641,17 @@ def execute_plan(
                 raise PublicationBlocked(str(exc)) from exc
             if refreshed.get("payload_sha256") != plan.approval_payload_sha256:
                 raise PublicationBlocked("approved plan changed before the mutation boundary")
+            if plan.media_kind == "video" and plan.target in {"meta_facebook", "meta_instagram"}:
+                latest_local = journal.latest_reel_reservation(plan.target)
+                now_utc = datetime.now(timezone.utc)
+                if latest_local is not None and now_utc - latest_local < REEL_MIN_GAP:
+                    raise PublicationBlocked(
+                        "24-hour local reel cooldown blocks publication until "
+                        f"{(latest_local + REEL_MIN_GAP).isoformat()}"
+                    )
+            # Keep provider identity and recent-media checks directly adjacent
+            # to the irreversible mutation boundary.
+            adapter.preflight(plan)
             journal.mark_started(plan)
             try:
                 result = dict(adapter.publish(plan, spool_path))
@@ -607,13 +671,19 @@ def execute_plan(
 class OfficialApiAdapter:
     """Official Meta Graph and YouTube Data API implementation."""
 
-    def __init__(self, project_root: str | Path = "."):
+    def __init__(
+        self,
+        project_root: str | Path = ".",
+        *,
+        now: Callable[[], datetime] | None = None,
+    ):
         self.project_root = Path(project_root).expanduser().resolve()
         load_dotenv(self.project_root / ".env", override=False)
         self.graph_version = os.getenv("META_GRAPH_VERSION", DEFAULT_GRAPH_VERSION)
         self.graph_base = f"https://graph.facebook.com/{self.graph_version}"
         self.session = requests.Session()
         self.timeout = (10, 45)
+        self.now = now or (lambda: datetime.now(timezone.utc))
 
     def _meta_token(self) -> str:
         token = os.getenv("PAGE_TOKEN") or os.getenv("META_PAGE_ACCESS_TOKEN")
@@ -682,6 +752,109 @@ class OfficialApiAdapter:
                 raise PublicationBlocked("YouTube OAuth token is invalid and cannot refresh headlessly")
         return build("youtube", "v3", credentials=credentials, cache_discovery=False)
 
+    @staticmethod
+    def _parse_meta_timestamp(value: object) -> datetime:
+        if not isinstance(value, str) or not value.strip():
+            raise PublicationBlocked("Meta reel spacing returned an invalid timestamp")
+        normalized = value.strip().replace("Z", "+00:00")
+        try:
+            parsed = datetime.fromisoformat(normalized)
+        except ValueError as exc:
+            raise PublicationBlocked("Meta reel spacing returned an invalid timestamp") from exc
+        if parsed.tzinfo is None:
+            raise PublicationBlocked("Meta reel spacing returned a timezone-less timestamp")
+        return parsed.astimezone(timezone.utc)
+
+    def _latest_meta_reel_time(self, plan: PublishPlan) -> datetime | None:
+        now = self.now()
+        if now.tzinfo is None:
+            raise PublicationBlocked("reel spacing clock must be timezone-aware")
+        cutoff = now.astimezone(timezone.utc) - REEL_MIN_GAP
+        try:
+            if plan.target == "meta_facebook":
+                asset_id = plan.target_contract["asset_id"]
+                payload = self._meta(
+                    "GET",
+                    f"{asset_id}/video_reels",
+                    params={
+                        "fields": "id,created_time",
+                        "since": int(cutoff.timestamp()),
+                        "limit": 100,
+                    },
+                )
+                timestamp_fields = ("created_time", "creation_time", "timestamp")
+                candidates = payload.get("data")
+            elif plan.target == "meta_instagram":
+                asset_id = plan.target_contract["asset_id"]
+                payload = self._meta(
+                    "GET",
+                    f"{asset_id}/media",
+                    params={
+                        "fields": "id,timestamp,media_type,media_product_type",
+                        "since": int(cutoff.timestamp()),
+                        "limit": 100,
+                    },
+                )
+                timestamp_fields = ("timestamp", "created_time")
+                raw_candidates = payload.get("data")
+                if not isinstance(raw_candidates, list):
+                    raise PublicationBlocked("Meta reel spacing returned malformed media data")
+                candidates = []
+                for item in raw_candidates:
+                    if not isinstance(item, dict):
+                        raise PublicationBlocked("Meta reel spacing returned malformed media data")
+                    media_type = item.get("media_type")
+                    if media_type not in {"IMAGE", "VIDEO", "CAROUSEL_ALBUM"}:
+                        raise PublicationBlocked("Meta reel spacing returned an unknown media type")
+                    if media_type != "VIDEO":
+                        continue
+                    product_type = item.get("media_product_type")
+                    if product_type in {"REELS", "REEL"}:
+                        candidates.append(item)
+                    elif product_type not in {"FEED", "STORY"}:
+                        raise PublicationBlocked(
+                            "Meta reel spacing cannot classify a video media product"
+                        )
+            else:
+                return None
+        except ApiPublishError as exc:
+            raise PublicationBlocked("Meta reel spacing could not be verified") from exc
+
+        if not isinstance(candidates, list):
+            raise PublicationBlocked("Meta reel spacing returned malformed media data")
+        timestamps: list[datetime] = []
+        for item in candidates:
+            if not isinstance(item, dict):
+                raise PublicationBlocked("Meta reel spacing returned malformed media data")
+            raw_timestamp = next((item.get(field) for field in timestamp_fields if item.get(field)), None)
+            timestamps.append(self._parse_meta_timestamp(raw_timestamp))
+        paging = payload.get("paging")
+        if paging is not None and not isinstance(paging, dict):
+            raise PublicationBlocked("Meta reel spacing returned malformed paging data")
+        has_next_page = isinstance(paging, dict) and bool(paging.get("next"))
+        if has_next_page and not any(timestamp >= cutoff for timestamp in timestamps):
+            raise PublicationBlocked("Meta reel spacing requires another media page")
+        return max(timestamps) if timestamps else None
+
+    def _verify_reel_spacing(self, plan: PublishPlan) -> Mapping[str, Any]:
+        if plan.media_kind != "video" or plan.target not in {"meta_facebook", "meta_instagram"}:
+            return {"reel_spacing_checked": False}
+        now = self.now()
+        if now.tzinfo is None:
+            raise PublicationBlocked("reel spacing clock must be timezone-aware")
+        now_utc = now.astimezone(timezone.utc)
+        latest = self._latest_meta_reel_time(plan)
+        if latest is not None and now_utc - latest < REEL_MIN_GAP:
+            next_allowed = latest + REEL_MIN_GAP
+            raise PublicationBlocked(
+                "24-hour reel spacing blocks publication until "
+                f"{next_allowed.isoformat()}"
+            )
+        return {
+            "reel_spacing_checked": True,
+            "latest_reel_at": latest.isoformat() if latest else None,
+        }
+
     def preflight(self, plan: PublishPlan) -> Mapping[str, Any]:
         if plan.target == "youtube":
             service = self._youtube_service()
@@ -703,7 +876,8 @@ class OfficialApiAdapter:
             me = self._meta("GET", "me", params={"fields": "id"})
             if me.get("id") != page_id or plan.target_contract.get("asset_id") != page_id:
                 raise PublicationBlocked("Meta token is not the approved Facebook page token")
-            return {"verified": True, "page_id": page_id}
+            spacing = self._verify_reel_spacing(plan)
+            return {"verified": True, "page_id": page_id, **spacing}
         instagram_id = plan.target_contract.get("asset_id")
         linked = page.get("instagram_business_account") or {}
         if linked.get("id") != instagram_id:
@@ -711,7 +885,8 @@ class OfficialApiAdapter:
         instagram = self._meta("GET", str(instagram_id), params={"fields": "id,username"})
         if instagram.get("id") != instagram_id:
             raise PublicationBlocked("Instagram identity mismatch")
-        return {"verified": True, "instagram_id": instagram_id}
+        spacing = self._verify_reel_spacing(plan)
+        return {"verified": True, "instagram_id": instagram_id, **spacing}
 
     def publish(self, plan: PublishPlan, spool_path: Path | None) -> Mapping[str, Any]:
         if plan.target == "youtube":

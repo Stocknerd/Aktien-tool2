@@ -1,3 +1,4 @@
+import ast
 import hashlib
 import json
 from pathlib import Path
@@ -18,6 +19,7 @@ from src.native_browser_publisher import (
 )
 from src.publishing_safety import (
     dispatch_or_prepare,
+    prepare_automated_reel_for_review,
     public_dispatch_enabled,
     validate_calendar_entries,
 )
@@ -201,13 +203,45 @@ def test_manual_mode_short_circuits_every_external_dispatch():
         dispatchers=(
             ("instagram", lambda: calls.append("instagram")),
             ("facebook", lambda: calls.append("facebook")),
-            ("youtube", lambda: calls.append("youtube")),
-            ("tiktok", lambda: calls.append("tiktok")),
         ),
     )
 
     assert result == {"mode": "prepared", "artifact": "packet-dir"}
     assert calls == ["prepare"]
+
+
+def test_automated_reels_are_always_review_only_even_when_dispatchers_are_supplied():
+    calls = []
+
+    result = prepare_automated_reel_for_review(
+        prepare=lambda: calls.append("prepare") or "reel-review-packet",
+        dispatchers=(
+            ("instagram", lambda: calls.append("instagram")),
+            ("facebook", lambda: calls.append("facebook")),
+            ("youtube", lambda: calls.append("youtube")),
+        ),
+    )
+
+    assert result == {"mode": "prepared", "artifact": "reel-review-packet"}
+    assert calls == ["prepare"]
+
+
+def test_ai_track_is_wired_to_hard_review_only_router():
+    source = Path("src/social_reels_autoposter.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    run_track = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "run_track_ai"
+    )
+    call_names = {
+        node.func.id
+        for node in ast.walk(run_track)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+
+    assert "prepare_automated_reel_for_review" in call_names
+    assert "dispatch_or_prepare" not in call_names
 
 
 def test_calendar_requires_real_complete_entries_and_never_fills_fallbacks():

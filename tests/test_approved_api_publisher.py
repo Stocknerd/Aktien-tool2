@@ -15,7 +15,12 @@ from src.approved_api_publisher import (
     execute_plan,
     scan_approved_packets,
 )
-from src.review_packets import approve_review_packet, build_review_manifest, write_review_manifest
+from src.review_packets import (
+    TARGET_CONTRACTS,
+    approve_review_packet,
+    build_review_manifest,
+    write_review_manifest,
+)
 
 
 NOW = datetime.now(timezone.utc).replace(microsecond=0)
@@ -164,6 +169,201 @@ def test_target_specific_fingerprints_differ_for_same_reel(tmp_path):
     assert all(plan.visibility == "public" for plan in plans)
 
 
+def _meta_preflight_stub(target, reel_time):
+    page_id = TARGET_CONTRACTS["meta_facebook"]["asset_id"]
+    instagram_id = TARGET_CONTRACTS["meta_instagram"]["asset_id"]
+
+    def fake_meta(method, path, *, params=None, **_kwargs):
+        assert method == "GET"
+        if path == page_id:
+            return {
+                "id": page_id,
+                "name": "Schatzsuche4.0",
+                "instagram_business_account": {"id": instagram_id},
+            }
+        if path == "me":
+            return {"id": page_id}
+        if path == instagram_id and target == "meta_instagram":
+            return {"id": instagram_id, "username": "schatzsuche4.0"}
+        if path == f"{page_id}/video_reels" and target == "meta_facebook":
+            return {"data": [{"id": "recent-fb", "created_time": reel_time.isoformat()}]}
+        if path == f"{instagram_id}/media" and target == "meta_instagram":
+            return {
+                "data": [
+                    {
+                        "id": "recent-ig",
+                        "timestamp": reel_time.isoformat(),
+                        "media_type": "VIDEO",
+                        "media_product_type": "REELS",
+                    }
+                ]
+            }
+        raise AssertionError(f"unexpected Meta preflight path: {path}")
+
+    return fake_meta
+
+
+@pytest.mark.parametrize("target", ("meta_facebook", "meta_instagram"))
+def test_recent_manual_meta_reel_blocks_approved_ai_bundle_for_24_hours(tmp_path, monkeypatch, target):
+    path = _approved_packet(
+        tmp_path,
+        post_type="ai_reel_bundle",
+        targets=(target,),
+        media_kind="video",
+    )
+    plan = build_publish_plan(
+        path,
+        target,
+        now=NOW + timedelta(minutes=2),
+        media_inspector=_inspector("video"),
+    )
+    adapter = OfficialApiAdapter(project_root=tmp_path, now=lambda: NOW)
+    monkeypatch.setattr(adapter, "_meta", _meta_preflight_stub(target, NOW - timedelta(hours=1)))
+
+    with pytest.raises(PublicationBlocked, match="24-hour reel spacing"):
+        adapter.preflight(plan)
+
+
+def test_meta_api_error_blocks_reel_instead_of_publishing_permissively(tmp_path, monkeypatch):
+    target = "meta_facebook"
+    path = _approved_packet(
+        tmp_path,
+        post_type="ai_reel_bundle",
+        targets=(target,),
+        media_kind="video",
+    )
+    plan = build_publish_plan(
+        path,
+        target,
+        now=NOW + timedelta(minutes=2),
+        media_inspector=_inspector("video"),
+    )
+    page_id = TARGET_CONTRACTS[target]["asset_id"]
+    adapter = OfficialApiAdapter(project_root=tmp_path, now=lambda: NOW)
+
+    def fake_meta(method, path, *, params=None, **_kwargs):
+        if path == page_id:
+            return {"id": page_id, "name": "Schatzsuche4.0"}
+        if path == "me":
+            return {"id": page_id}
+        if path == f"{page_id}/video_reels":
+            raise ApiPublishError("simulated Meta failure")
+        raise AssertionError(f"unexpected Meta preflight path: {path}")
+
+    monkeypatch.setattr(adapter, "_meta", fake_meta)
+    with pytest.raises(PublicationBlocked, match="could not be verified"):
+        adapter.preflight(plan)
+
+
+@pytest.mark.parametrize(
+    "malformed_data",
+    (
+        [None],
+        [{"timestamp": NOW.isoformat(), "media_type": "VIDEO"}],
+        [{"timestamp": NOW.isoformat(), "media_type": "UNKNOWN", "media_product_type": "REELS"}],
+    ),
+)
+def test_unclassifiable_instagram_media_blocks_reel_fail_closed(tmp_path, monkeypatch, malformed_data):
+    target = "meta_instagram"
+    path = _approved_packet(
+        tmp_path,
+        post_type="ai_reel_bundle",
+        targets=(target,),
+        media_kind="video",
+    )
+    plan = build_publish_plan(
+        path,
+        target,
+        now=NOW + timedelta(minutes=2),
+        media_inspector=_inspector("video"),
+    )
+    fallback = _meta_preflight_stub(target, NOW - timedelta(hours=25))
+    instagram_id = TARGET_CONTRACTS[target]["asset_id"]
+    adapter = OfficialApiAdapter(project_root=tmp_path, now=lambda: NOW)
+
+    def fake_meta(method, path, *, params=None, **kwargs):
+        if path == f"{instagram_id}/media":
+            return {"data": malformed_data}
+        return fallback(method, path, params=params, **kwargs)
+
+    monkeypatch.setattr(adapter, "_meta", fake_meta)
+    with pytest.raises(PublicationBlocked, match="Meta reel spacing"):
+        adapter.preflight(plan)
+
+
+def test_incomplete_meta_pagination_blocks_when_no_recent_reel_was_proven(tmp_path, monkeypatch):
+    target = "meta_facebook"
+    path = _approved_packet(
+        tmp_path,
+        post_type="ai_reel_bundle",
+        targets=(target,),
+        media_kind="video",
+    )
+    plan = build_publish_plan(
+        path,
+        target,
+        now=NOW + timedelta(minutes=2),
+        media_inspector=_inspector("video"),
+    )
+    fallback = _meta_preflight_stub(target, NOW - timedelta(hours=25))
+    page_id = TARGET_CONTRACTS[target]["asset_id"]
+    adapter = OfficialApiAdapter(project_root=tmp_path, now=lambda: NOW)
+
+    def fake_meta(method, path, *, params=None, **kwargs):
+        if path == f"{page_id}/video_reels":
+            return {
+                "data": [{"id": "old", "created_time": (NOW - timedelta(hours=25)).isoformat()}],
+                "paging": {"next": "https://graph.facebook.com/next"},
+            }
+        return fallback(method, path, params=params, **kwargs)
+
+    monkeypatch.setattr(adapter, "_meta", fake_meta)
+    with pytest.raises(PublicationBlocked, match="another media page"):
+        adapter.preflight(plan)
+
+
+@pytest.mark.parametrize("target", ("meta_facebook", "meta_instagram"))
+def test_meta_reel_older_than_24_hours_allows_approved_ai_bundle(tmp_path, monkeypatch, target):
+    path = _approved_packet(
+        tmp_path,
+        post_type="ai_reel_bundle",
+        targets=(target,),
+        media_kind="video",
+    )
+    plan = build_publish_plan(
+        path,
+        target,
+        now=NOW + timedelta(minutes=2),
+        media_inspector=_inspector("video"),
+    )
+    adapter = OfficialApiAdapter(project_root=tmp_path, now=lambda: NOW)
+    monkeypatch.setattr(adapter, "_meta", _meta_preflight_stub(target, NOW - timedelta(hours=25)))
+
+    assert adapter.preflight(plan)["verified"] is True
+
+
+def test_meta_feed_post_does_not_consult_reel_spacing(tmp_path, monkeypatch):
+    path = _approved_packet(tmp_path, post_type="social_feed", targets=("meta_facebook",))
+    plan = build_publish_plan(
+        path,
+        "meta_facebook",
+        now=NOW + timedelta(minutes=2),
+        media_inspector=_inspector("image"),
+    )
+    page_id = TARGET_CONTRACTS["meta_facebook"]["asset_id"]
+    adapter = OfficialApiAdapter(project_root=tmp_path, now=lambda: NOW)
+
+    def fake_meta(method, path, *, params=None, **_kwargs):
+        if path == page_id:
+            return {"id": page_id, "name": "Schatzsuche4.0"}
+        if path == "me":
+            return {"id": page_id}
+        raise AssertionError("feed preflight must not query recent Reels")
+
+    monkeypatch.setattr(adapter, "_meta", fake_meta)
+    assert adapter.preflight(plan)["verified"] is True
+
+
 def test_dry_plan_does_not_create_journal_or_change_manifest(tmp_path):
     path = _approved_packet(tmp_path)
     before = path.read_bytes()
@@ -201,6 +401,44 @@ def test_success_is_journaled_and_second_execute_never_mutates_again(tmp_path):
     result = stored["publishing"]["results"]["meta_facebook"]
     assert result["status"] == "public"
     assert result["fingerprint"] == plan.fingerprint
+
+
+def test_local_reel_reservation_blocks_second_packet_when_meta_list_is_stale(tmp_path):
+    first_path = _approved_packet(
+        tmp_path,
+        post_type="ai_reel_bundle",
+        targets=("meta_facebook",),
+        media_kind="video",
+        label="first",
+    )
+    second_path = _approved_packet(
+        tmp_path,
+        post_type="ai_reel_bundle",
+        targets=("meta_facebook",),
+        media_kind="video",
+        label="second",
+    )
+    first_plan = build_publish_plan(
+        first_path,
+        "meta_facebook",
+        now=NOW + timedelta(minutes=2),
+        media_inspector=_inspector("video"),
+    )
+    second_plan = build_publish_plan(
+        second_path,
+        "meta_facebook",
+        now=NOW + timedelta(minutes=2),
+        media_inspector=_inspector("video"),
+    )
+    journal = PublisherJournal(tmp_path / "state" / "publisher.sqlite3")
+    adapter = FakeAdapter()
+
+    execute_plan(first_plan, journal=journal, adapter=adapter, state_dir=tmp_path / "state")
+    with pytest.raises(PublicationBlocked, match="local reel cooldown"):
+        execute_plan(second_plan, journal=journal, adapter=adapter, state_dir=tmp_path / "state")
+
+    assert adapter.preflight_calls == 1
+    assert adapter.publish_calls == 1
 
 
 def test_manifest_result_without_journal_blocks_instead_of_double_posting(tmp_path):

@@ -359,6 +359,28 @@ def test_generated_content_contract_accepts_complete_bounded_viral_payload():
     assert len(validated["card_points"]) == 5
 
 
+@pytest.mark.parametrize(
+    "headline",
+    (
+        "x" * 41,
+        "Chance oder\nValue Trap?",
+    ),
+)
+def test_generated_content_contract_rejects_headlines_that_cannot_be_safe_mobile_hooks(headline):
+    content = _valid_viral_content()
+    content["headline"] = headline
+
+    with pytest.raises(ValueError, match="headline"):
+        validate_structured_content(content, template_type="viral_list")
+
+
+def test_generated_content_contract_accepts_40_character_single_line_hook():
+    content = _valid_viral_content()
+    content["headline"] = "x" * 40
+
+    assert validate_structured_content(content, template_type="viral_list")["headline"] == "x" * 40
+
+
 def test_generated_content_contract_rejects_wrong_card_count():
     content = _valid_viral_content()
     content["card_points"] = content["card_points"][:3]

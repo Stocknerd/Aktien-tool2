@@ -26,16 +26,14 @@ from src.news_sources import (
 from src.youtube_uploader import upload_video as youtube_upload_video
 
 from src.publishing_safety import (
-    content_dispatch_allowed,
-    dispatch_or_prepare,
     external_transfer_enabled,
+    prepare_automated_reel_for_review,
     review_metadata_for_content,
     validate_calendar_entries,
 )
 from core import render_stock_card, render_compare, CSV_FILE
 from ai_logic import get_tool_promotion_caption, get_ai_verdict, get_ai_comparison_verdict
 from social_publisher import (
-    live_public_dispatch_enabled,
     post_facebook_reel,
     post_instagram_reel,
     run_social_sync,
@@ -537,7 +535,8 @@ def run_track_ai(topic=None):
         output_mp4_path=video_path,
         silent=False,
         duration=15.0,
-        mood=detected_mood
+        mood=detected_mood,
+        hook_text=content.get("headline"),
     )
     
     # 4. Route all preparation/publication through one central fail-closed gate.
@@ -619,11 +618,10 @@ def run_track_ai(topic=None):
             print(f"TIKTOK: Warning: Upload failed: {error}")
             return False
 
-    distribution = dispatch_or_prepare(
-        prepare_only=(
-            not content_dispatch_allowed(content)
-            or not live_public_dispatch_enabled()
-        ),
+    # Generated Reels remain review-only until the new mobile-quality contract
+    # has produced enough verified performance evidence. This is intentionally
+    # a code-level gate: legacy live ENV values cannot reopen direct posting.
+    distribution = prepare_automated_reel_for_review(
         prepare=prepare_bundle,
         dispatchers=(
             ("feed", dispatch_feed),

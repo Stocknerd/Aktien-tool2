@@ -1,8 +1,9 @@
 import os
 import requests
 import json
+import uuid
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 from moviepy import *
 import moviepy.video.fx as vfx
 import moviepy.audio.fx as afx
@@ -13,6 +14,175 @@ from src.content_generator import client
 
 # Audio and SFX source files (local library configuration)
 AUDIO_DIR = os.path.join(BASE_DIR, "audio_library")
+
+REEL_SIZE = (1080, 1920)
+REEL_FPS = 30
+REEL_SAFE_X = 90
+
+
+def _font(path, size):
+    try:
+        return ImageFont.truetype(path, size)
+    except (OSError, TypeError):
+        return ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size)
+
+
+def _text_width(draw, text, font):
+    box = draw.textbbox((0, 0), text, font=font, stroke_width=2)
+    return box[2] - box[0]
+
+
+def _wrap_hook(draw, text, font, max_width, max_lines=3):
+    lines = []
+    current = ""
+    for word in text.split():
+        candidate = f"{current} {word}".strip()
+        if current and _text_width(draw, candidate, font) > max_width:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    if len(lines) > max_lines or any(_text_width(draw, line, font) > max_width for line in lines):
+        return None
+    return lines
+
+
+def _prepare_reel_background(background_image_path, destination_path, *, hook_text=None):
+    """Normalize every Reel frame and render one mobile-safe visual hook."""
+
+    with Image.open(background_image_path) as source:
+        contained = ImageOps.contain(source.convert("RGB"), REEL_SIZE, Image.Resampling.LANCZOS)
+    canvas = Image.new("RGB", REEL_SIZE, COLORS.get("background", (11, 30, 33)))
+    canvas.paste(
+        contained,
+        ((REEL_SIZE[0] - contained.width) // 2, (REEL_SIZE[1] - contained.height) // 2),
+    )
+
+    if hook_text is not None:
+        hook = str(hook_text).strip()
+        if not hook or len(hook) > 40 or "\n" in hook or "\r" in hook:
+            raise ValueError("Reel hook must be single-line text with at most 40 characters")
+        canvas = canvas.filter(ImageFilter.GaussianBlur(radius=10))
+        shade = Image.new("RGBA", REEL_SIZE, (4, 10, 18, 180))
+        canvas = Image.alpha_composite(canvas.convert("RGBA"), shade).convert("RGB")
+        draw = ImageDraw.Draw(canvas)
+        hook_font_path = FONT_PATHS.get("Outfit-Bold.ttf", "arial.ttf")
+        lines = None
+        hook_font = None
+        for size in range(92, 53, -2):
+            candidate_font = _font(hook_font_path, size)
+            candidate_lines = _wrap_hook(draw, hook.upper(), candidate_font, 900, max_lines=3)
+            if candidate_lines is not None:
+                hook_font = candidate_font
+                lines = candidate_lines
+                break
+        if hook_font is None or lines is None:
+            raise ValueError("Reel hook does not fit the mobile safe area")
+        line_height = max(
+            draw.textbbox((0, 0), line, font=hook_font, stroke_width=3)[3]
+            for line in lines
+        ) + 18
+        start_y = 450 - ((len(lines) - 1) * line_height // 2)
+        for index, line in enumerate(lines):
+            draw.text(
+                (REEL_SIZE[0] // 2, start_y + index * line_height),
+                line,
+                font=hook_font,
+                fill=(247, 247, 247),
+                stroke_width=3,
+                stroke_fill=(4, 10, 18),
+                anchor="mm",
+            )
+
+    draw = ImageDraw.Draw(canvas)
+    gold = COLORS.get("primary", (201, 162, 39))
+    draw.rectangle((85, 85, REEL_SIZE[0] - 85, REEL_SIZE[1] - 85), outline=gold, width=2)
+    draw.rectangle((100, 100, REEL_SIZE[0] - 100, REEL_SIZE[1] - 100), outline=gold, width=1)
+    destination = os.fspath(destination_path)
+    os.makedirs(os.path.dirname(os.path.abspath(destination)), exist_ok=True)
+    canvas.save(destination, "PNG")
+    canvas.close()
+    return destination
+
+
+def _layout_karaoke_words(words, *, active_index, font_path, frame_size=REEL_SIZE, base_font_size=55):
+    """Return a two-line, pixel-bounded karaoke layout for mobile playback."""
+
+    width, height = frame_size
+    max_width = width - (2 * REEL_SAFE_X)
+    scratch = Image.new("RGB", (1, 1))
+    draw = ImageDraw.Draw(scratch)
+    chosen = None
+    for font_size in range(base_font_size, 31, -2):
+        regular = _font(font_path, font_size)
+        bold = _font(font_path, int(font_size * 1.05))
+        lines = [[]]
+        line_widths = [0.0]
+        valid = True
+        space_width = _text_width(draw, " ", regular)
+        for index, word in enumerate(words):
+            text = str(word.word).strip().upper()
+            font = bold if index == active_index else regular
+            word_width = _text_width(draw, text, font)
+            if word_width > max_width:
+                valid = False
+                break
+            addition = word_width if not lines[-1] else space_width + word_width
+            if line_widths[-1] + addition > max_width:
+                if len(lines) == 2:
+                    valid = False
+                    break
+                lines.append([])
+                line_widths.append(0.0)
+                addition = word_width
+            lines[-1].append((index, text, font, word_width))
+            line_widths[-1] += addition
+        if valid:
+            chosen = (font_size, regular, lines, line_widths, space_width)
+            break
+    scratch.close()
+    if chosen is None:
+        raise ValueError("karaoke words do not fit the two-line mobile safe area")
+
+    font_size, regular, lines, line_widths, space_width = chosen
+    line_height = int(font_size * 1.35)
+    block_height = len(lines) * line_height
+    start_y = int(height * 0.72 - block_height / 2)
+    items = []
+    for line_index, line in enumerate(lines):
+        x = (width - line_widths[line_index]) / 2
+        y = start_y + line_index * line_height
+        for item_index, text, font, word_width in line:
+            if items and items[-1]["line"] == line_index:
+                x += space_width
+            bbox = font.getbbox(text, stroke_width=2)
+            item_height = bbox[3] - bbox[1]
+            items.append(
+                {
+                    "text": text,
+                    "font": font,
+                    "active": item_index == active_index,
+                    "line": line_index,
+                    "left": int(x),
+                    "top": int(y),
+                    "right": int(x + word_width),
+                    "bottom": int(y + item_height),
+                }
+            )
+            x += word_width
+    left = max(REEL_SAFE_X, min(item["left"] for item in items) - 22)
+    right = min(width - REEL_SAFE_X, max(item["right"] for item in items) + 22)
+    top = max(0, min(item["top"] for item in items) - 18)
+    bottom = min(height, max(item["bottom"] for item in items) + 24)
+    return {
+        "items": items,
+        "box": (left, top, right, bottom),
+        "line_count": len(lines),
+        "font_size": font_size,
+    }
+
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 def generate_speech_and_words(text, output_mp3_path):
@@ -38,86 +208,44 @@ def generate_speech_and_words(text, output_mp3_path):
     return transcript.words
 
 def draw_karaoke_subtitles(img, t, words_data, font_path, base_font_size=55):
-    """
-    TikTok/CapCut-Style karaoke subtitles centered at the lower part of the screen.
-    Displays small groups of words, highlighting the current word in brand gold,
-    with a dark semi-transparent rounded background.
-    """
-    draw = ImageDraw.Draw(img)
-    width, height = img.size
-    
+    """Draw a mobile-safe karaoke group without clipping long German words."""
+
     current_word_idx = -1
-    for i, w in enumerate(words_data):
-        if w.start <= t <= w.end:
-            current_word_idx = i
+    for index, word in enumerate(words_data):
+        if word.start <= t <= word.end:
+            current_word_idx = index
             break
-            
     if current_word_idx == -1:
         return img
 
-    # Group of words (typically 4)
-    group_size = 4
+    group_size = 3
     group_start = (current_word_idx // group_size) * group_size
     group_end = min(group_start + group_size, len(words_data))
-    
-    words_to_draw = []
-    for i in range(group_start, group_end):
-        word_text = words_data[i].word.upper()
-        is_active = (i == current_word_idx)
-        # Highlight active word in brand gold (201, 162, 39)
-        words_to_draw.append({
-            "text": word_text,
-            "color": "#C9A227" if is_active else "white",
-            "active": is_active
-        })
-    
-    try:
-        font = ImageFont.truetype(font_path, base_font_size)
-        font_bold = ImageFont.truetype(font_path, int(base_font_size * 1.05))
-    except:
-        font = ImageFont.load_default()
-        font_bold = font
+    group = words_data[group_start:group_end]
+    layout = _layout_karaoke_words(
+        group,
+        active_index=current_word_idx - group_start,
+        font_path=font_path,
+        frame_size=img.size,
+        base_font_size=base_font_size,
+    )
 
-    total_text = " ".join([w["text"] for w in words_to_draw])
-    bbox = draw.textbbox((0, 0), total_text, font=font)
-    total_w = bbox[2] - bbox[0]
-    
-    current_x = (width - total_w) / 2
-    y_pos = height * 0.72  # Positioned beautifully in the lower third
-    
-    # Transparent dark background bar
-    padding = 20
-    bar_left = max(20, current_x - padding)
-    bar_right = min(width - 20, current_x + total_w + padding)
-    bar_top = y_pos - padding
-    bar_bottom = y_pos + base_font_size + padding
-    
-    # Create a small local overlay box instead of a full screen image
-    box_w = int(bar_right - bar_left)
-    box_h = int(bar_bottom - bar_top)
-    if box_w > 0 and box_h > 0:
-        overlay = Image.new('RGBA', (box_w, box_h), (0, 0, 0, 0))
-        overlay_draw = ImageDraw.Draw(overlay)
-        overlay_draw.rounded_rectangle(
-            [0, 0, box_w, box_h],
-            radius=16, fill=(11, 30, 33, 180) # Brand background color with opacity
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    overlay_draw = ImageDraw.Draw(overlay)
+    overlay_draw.rounded_rectangle(layout["box"], radius=18, fill=(11, 30, 33, 190))
+    composed = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+    draw = ImageDraw.Draw(composed)
+    for item in layout["items"]:
+        draw.text(
+            (item["left"], item["top"]),
+            item["text"],
+            font=item["font"],
+            fill="#C9A227" if item["active"] else "white",
+            stroke_width=2,
+            stroke_fill="black",
         )
-        img_rgba = img.convert('RGBA')
-        img_rgba.paste(overlay, (int(bar_left), int(bar_top)), overlay)
-        img = img_rgba.convert('RGB')
-    draw = ImageDraw.Draw(img)
-    
-    for w_obj in words_to_draw:
-        w_text = w_obj["text"] + " "
-        use_font = font_bold if w_obj["active"] else font
-        # Outline for crisp text
-        for adj, b_idx in [(-2,-2), (2,-2), (-2,2), (2,2)]:
-            draw.text((current_x + adj, y_pos + b_idx), w_text, font=use_font, fill="black")
-        draw.text((current_x, y_pos), w_text, font=use_font, fill=w_obj["color"])
-        w_bbox = draw.textbbox((0, 0), w_text, font=use_font)
-        current_x += (w_bbox[2] - w_bbox[0])
+    return composed
 
-    return img
 
 def ensure_bg_music(mood=None):
     """
@@ -242,7 +370,15 @@ def ensure_bg_music(mood=None):
     print(f"MUSIC: Selected random background track: {os.path.basename(selected_track)}")
     return selected_track
 
-def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=False, duration=10.0, mood=None):
+def build_reel_mp4(
+    script_text,
+    background_image_path,
+    output_mp4_path,
+    silent=False,
+    duration=10.0,
+    mood=None,
+    hook_text=None,
+):
     """
     Creates a 9:16 vertical video Reel:
     - If silent=False: Voiceover TTS & Word-level Karaoke Subtitles
@@ -255,70 +391,16 @@ def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=F
     temp_dir = os.path.join(BASE_DIR, "temp_assets")
     os.makedirs(temp_dir, exist_ok=True)
     
-    # Check aspect ratio of background image and pad if necessary
-    try:
-        from PIL import Image, ImageDraw, ImageFont
-        orig_img = Image.open(background_image_path)
-        w, h = orig_img.size
-        if abs(w / h - 9 / 16) > 0.05:
-            print(f"REEL: Aspect ratio is not 9:16 ({w}x{h}). Padding image to 1080x1920...")
-            padded_img = Image.new("RGB", (1080, 1920), (8, 12, 28))
-            
-            # Center original image vertically
-            paste_y = (1920 - h) // 2
-            padded_img.paste(orig_img, (0, paste_y))
-            
-            draw = ImageDraw.Draw(padded_img)
-            margin1 = 25
-            margin2 = 35
-            gold_color = COLORS.get("primary", (201, 162, 39))
-            draw.rectangle([margin1, margin1, 1080 - margin1, 1920 - margin1], outline=gold_color, width=2)
-            draw.rectangle([margin2, margin2, 1080 - margin2, 1920 - margin2], outline=gold_color, width=1)
-            
-            # Draw brand logo at the top
-            from src.config import LOGO_PATH
-            if os.path.exists(LOGO_PATH):
-                try:
-                    logo = Image.open(LOGO_PATH)
-                    aspect = logo.height / logo.width
-                    logo_w = 320
-                    logo_h = int(logo_w * aspect)
-                    logo = logo.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
-                    padded_img.paste(logo, (int((1080 - logo_w) / 2), 70), logo if logo.mode == "RGBA" else None)
-                except Exception as logo_err:
-                    print(f"REEL: Logo pasting failed: {logo_err}")
-            else:
-                try:
-                    font_logo = ImageFont.truetype(FONT_PATHS.get("Outfit-Bold.ttf", "arial.ttf"), 36)
-                    draw.text((540, 100), "SCHATZSUCHE 4.0", fill=gold_color, font=font_logo, anchor="mm")
-                except:
-                    pass
-                
-            # Draw elegant brand footer at the bottom
-            try:
-                from src.config import BRAND_PROFILE, DISCLAIMERS
-                font_footer = ImageFont.truetype(FONT_PATHS.get("Inter-Bold.ttf", "arial.ttf"), 22)
-                footer_text = f"{BRAND_PROFILE.get('website', 'schatzsuche40.de')}  |  @schatzsuche40"
-                draw.text((540, 1720), footer_text, fill=gold_color, font=font_footer, anchor="mm")
-                
-                font_disc = ImageFont.truetype(FONT_PATHS.get("Inter-Regular.ttf", "arial.ttf"), 16)
-                disclaimer_text = DISCLAIMERS.get("short_disclaimer", "")
-                import textwrap
-                disc_lines = textwrap.wrap(disclaimer_text, width=95)
-                disc_y = 1760
-                for line in disc_lines:
-                    draw.text((540, disc_y), line, fill=(160, 176, 178), font=font_disc, anchor="mm")
-                    disc_y += 22
-            except Exception as footer_err:
-                print(f"REEL: Footer drawing failed: {footer_err}")
-                
-            temp_padded_path = os.path.join(temp_dir, f"padded_{os.path.basename(background_image_path)}")
-            padded_img.save(temp_padded_path, "PNG")
-            background_image_path = temp_padded_path
-    except Exception as pad_err:
-        print(f"REEL: Aspect ratio formatting failed: {pad_err}")
+    run_id = uuid.uuid4().hex
+    prepared_background_path = os.path.join(temp_dir, f"prepared_{run_id}.png")
+    _prepare_reel_background(
+        background_image_path,
+        prepared_background_path,
+        hook_text=hook_text,
+    )
+    background_image_path = prepared_background_path
 
-    audio_path = os.path.join(temp_dir, "reel_audio.mp3") if not silent else None
+    audio_path = os.path.join(temp_dir, f"reel_audio_{run_id}.mp3") if not silent else None
     
     if not silent:
         # 1. Voiceover TTS & Timestamps
@@ -352,16 +434,27 @@ def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=F
         if not silent and words_data:
             img = draw_karaoke_subtitles(img, t, words_data, font_path)
         
-        # 3. Add dynamic red/gold progress bar at the bottom
+        # 3. Add a mobile-safe progress bar above platform caption overlays.
         draw = ImageDraw.Draw(img)
-        bar_height = 12
-        bar_width = int(w * progress)
+        bar_height = 10
+        bar_left = REEL_SAFE_X
+        bar_right = w - REEL_SAFE_X
+        bar_top = h - 120
+        bar_width = int((bar_right - bar_left) * progress)
+        draw.rounded_rectangle(
+            (bar_left, bar_top, bar_right, bar_top + bar_height),
+            radius=5,
+            fill=(43, 63, 68),
+        )
         if bar_width > 0:
-            # Gold progress bar (201, 162, 39)
-            draw.rectangle([0, h - bar_height, bar_width, h], fill=COLORS["primary"])
+            draw.rounded_rectangle(
+                (bar_left, bar_top, bar_left + bar_width, bar_top + bar_height),
+                radius=5,
+                fill=COLORS["primary"],
+            )
             
         # Run garbage collection periodically (every 2 seconds) to prevent memory leak
-        if int(t * 24) % 48 == 0:
+        if int(t * REEL_FPS) % (2 * REEL_FPS) == 0:
             import gc
             gc.collect()
             
@@ -394,7 +487,7 @@ def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=F
     
     # Render final MP4
     print(f"REEL: Rendering {'SILENT ' if silent else ''}final MP4 to {output_mp4_path}...")
-    video_clip.write_videofile(output_mp4_path, fps=24, codec="libx264", audio_codec="aac" if video_clip.audio else None, preset="veryfast", threads=1, logger=None)
+    video_clip.write_videofile(output_mp4_path, fps=REEL_FPS, codec="libx264", audio_codec="aac" if video_clip.audio else None, preset="veryfast", threads=1, logger=None)
     print(f"REEL: Video created successfully! ({output_mp4_path})")
     
     # Cleanup temp audio
@@ -404,6 +497,8 @@ def build_reel_mp4(script_text, background_image_path, output_mp4_path, silent=F
         video_clip.close()
         if audio_path and os.path.exists(audio_path):
             os.remove(audio_path)
+        if os.path.exists(prepared_background_path):
+            os.remove(prepared_background_path)
     except Exception as e:
         print(f"WARNING: Clean-up error: {e}")
 

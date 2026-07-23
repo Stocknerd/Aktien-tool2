@@ -100,6 +100,26 @@ def review_metadata_for_content(
     }
 
 
+def prepare_automated_reel_for_review(
+    *,
+    prepare: Callable[[], Any],
+    dispatchers: Iterable[tuple[str, Callable[[], Any]]],
+) -> dict[str, Any]:
+    """Keep generated Reels review-only regardless of global live ENV gates.
+
+    The dispatcher iterable is accepted deliberately so callers cannot retain a
+    parallel direct-publication branch. ``dispatch_or_prepare`` returns before
+    consuming it, making this a hard code-level safety gate rather than another
+    deployment switch.
+    """
+
+    return dispatch_or_prepare(
+        prepare_only=True,
+        prepare=prepare,
+        dispatchers=dispatchers,
+    )
+
+
 def dispatch_or_prepare(
     *,
     prepare_only: bool,

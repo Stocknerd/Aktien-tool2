@@ -16,7 +16,7 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "dummy-key-for-local-im
 
 
 _GENERATED_TEXT_LIMITS = {
-    "headline": 80,
+    "headline": 40,
     "subheadline": 140,
     "image_prompt": 16_000,
     "caption_ig": 5_000,
@@ -64,6 +64,8 @@ def validate_structured_content(
     validated = dict(content)
     for field, limit in _GENERATED_TEXT_LIMITS.items():
         validated[field] = _required_generated_text(content, field, limit)
+    if "\n" in validated["headline"] or "\r" in validated["headline"]:
+        raise ValueError("generated field headline must be a single-line mobile hook")
 
     raw_points = content.get("card_points")
     required_count = 5 if template_type == "viral_list" else 3
@@ -188,8 +190,11 @@ def generate_structured_content(topic, template_type="evergreen", source_context
         - Der Prompt muss alle Texte, Überschriften, Zahlenwerte und Formeln exakt in deutschem Text vorgeben und anweisen, dass diese von `image-2` in sauberer, geometrischer, serifenloser Schriftart (ähnlich Outfit und Inter) komplett fehlerfrei gezeichnet werden müssen.
         
         WICHTIGE ANFORDERUNGEN AN DAS REEL:
+        - `headline` ist der einzige große visuelle Hook des Reels: einzeilig im JSON, maximal 40 Zeichen, konkret und auf höchstens drei großen mobilen Zeilen darstellbar.
+        - Der Hook nennt nach Möglichkeit eine belegte Zahl, einen konkreten Namen oder eine klare Entscheidung; bei dünner Quellenlage darf nichts erfunden werden.
         - Der gesprochene Reel-Sprechtext (reel_script) muss exakt 60-80 Wörter umfassen (für 30-45 Sekunden Video). Keine Szenenüberschriften, reiner gesprochener Text.
-        - HOOK-REGEL: Der Text MUSS direkt mit einem extrem fesselnden Satz beginnen (z. B. eine provokante Frage oder schockierende Statistik). Es darf ABSOLUT KEINE Begrüßung enthalten sein (z. B. KEIN 'Willkommen bei...', 'Hallo...', 'In diesem Video...', 'Heute schauen wir uns...'). Starte direkt mit dem brennenden Thema!
+        - Der erste gesprochene Satz muss inhaltlich direkt zur `headline` passen und ohne Begrüßung starten.
+        - HOOK-REGEL: Der Text MUSS direkt mit einem extrem fesselnden Satz beginnen (z. B. eine provokante Frage oder belegte überraschende Zahl). Es darf ABSOLUT KEINE Begrüßung enthalten sein (z. B. KEIN 'Willkommen bei...', 'Hallo...', 'In diesem Video...', 'Heute schauen wir uns...'). Starte direkt mit dem brennenden Thema!
         
         Antworte AUSSCHLIESSLICH im folgenden validen JSON-Format:
         {{
