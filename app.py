@@ -109,6 +109,9 @@ _search_all_cache_lock = threading.Lock()
 
 @app.route('/')
 def home():
+    if request.host.split(':', 1)[0].lower() == 'compare.schatzsuche40.de':
+        return compare_home()
+
     df = core.load_df()
     keys = core.all_metric_keys(df)
     available = [{
@@ -734,9 +737,18 @@ def compare_home():
     t1 = request.args.get('t1', '').upper()
     t2 = request.args.get('t2', '').upper()
     m_param = request.args.get('metrics', '')
+    host = request.host.split(':', 1)[0].lower()
+    canonical_url = 'https://compare.schatzsuche40.de/' if host == 'compare.schatzsuche40.de' else request.base_url
     
     # Explicitly render the comparison tool template
-    return render_template('compare.html', is_embedded=is_embedded, vt1=t1, vt2=t2, vmetrics=m_param)
+    return render_template(
+        'compare.html',
+        is_embedded=is_embedded,
+        vt1=t1,
+        vt2=t2,
+        vmetrics=m_param,
+        canonical_url=canonical_url,
+    )
 
 @app.route('/compare/generate', methods=['POST'])
 def generate_compare():
