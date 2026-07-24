@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% if ticker %}{{ company_name }} ({{ ticker }}) - Aktienanalyse | Schatzsuche 4.0{% else %}Aktien-Bild Generator | Schatzsuche 4.0{% endif %}</title>
+  <title>{% if ticker %}{{ seo_title }}{% else %}Aktien-Bild Generator | Schatzsuche 4.0{% endif %}</title>
   <meta name="description" content="{% if ticker %}Aktuelle Kennzahlen, Analysten-Ratings und Kursziele für {{ company_name }} ({{ ticker }}). Erstelle jetzt deine eigene Infografik.{% else %}Professionelle Aktien-Infografiken erstellen und vergleichen. Kostenlose Analyse-Tools für Dividenden-Investoren.{% endif %}">
   <link rel="canonical" href="{{ request.base_url }}" />
   

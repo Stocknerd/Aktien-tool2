@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% if ticker %}{{ company_name }} ({{ ticker }}) - Aktienanalyse | Schatzsuche 4.0{% else %}Ergebnis - Aktien Analyse | Schatzsuche 4.0{% endif %}</title>
+  <title>{% if ticker %}{{ seo_title }}{% else %}Ergebnis - Aktien Analyse | Schatzsuche 4.0{% endif %}</title>
   <meta name="description" content="{% if ticker %}Deine Aktienanalyse für {{ company_name }} ({{ ticker }}) ist bereit.{% else %}Deine professionelle Aktien-Infografik wurde erstellt.{% endif %}">
   <link rel="canonical" href="{{ request.base_url }}" />
   

@@ -30,6 +30,26 @@ def inject_tracking_config():
 # SaaS Guest Auth
 GUEST_TOKEN = "b2831286e14844faa0782f69d4649825" # Standard Guest Token (Premium Tier)
 
+
+def build_analysis_title(company_name, ticker, max_length=60):
+    """Build a bounded SEO title while preserving company, ticker and search intent."""
+    ticker = " ".join(str(ticker or "").split()).upper()
+    company_name = " ".join(str(company_name or ticker or "Aktie").split())
+    analysis_suffix = f" ({ticker}) - Aktienanalyse" if ticker else " - Aktienanalyse"
+    brand_suffix = " | Schatzsuche 4.0"
+    branded_title = f"{company_name}{analysis_suffix}{brand_suffix}"
+    if len(branded_title) <= max_length:
+        return branded_title
+
+    available_company_length = max_length - len(analysis_suffix)
+    if available_company_length < 2:
+        fallback = f"{ticker} - Aktienanalyse" if ticker else "Aktienanalyse"
+        return fallback[:max_length]
+    if len(company_name) > available_company_length:
+        company_name = company_name[: available_company_length - 1].rstrip(" .,-_") + "…"
+    return f"{company_name}{analysis_suffix}"
+
+
 def get_effective_token():
     t = request.form.get('token') or request.args.get('token')
     if not t or t.strip() == "":
@@ -508,6 +528,7 @@ def stock_landing(ticker):
         'index.html',
         ticker=ticker,
         company_name=company_name,
+        seo_title=build_analysis_title(company_name, ticker),
         default_metrics=core.DEFAULT_METRICS,
         available_metrics=available,
         metric_descriptions=core.METRIC_DESC,
@@ -721,6 +742,7 @@ def display_result(filename):
         filename=filename,
         ticker=ticker,
         company_name=company_name,
+        seo_title=build_analysis_title(company_name, ticker),
         related_stocks=related_stocks,
         ai_verdict=ai_verdict,
         is_embedded=is_embedded,
