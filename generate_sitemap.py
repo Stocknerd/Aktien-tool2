@@ -42,7 +42,6 @@ def generate_sitemap(csv_path="stock_data.csv", output_path=None):
         ("https://tool.schatzsuche40.de/dividenden-kalender", "daily", "0.8"),
         ("https://tool.schatzsuche40.de/dividend-rechner", "daily", "0.8"),
         ("https://tool.schatzsuche40.de/p2p", "daily", "0.8"),
-        ("https://tool.schatzsuche40.de/compare", "daily", "0.8"),
     ]
     
     xml_body = ""

@@ -763,6 +763,12 @@ def generated_file(filename):
 
 @app.route('/compare')
 def compare_home():
+    if current_host() != COMPARE_HOST:
+        target = f'https://{COMPARE_HOST}/'
+        if request.query_string:
+            target = f"{target}?{request.query_string.decode('utf-8', errors='ignore')}"
+        return redirect(target, code=301)
+
     is_embedded = request.args.get('embed') == '1'
     t1 = request.args.get('t1', '').upper()
     t2 = request.args.get('t2', '').upper()
@@ -782,6 +788,9 @@ def compare_home():
 
 @app.route('/compare/generate', methods=['POST'])
 def generate_compare():
+    if current_host() != COMPARE_HOST:
+        return redirect(f'https://{COMPARE_HOST}/compare/generate', code=308)
+
     token = get_effective_token()
     ok, msg = saas_logic.check_quota(token)
     if not ok:
@@ -860,6 +869,12 @@ def generate_compare():
 
 @app.route('/compare/result/<path:filename>')
 def compare_result(filename):
+    if current_host() != COMPARE_HOST:
+        target = f'https://{COMPARE_HOST}{request.path}'
+        if request.query_string:
+            target = f"{target}?{request.query_string.decode('utf-8', errors='ignore')}"
+        return redirect(target, code=301)
+
     is_embedded = request.args.get('embed') == '1'
     t1 = request.args.get('t1', '')
     t2 = request.args.get('t2', '')

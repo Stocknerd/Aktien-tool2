@@ -439,7 +439,7 @@
         <a href="/" class="nav-btn">🏠 Home</a>
         <a href="/screener" class="nav-btn active">🎯 Screener</a>
         <a href="/dividenden-kalender" class="nav-btn">📅 Kalender</a>
-        <a href="/compare" class="nav-btn">📊 Vergleich</a>
+        <a href="https://compare.schatzsuche40.de/" class="nav-btn">📊 Vergleich</a>
         <a href="/p2p" class="nav-btn">💳 P2P</a>
         <a href="/dividend-rechner" class="nav-btn">💰 Rechner</a>
         <a href="/watchlist" class="nav-btn">⭐ Watchlist</a>
@@ -1050,7 +1050,7 @@ function loadPeers(stock) {
                 <span class="peer-name" title="${p.name}">${p.name}</span>
                 <span class="peer-tick">${p.symbol}</span>
             </div>
-            <a href="${window.parent !== window ? 'https://schatzsuche40.de/aktien-vergleichstool/' : '/compare'}?t1=${stock.symbol}&t2=${p.symbol}" target="_blank" class="action-link" style="font-size:0.7rem; padding:4px 8px;">
+            <a href="${window.parent !== window ? 'https://schatzsuche40.de/aktien-vergleichstool/' : 'https://compare.schatzsuche40.de/'}?t1=${stock.symbol}&t2=${p.symbol}" target="_blank" class="action-link" style="font-size:0.7rem; padding:4px 8px;">
                 Duell ⚡
             </a>
         </div>
