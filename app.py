@@ -39,6 +39,36 @@ def get_effective_token():
 import ops_middleware
 ops_middleware.setup_ops(app, core.CSV_FILE)
 
+COMPARE_HOST = 'compare.schatzsuche40.de'
+
+
+def current_host():
+    return request.host.split(':', 1)[0].lower()
+
+
+@app.before_request
+def enforce_compare_host_boundary():
+    """Keep analysis tools off the dedicated comparison hostname."""
+    if current_host() != COMPARE_HOST:
+        return None
+
+    path = request.path
+    if request.method in {'GET', 'HEAD'}:
+        if path == '/compare':
+            return redirect('https://compare.schatzsuche40.de/', code=301)
+        if path in {'/', '/robots.txt', '/sitemap.xml'} or path.startswith(
+            ('/compare/result/', '/output/', '/static/', '/download/')
+        ):
+            return None
+        target = f"https://tool.schatzsuche40.de{path}"
+        if request.query_string:
+            target = f"{target}?{request.query_string.decode('utf-8', errors='ignore')}"
+        return redirect(target, code=301)
+
+    if request.method == 'POST' and path == '/compare/generate':
+        return None
+    return jsonify({'error': 'Not found'}), 404
+
 # ─── Navigation Helpers ──────────────────────────────────────
 TOP_TICKERS_LIST = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'SAP.DE', 'SIE.DE', 'ALV.DE']
 
@@ -109,7 +139,7 @@ _search_all_cache_lock = threading.Lock()
 
 @app.route('/')
 def home():
-    if request.host.split(':', 1)[0].lower() == 'compare.schatzsuche40.de':
+    if current_host() == COMPARE_HOST:
         return compare_home()
 
     df = core.load_df()
@@ -737,8 +767,8 @@ def compare_home():
     t1 = request.args.get('t1', '').upper()
     t2 = request.args.get('t2', '').upper()
     m_param = request.args.get('metrics', '')
-    host = request.host.split(':', 1)[0].lower()
-    canonical_url = 'https://compare.schatzsuche40.de/' if host == 'compare.schatzsuche40.de' else request.base_url
+    host = current_host()
+    canonical_url = f'https://{COMPARE_HOST}/' if host == COMPARE_HOST else request.base_url
     
     # Explicitly render the comparison tool template
     return render_template(
@@ -839,10 +869,33 @@ def compare_result(filename):
 # ─── SEO Sitemap (Hebel 1) ─────────────────────────────────
 @app.route('/sitemap.xml')
 def sitemap():
+    if current_host() == COMPARE_HOST:
+        body = '''<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://compare.schatzsuche40.de/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
+'''
+        return Response(body, mimetype='application/xml')
     return send_from_directory(app.static_folder, 'sitemap.xml', mimetype='application/xml')
 
 @app.route('/robots.txt')
 def robots():
+    if current_host() == COMPARE_HOST:
+        body = '''User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /compare/result/
+Disallow: /output/
+Disallow: /download/
+
+Sitemap: https://compare.schatzsuche40.de/sitemap.xml
+'''
+        return Response(body, mimetype='text/plain')
     return send_from_directory(app.static_folder, 'robots.txt', mimetype='text/plain')
 
 
