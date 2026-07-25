@@ -1,6 +1,9 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import requests
 
-USER_TOKEN = "EAA8x4HLPSKMBRLIdHroILuQNdFNZATupwypkc6PykgJJO18aJAZCKraPrW1aZCCiXazmH1kYRZANfT1mcpA722PaifrKibWG0TywWG9hZB3vggMdzvqSiXVkkaKPpvUPKLbmWkxartlvY1YTgGIzhEEbBotEMU5euKJQdQArORS9NWMiZBt0pdOTT5Pf9OwgxhNcZBAWceHBAZDZD"
+USER_TOKEN = os.environ["SCHATZSUCHE_META_ACCESS_TOKEN"]
 PAGE_ID = "112395201353218"
 
 def get_page_token():

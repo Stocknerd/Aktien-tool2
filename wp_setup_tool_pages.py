@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
+from dotenv import load_dotenv
+load_dotenv()
 # wp_setup_tool_pages.py – Erstellt dedizierte Landingpages für die Tools auf WordPress
 
 import os, base64, json, requests
 
 # Konfiguration (aus wp_inject_iframes.py übernommen)
 WP_BASE_URL   = "https://schatzsuche40.de/wp-json/wp/v2"
-WP_USER       = "schatzsuche40"
-WP_PASS       = "R33G PRPb mqee hBGc pvKJ 51iz"
+WP_USER = os.environ["SCHATZSUCHE_WP_USER"]
+WP_PASS = os.environ["SCHATZSUCHE_WP_APP_PASSWORD"]
 TOOL_BASE_URL = "https://tool.schatzsuche40.de"
 
 CREDS = base64.b64encode(f"{WP_USER}:{WP_PASS}".encode()).decode()

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+import os
+from dotenv import load_dotenv
+load_dotenv()
 """
 WordPress XML-RPC Page Updater
 Uses XML-RPC (which bypasses Authorization header restrictions) to update pages.
@@ -8,8 +11,8 @@ import sys
 import xmlrpc.client
 
 WP_URL = "https://schatzsuche40.de/xmlrpc.php"
-WP_USER = "fhofmann"
-WP_PASS = "Pm8T ZqbK 8Muk FgkC kBB0 UIN4"
+WP_USER = os.environ["SCHATZSUCHE_WP_USER"]
+WP_PASS = os.environ["SCHATZSUCHE_WP_APP_PASSWORD"]
 BLOG_ID = 1
 
 HTML_PAGE_1210 = """

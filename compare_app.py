@@ -932,7 +932,7 @@ except Exception:
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'change-me')
-GUEST_TOKEN = "b2831286e14844faa0782f69d4649825"
+GUEST_TOKEN = os.environ["SCHATZSUCHE_GUEST_TOKEN"]
 
 def get_effective_token():
     return request.args.get('token') or GUEST_TOKEN

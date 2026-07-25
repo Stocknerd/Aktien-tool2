@@ -1,7 +1,10 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import urllib.request
 import json
 
-USER_TOKEN = "EAAVGjnfVF0YBRT1y8JjDzv9rB7UgYyS9mJzu0XGwZAUV2nmxDYdWgfQalFIZAp4yvB3yCH4mYsnPb5CdUtEuTEM1dRsEKa8Run1FI2h3fX6lZB87WtwCeYwiyFHJHtqSxMrt74RKok55hCHL5xsCLEPZCCOZBgZCNpP8yypviZBJ4RGVZBaV4XYyRTplzICZCsYy5WhaNTbMFGAZDZD"
+USER_TOKEN = os.environ["SCHATZSUCHE_META_ACCESS_TOKEN"]
 META_PAGE_ID = "112395201353218"
 
 url = f"https://graph.facebook.com/v20.0/{META_PAGE_ID}?fields=access_token&access_token={USER_TOKEN}"

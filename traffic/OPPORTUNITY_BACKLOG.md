@@ -3,17 +3,22 @@
 Stand: 2026-07-21
 Ziel: qualifizierte Websitezugriffe erhöhen; zuerst technische Basis und bestehende Chancen, danach skalieren.
 
-## Rang 1 – WordPress-Zugang absichern
+## Rang 1 – WordPress-Zugang absichern — abgeschlossen 2026-07-25
 
-**Befund:** Klartext-Zugangsdaten sind in zwei von Git verfolgten Dateien enthalten.
+**Ausgangsbefund:** Mehrere Git-verfolgte Hilfsdateien enthielten zwei noch gültige WordPress-Administrator-App-Passwörter; das Repository ist öffentlich. Zusätzlich waren abgelaufene Meta-Tokens und ein wirksamer Guest-/Admin-Token fest im Quellcode hinterlegt.
 
-**Aktion:**
-1. WordPress-App-Passwort/Zugang rotieren.
-2. Geheimnisse aus Quellcode entfernen und über geschützte Umgebungsvariablen/Server-Secrets laden.
-3. Publisher und WordPress-Schreibweg mit neuem Zugang kontrolliert testen.
-4. Keine Geheimnisse in Logs, Commits oder Telegram ausgeben.
+**Umgesetzt und verifiziert:**
+1. neuer WordPress-App-Zugang erstellt, lokal in `.env` mit Modus `600` gespeichert und per `/users/me` mit HTTP 200 geprüft;
+2. beide öffentlich kompromittierten WordPress-App-Passwörter widerrufen; beide liefern danach HTTP 401;
+3. WordPress-, Meta- und Guest-Token-Konstanten aus 20 Git-Dateien entfernt und fail-closed auf Umgebungsvariablen umgestellt;
+4. Guest-/Admin-Token auf dem aktiven AWS-Toolserver in der geschützten `.env` rotiert;
+5. Secret-Scan über 150 Git-verfolgte Python-Dateien: 0 verbleibende Klartextkandidaten;
+6. 29 Zieltests bestanden;
+7. `.gitignore` repariert und `.env.example` ohne Werte ergänzt.
 
-**Wirkung:** Verhindert Übernahme oder Spam-/SEO-Schäden; Voraussetzung für sichere Automationen.
+**Resthinweis:** Die widerrufenen/abgelaufenen Werte bleiben in älteren Git-Commits sichtbar, sind aber nicht mehr gültig. Der deaktivierte n8n-Altworkflow `Sustainability AutoPublisher v1` bleibt deaktiviert und besitzt nach der Rotation absichtlich kein getestetes aktuelles Schatzsuche-Credential.
+
+**Wirkung:** Der unmittelbar ausnutzbare öffentliche Zugang ist geschlossen; lokale und serverseitige Laufwege beziehen Secrets nicht mehr aus dem Quellcode.
 
 ## Rang 2 – GSC-/GA4-Baseline herstellen
 

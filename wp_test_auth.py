@@ -1,10 +1,13 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import requests
 from requests.auth import HTTPBasicAuth
 import json
 
 wp_url = "https://schatzsuche40.de/wp-json/wp/v2/posts"
-wp_user = "schatzsuche40"
-wp_pass = "VIhSXAT1tAJagL4dR8LJnHWL" # Application Password
+wp_user = os.environ["SCHATZSUCHE_WP_USER"]
+wp_pass = os.environ["SCHATZSUCHE_WP_APP_PASSWORD"]
 
 post_data = {
     "title": "Automated Test Post by KI-Bot",

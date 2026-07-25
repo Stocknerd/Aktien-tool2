@@ -1,11 +1,13 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import requests
 from requests.auth import HTTPBasicAuth
 import json
 
 WP_URL = "https://schatzsuche40.de/wp-json/wp/v2/tags"
-WP_USER = "schatzsuche40"
-WP_PASS = "VIhSXAT1tAJagL4dR8LJnHWL"
-
+WP_USER = os.environ["SCHATZSUCHE_WP_USER"]
+WP_PASS = os.environ["SCHATZSUCHE_WP_APP_PASSWORD"]
 def get_or_create_tag(tag_name):
     # First search for it
     search_res = requests.get(f"{WP_URL}?search={tag_name}", auth=HTTPBasicAuth(WP_USER, WP_PASS))

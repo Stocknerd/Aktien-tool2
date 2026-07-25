@@ -1,8 +1,10 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import xmlrpc.client
 
-WP_USER = "schatzsuche40"
-WP_PASS = "VIhSXAT1tAJagL4dR8LJnHWL"
-
+WP_USER = os.environ["SCHATZSUCHE_WP_USER"]
+WP_PASS = os.environ["SCHATZSUCHE_WP_APP_PASSWORD"]
 def test_xmlrpc_meta(post_id):
     server = xmlrpc.client.ServerProxy("https://schatzsuche40.de/xmlrpc.php")
     

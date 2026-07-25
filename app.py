@@ -27,8 +27,8 @@ def inject_tracking_config():
         'show_monetization_cta': os.environ.get('SHOW_CTA_BANNER', 'false').lower() == 'true',
     }
 
-# SaaS Guest Auth
-GUEST_TOKEN = "b2831286e14844faa0782f69d4649825" # Standard Guest Token (Premium Tier)
+# SaaS Guest Auth. Never fall back to a source-controlled token.
+GUEST_TOKEN = os.environ["SCHATZSUCHE_GUEST_TOKEN"]
 
 
 def build_analysis_title(company_name, ticker, max_length=60):

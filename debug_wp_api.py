@@ -1,11 +1,13 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import requests
 from requests.auth import HTTPBasicAuth
 import json
 
 WP_URL = "https://schatzsuche40.de/wp-json/wp/v2/posts"
-WP_USER = "schatzsuche40"
-WP_PASS = "VIhSXAT1tAJagL4dR8LJnHWL"
-
+WP_USER = os.environ["SCHATZSUCHE_WP_USER"]
+WP_PASS = os.environ["SCHATZSUCHE_WP_APP_PASSWORD"]
 def debug_post():
     data = {
         "title": "API Debug Test - Please ignore",

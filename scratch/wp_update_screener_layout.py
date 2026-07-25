@@ -1,9 +1,11 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import requests, base64
 
 WP_BASE_URL   = "https://schatzsuche40.de/wp-json/wp/v2"
-WP_USER       = "schatzsuche40"
-WP_PASS       = "R33G PRPb mqee hBGc pvKJ 51iz"
-
+WP_USER = os.environ["SCHATZSUCHE_WP_USER"]
+WP_PASS = os.environ["SCHATZSUCHE_WP_APP_PASSWORD"]
 CREDS = base64.b64encode(f"{WP_USER}:{WP_PASS}".encode()).decode()
 HEADERS = {
     "Authorization": f"Basic {CREDS}",

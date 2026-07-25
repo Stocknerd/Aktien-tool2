@@ -1,6 +1,9 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import requests
 
-SHORT_TOKEN = "EAAVGjnfVF0YBRclrtAR65RZCub6xXo3lMOplWiLGNuQjOZB2dXsrvRRbzWXdf4cVnEmJxP5YIOWx3H0Czn4HQZBNRRa1pA0B80lKPKigiFLzU2z09Q7yNoNdI2EvAZCQif65x1wtGKJ9xab3Yo6oMbszG9r9wqfaZCykxIFNHd5tMSlhiVjhttiPDYdW4HWdEprH2iuwb6KJdmwFle8ZCAnYhD9PhWRNifEMZBs08AbWfbG6PxrIX8HjTspZCzzq0CvcF2UfZAp6nkQn2MKJTvZAnmBNROXugFvUVSG50ZD"
+SHORT_TOKEN = os.environ["SCHATZSUCHE_META_ACCESS_TOKEN"]
 PAGE_ID = "112395201353218"
 APP_ID = "1478160492972904"  # Let's see if we can get the App ID from the token info
 APP_SECRET = "" # We need the APP SECRET to extend the token... wait.

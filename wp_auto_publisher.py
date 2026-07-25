@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 import os
 import random
 import requests
@@ -15,9 +17,8 @@ from pathlib import Path
 WP_URL = "https://schatzsuche40.de/wp-json/wp/v2/posts"
 WP_MEDIA_URL = "https://schatzsuche40.de/wp-json/wp/v2/media"
 WP_TAGS_URL = "https://schatzsuche40.de/wp-json/wp/v2/tags"
-WP_USER = "schatzsuche40"
-WP_PASS = "VIhSXAT1tAJagL4dR8LJnHWL"
-
+WP_USER = os.environ["SCHATZSUCHE_WP_USER"]
+WP_PASS = os.environ["SCHATZSUCHE_WP_APP_PASSWORD"]
 def get_or_create_tag(tag_name):
     search_res = requests.get(f"{WP_TAGS_URL}?search={tag_name}", auth=HTTPBasicAuth(WP_USER, WP_PASS))
     if search_res.status_code == 200:

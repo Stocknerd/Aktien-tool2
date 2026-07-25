@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from dotenv import load_dotenv
+load_dotenv()
 # wp_inject_iframes.py – Scannt WP-Artikel auf Aktien-Ticker und injiziert iFrame-Blöcke
 #
 # Verwendung:
@@ -11,8 +13,8 @@ import pandas as pd
 
 # ─── Konfiguration ──────────────────────────────────────────────────────────────
 WP_BASE_URL   = "https://schatzsuche40.de/wp-json/wp/v2"
-WP_USER       = "schatzsuche40"
-WP_PASS       = "R33G PRPb mqee hBGc pvKJ 51iz"
+WP_USER = os.environ["SCHATZSUCHE_WP_USER"]
+WP_PASS = os.environ["SCHATZSUCHE_WP_APP_PASSWORD"]
 TOOL_BASE_URL = "https://tool.schatzsuche40.de"
 CSV_PATH      = os.path.join(os.path.dirname(__file__), "stock_data.csv")
 

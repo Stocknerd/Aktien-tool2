@@ -8,9 +8,8 @@ import time
 load_dotenv()
 
 WP_URL = "https://schatzsuche40.de/wp-json/wp/v2/posts"
-WP_USER = "schatzsuche40"
-WP_PASS = "VIhSXAT1tAJagL4dR8LJnHWL"
-
+WP_USER = os.environ["SCHATZSUCHE_WP_USER"]
+WP_PASS = os.environ["SCHATZSUCHE_WP_APP_PASSWORD"]
 EVERGREEN_ARTICLES = [
     {
         "title": "Was ist das KGV? – Einfach erklärt für Anfänger",
