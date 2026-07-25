@@ -14,7 +14,10 @@ Ziel: qualifizierte Websitezugriffe erhöhen; zuerst technische Basis und besteh
 4. Guest-/Admin-Token auf dem aktiven AWS-Toolserver in der geschützten `.env` rotiert;
 5. Secret-Scan über 150 Git-verfolgte Python-Dateien: 0 verbleibende Klartextkandidaten;
 6. 29 Zieltests bestanden;
-7. `.gitignore` repariert und `.env.example` ohne Werte ergänzt.
+7. `.gitignore` repariert und `.env.example` ohne Werte ergänzt;
+8. Commit `bbac49d` auf den AWS-Toolserver ausgerollt; `aktien-tool.service`, Tool-Health, Compare-Startseite, Compare-Sitemap und WordPress-Startseite liefern HTTP 200;
+9. alter Guest-/Admin-Token wird live mit HTTP 403 abgelehnt, der neue geschützte Token mit HTTP 200 akzeptiert;
+10. eine bereits vorhandene, fehlerhaft maskierte Pinterest-Env-Zeile wurde nach bytegenauem Parser-Vergleich semantisch unverändert normalisiert; die komplette Server-`.env` lädt danach 27 Keys, Backups liegen außerhalb des Repos mit Modus `600` in einem Verzeichnis mit Modus `700`.
 
 **Resthinweis:** Die widerrufenen/abgelaufenen Werte bleiben in älteren Git-Commits sichtbar, sind aber nicht mehr gültig. Der deaktivierte n8n-Altworkflow `Sustainability AutoPublisher v1` bleibt deaktiviert und besitzt nach der Rotation absichtlich kein getestetes aktuelles Schatzsuche-Credential.
 
