@@ -1,6 +1,6 @@
 # Schatzsuche 4.0 – Traffic Opportunity Backlog
 
-Stand: 2026-07-21
+Stand: 2026-07-26
 Ziel: qualifizierte Websitezugriffe erhöhen; zuerst technische Basis und bestehende Chancen, danach skalieren.
 
 ## Rang 1 – WordPress-Zugang absichern — abgeschlossen 2026-07-25
@@ -25,6 +25,8 @@ Ziel: qualifizierte Websitezugriffe erhöhen; zuerst technische Basis und besteh
 
 ## Rang 2 – GSC-/GA4-Baseline herstellen
 
+**Aktueller Blocker (erneut verifiziert 2026-07-26):** Site Kit führt Search Console und Analytics 4 als aktiv/verbunden, die Google-Nutzerautorisierung ist jedoch nicht verfügbar. Reale GSC- und GA4-Berichtsprobes liefern HTTP 403 / `missing_required_scopes`. Erforderlich ist eine einmalige menschliche Neuautorisierung in WordPress/Site Kit; Tokens werden nicht automatisiert verändert.
+
 **Aktion:**
 1. GSC-Leistung 28 und 90 Tage exportieren: Seiten, Suchanfragen, Geräte, Länder.
 2. GSC-Indexierungsbericht exportieren.
@@ -33,21 +35,22 @@ Ziel: qualifizierte Websitezugriffe erhöhen; zuerst technische Basis und besteh
 
 **Wirkung:** Zeigt Near-Wins, CTR-Probleme, Kannibalisierung und die beste nächste URL.
 
-## Rang 3 – globales H1-/Template-Problem beheben
+## Rang 3 – globales H1-/Template-Problem beheben — live abgeschlossen, verifiziert 2026-07-26
 
-**Befund:** 182 von 184 Sitemap-URLs ohne H1 im gelieferten HTML.
+**Früherer Befund:** 182 von 184 Sitemap-URLs ohne H1 im gelieferten HTML.
 
-**Aktion:**
-1. Aktives Theme-/Elementor-Template für Startseite, Single Post, Page und Archive identifizieren.
-2. Den sichtbaren Seitentitel semantisch als genau einen H1 ausgeben.
-3. Erst an Staging/Entwurf oder kleinster kontrollierter Template-Stelle testen.
-4. Repräsentative URLs nach Änderung prüfen: Startseite, Artikel, Seite, Kategorie, Tag, Autor.
+**Aktueller Live-Nachweis:**
+1. kompletter Crawl aller 185 eindeutigen WordPress-Sitemap-URLs: 0 Fehler, alle 185 URLs mit genau einem H1;
+2. Beiträge, Seiten, Kategorien, Tags, Autor, Blogübersicht und Startseite abgedeckt;
+3. sieben repräsentative URL-Typen normal und mit Cache-Busting: jeweils HTTP 200, genau ein H1 und unverändertes Canonical;
+4. aktueller Beitrag auf Desktop 1280 × 720 und Mobil 390 × 844 geprüft: H1 sichtbar und lesbar, kein horizontaler Überlauf, keine Browserfehler;
+5. in diesem Verifikationslauf keine WordPress-Mutation vorgenommen, da der zuvor offene globale Zustand bereits korrigiert war.
 
-**Messung:** HTTP 200, Canonical unverändert, genau ein sichtbarer H1, keine Layoutregression.
+**Evidenz:** `traffic/H1_VERIFICATION_2026-07-26.md`.
 
 ## Rang 4 – Startseite zu einem klaren Such- und Nutzerhub machen
 
-**Befund:** Titel `Willkommen!`, keine Description, kein H1.
+**Erledigter technischer Teil:** Die Startseite besitzt inzwischen den SEO-Titel `Aktienanalyse, Screener & Vergleich | Schatzsuche 4.0`, eine passende Meta-Description und genau ein sichtbares H1. Offen bleibt der redaktionelle Hub-Ausbau und dessen spätere Messung.
 
 **Zielbild:** Ein klarer Einstieg rund um Aktienanalyse, Dividenden und die eigenen Werkzeuge.
 

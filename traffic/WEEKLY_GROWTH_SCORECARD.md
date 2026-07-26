@@ -45,9 +45,9 @@ Nicht verändert: URL, Canonical, Robots, Seitentitel `Willkommen!`, Navigation,
 
 Site Kit ist mit GSC und GA4 konfiguriert, aber reale GSC-Query-/Page- und GA4-Landingpage-Probes antworten HTTP 403 / `missing_required_scopes`. Deshalb liegen noch keine belastbaren Vorher-Metriken vor und es wird keine Rankingwirkung behauptet.
 
-### Offener globaler H1-Punkt
+### Globaler H1-Punkt – live gelöst und am 2026-07-26 vollständig verifiziert
 
-Das aktive BeTheme 28.2.1 rendert Seitentitel global als `<h2 class="title">`. Die Startseite ist nun durch den vorhandenen Hero-H1 sauber. Viele Artikel bleiben jedoch ohne H1; der neueste Artikel vom 2026-07-20 wurde im Abschlusscheck weiterhin mit H1-Anzahl 0 bestätigt. Ein globaler Theme-Fix benötigt BeTheme-/WordPress-Admin- oder Hosting-Dateizugriff und darf nicht durch 182 blind duplizierte Inhaltsüberschriften ersetzt werden.
+Der frühere Crawlzustand mit 182 von 184 URLs ohne H1 ist nicht mehr aktuell. Ein vollständiger Live-Crawl aller 185 eindeutigen WordPress-Sitemap-URLs ergab 0 Fehler und auf jeder URL genau ein H1. Repräsentative Beiträge, Seiten, Kategorien, Tags, Autor, Blogübersicht und Startseite wurden zusätzlich normal sowie mit Cache-Busting geprüft: HTTP 200, Canonical unverändert, jeweils genau ein H1. Ein aktueller Beitrag blieb auf Desktop 1280 × 720 und Mobil 390 × 844 sichtbar und lesbar, ohne horizontalen Überlauf oder Browserfehler. In diesem Verifikationslauf war keine WordPress-Mutation nötig, weil der globale Zustand bereits korrigiert war. Vollständige Evidenz: `traffic/H1_VERIFICATION_2026-07-26.md`.
 
 ### Reviewtermine
 
