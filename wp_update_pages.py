@@ -3,6 +3,7 @@
 WordPress Page Updater
 Updates schatzsuche40.de pages with premium content via REST API.
 """
+import os
 
 import base64
 import json
@@ -12,7 +13,7 @@ import sys
 # --- Config ---
 WP_BASE = "https://schatzsuche40.de/wp-json/wp/v2"
 WP_USER = "fhofmann"
-WP_APP_PASS = "Pm8T ZqbK 8Muk FgkC kBB0 UIN4"
+WP_APP_PASS = os.environ['SCHATZSUCHE_WP_APP_PASSWORD']
 
 # Build auth header
 credentials = f"{WP_USER}:{WP_APP_PASS}"

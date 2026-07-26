@@ -10,7 +10,7 @@ import os
 import pandas as pd
 
 WP_USER = "schatzsuche40"
-WP_APP_PASS = "R33G PRPb mqee hBGc pvKJ 51iz"
+WP_APP_PASS = os.environ['SCHATZSUCHE_WP_APP_PASSWORD']
 BASE = "https://schatzsuche40.de/wp-json/wp/v2"
 
 creds = base64.b64encode(f"{WP_USER}:{WP_APP_PASS}".encode()).decode()
