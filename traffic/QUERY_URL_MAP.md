@@ -1,7 +1,7 @@
 # Schatzsuche 4.0 – Query-/URL-Map
 
-Stand: 2026-07-21
-Status: Struktur vorbereitet; Metriken fehlen bis zum GSC-Export.
+Stand: 2026-07-27
+Status: Struktur vorbereitet; Site Kit zeigt reale Zahlen im WordPress-Dashboard, ein datierter GSC-Export liegt im Repository noch nicht vor.
 
 ## Vorläufige Intent-Eigentümer
 

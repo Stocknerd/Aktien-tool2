@@ -1,6 +1,6 @@
 # Schatzsuche 4.0 – Traffic Opportunity Backlog
 
-Stand: 2026-07-26
+Stand: 2026-07-27
 Ziel: qualifizierte Websitezugriffe erhöhen; zuerst technische Basis und bestehende Chancen, danach skalieren.
 
 ## Rang 1 – WordPress-Zugang absichern — abgeschlossen 2026-07-25
@@ -25,10 +25,10 @@ Ziel: qualifizierte Websitezugriffe erhöhen; zuerst technische Basis und besteh
 
 ## Rang 2 – GSC-/GA4-Baseline herstellen
 
-**Aktueller Blocker (erneut verifiziert 2026-07-26):** Site Kit führt Search Console und Analytics 4 als aktiv/verbunden, die Google-Nutzerautorisierung ist jedoch nicht verfügbar. Reale GSC- und GA4-Berichtsprobes liefern HTTP 403 / `missing_required_scopes`. Erforderlich ist eine einmalige menschliche Neuautorisierung in WordPress/Site Kit; Tokens werden nicht automatisiert verändert.
+**Status, korrigiert 2026-07-27:** Site Kit ist autorisiert und Frank sieht die realen Search-Console-/Analytics-Zahlen im WordPress-Dashboard. Die separaten serverseitigen Berichtsprobes dieses Repositories liefern weiterhin HTTP 403 / `missing_required_scopes`; das ist eine Grenze des automatisierten Lesewegs und kein Beleg für eine fehlende Site-Kit-Verbindung. Aktuell ist keine menschliche Neuautorisierung erforderlich.
 
 **Aktion:**
-1. GSC-Leistung 28 und 90 Tage exportieren: Seiten, Suchanfragen, Geräte, Länder.
+1. Wenn ein automatischer Datenlauf eingerichtet wird, GSC-Leistung 28 und 90 Tage kontrolliert übernehmen: Seiten, Suchanfragen, Geräte, Länder.
 2. GSC-Indexierungsbericht exportieren.
 3. GA4 organische Landingpages und Engagement ergänzen.
 4. Danach `QUERY_URL_MAP.md` und `WEEKLY_GROWTH_SCORECARD.md` mit echten Daten füllen.
@@ -51,6 +51,8 @@ Ziel: qualifizierte Websitezugriffe erhöhen; zuerst technische Basis und besteh
 ## Rang 4 – Startseite zu einem klaren Such- und Nutzerhub machen
 
 **Erledigter technischer Teil:** Die Startseite besitzt inzwischen den SEO-Titel `Aktienanalyse, Screener & Vergleich | Schatzsuche 4.0`, eine passende Meta-Description und genau ein sichtbares H1. Offen bleibt der redaktionelle Hub-Ausbau und dessen spätere Messung.
+
+**Hub-Ergänzung, live verifiziert 2026-07-27:** Zwei konkrete Wege wurden ergänzt: `Alle Depots ansehen` führt zur Depotübersicht und `Online-Leitfaden direkt lesen` zum Aktienbewertungs-Leitfaden. Eine im unabhängigen Review gefundene mobile Überbreite wurde anschließend behoben. Beide CTA-Blöcke liegen bei 320, 360 und 390 px vollständig im Viewport; die Dokumentbreite entspricht jeweils exakt der Viewportbreite. HTTP 200, Canonical, genau ein H1 und `index, follow` blieben erhalten.
 
 **Zielbild:** Ein klarer Einstieg rund um Aktienanalyse, Dividenden und die eigenen Werkzeuge.
 

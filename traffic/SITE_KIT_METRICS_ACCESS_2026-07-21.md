@@ -27,6 +27,6 @@ Zeitraum: 2026-06-22 bis 2026-07-20.
 
 Es wurden daher keine Klicks, Impressionen, CTR-, Positions-, Session- oder Engagementwerte erzeugt oder angenommen.
 
-## Erforderlicher manueller Schritt
+## Korrektur vom 2026-07-27
 
-Einmalige Google-Neuauthentifizierung in WordPress Site Kit für Administrator/User 1 mit den read-only Berechtigungen für Search Console und Analytics. Danach dieselben drei GET-Abfragen erneut ausführen und die Ergebnisse in `WEEKLY_GROWTH_SCORECARD.md` und `QUERY_URL_MAP.md` übernehmen.
+Frank hat bestätigt, dass Site Kit autorisiert ist und im WordPress-Dashboard reale Zahlen anzeigt. Die damaligen HTTP-403-Antworten belegen daher nur, dass der separate serverseitige Leseweg dieses Repositories nicht über die nötigen Scopes verfügt. Es ist keine Site-Kit-Neuauthentifizierung erforderlich. Für automatisierte Auswertungen muss später ein eigener kontrollierter Datenzugang oder ein datierter Export eingerichtet werden.

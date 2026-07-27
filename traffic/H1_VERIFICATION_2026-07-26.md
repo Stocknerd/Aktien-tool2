@@ -75,9 +75,9 @@ Browserkonsole: 0 Fehler, 0 Warnungen.
 - Klassisches Theme; WordPress-Template-REST-Liste leer
 - Der frühere globale H2-Titelzustand ist öffentlich nicht mehr vorhanden.
 - Site Kit meldet Search Console und Analytics 4 als aktiv/verbunden.
-- Die Google-Nutzerautorisierung ist weiterhin nicht verfügbar.
-- Reale GSC- und GA4-Berichtsanfragen liefern HTTP 403 / `missing_required_scopes`.
+- Frank hat am 2026-07-27 bestätigt, dass Site Kit autorisiert ist und im WordPress-Dashboard reale Zahlen zeigt.
+- Nur der separate serverseitige Berichtsweg dieses Repositories liefert HTTP 403 / `missing_required_scopes`; daraus folgt kein Site-Kit-Verbindungsfehler.
 
 ## Entscheidung
 
-Der globale H1-Punkt ist anhand des aktuellen öffentlichen Zustands abgeschlossen. Es wird keine weitere Theme-Mutation vorgenommen. Nächster Daten-Gate ist die einmalige Site-Kit-Neuautorisierung; erst danach werden Query-/URL-Prioritäten aus realen GSC-/GA4-Daten abgeleitet.
+Der globale H1-Punkt ist anhand des aktuellen öffentlichen Zustands abgeschlossen. Es wird keine weitere Theme-Mutation vorgenommen. Eine Site-Kit-Neuautorisierung ist nicht erforderlich. Query-/URL-Prioritäten werden datenbasiert ergänzt, sobald ein datierter Dashboard-Export oder ein separater automatisierter Leseweg vorliegt; bis dahin bleiben Strukturmaßnahmen ausdrücklich Arbeitshypothesen.

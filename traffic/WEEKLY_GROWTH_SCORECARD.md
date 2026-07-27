@@ -43,18 +43,29 @@ Nicht verändert: URL, Canonical, Robots, Seitentitel `Willkommen!`, Navigation,
 
 ### Messzugang
 
-Site Kit ist mit GSC und GA4 konfiguriert, aber reale GSC-Query-/Page- und GA4-Landingpage-Probes antworten HTTP 403 / `missing_required_scopes`. Deshalb liegen noch keine belastbaren Vorher-Metriken vor und es wird keine Rankingwirkung behauptet.
+Site Kit ist autorisiert; Frank sieht reale GSC-/GA4-Zahlen im WordPress-Dashboard. Nur die separaten serverseitigen Query-/Page-/Landingpage-Probes dieses Repositories antworten weiterhin HTTP 403 / `missing_required_scopes`. Das ist kein Site-Kit-Verbindungsfehler. Da noch kein datierter Export im Repository liegt, wird weiterhin keine Rankingwirkung behauptet.
 
 ### Globaler H1-Punkt – live gelöst und am 2026-07-26 vollständig verifiziert
 
 Der frühere Crawlzustand mit 182 von 184 URLs ohne H1 ist nicht mehr aktuell. Ein vollständiger Live-Crawl aller 185 eindeutigen WordPress-Sitemap-URLs ergab 0 Fehler und auf jeder URL genau ein H1. Repräsentative Beiträge, Seiten, Kategorien, Tags, Autor, Blogübersicht und Startseite wurden zusätzlich normal sowie mit Cache-Busting geprüft: HTTP 200, Canonical unverändert, jeweils genau ein H1. Ein aktueller Beitrag blieb auf Desktop 1280 × 720 und Mobil 390 × 844 sichtbar und lesbar, ohne horizontalen Überlauf oder Browserfehler. In diesem Verifikationslauf war keine WordPress-Mutation nötig, weil der globale Zustand bereits korrigiert war. Vollständige Evidenz: `traffic/H1_VERIFICATION_2026-07-26.md`.
+
+### Startseiten-Hub-Ergänzung – live verifiziert 2026-07-27
+
+- neuer Inline-CTA von der Depotsektion zu `/meine-depots/`;
+- neuer CTA vom Leitfadenbereich zu `/leitfaden-aktienbewertung/`;
+- beide exakten Selektoren, Linktexte und Ziel-URLs anonym auf normaler und cacheumgehender Startseite geprüft;
+- unabhängiges Review entdeckte eine mobile Überbreite durch `white-space` und Flex-Kind-Mindestbreiten;
+- mobile Depotsektion begrenzt und CTAs unter 640 px als eigene Blöcke dargestellt;
+- Browsernachweis bei 320, 360 und 390 px: beide CTAs vollständig sichtbar, Dokumentbreite exakt gleich Viewportbreite;
+- weiterhin HTTP 200, korrektes Canonical, genau ein H1, `index, follow` und keine Browserwarnungen;
+- hashgenaue Backups und REST-Readbacks für jede begrenzte Mutation vorhanden.
 
 ### Reviewtermine
 
 - 14 Tage: 2026-08-04
 - 28 Tage: 2026-08-18
 
-Sobald Site Kit neu autorisiert ist, vergleichen:
+Zum 14-/28-Tage-Termin anhand der sichtbaren Site-Kit-Daten oder eines kontrollierten Exports vergleichen:
 
 - Startseiten-Impressionen
 - Startseiten-Klicks
