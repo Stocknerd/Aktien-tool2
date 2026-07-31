@@ -3,7 +3,7 @@ import requests
 import tweepy
 from dotenv import load_dotenv
 
-from src.publishing_safety import explicit_public_dispatch_enabled, external_transfer_enabled
+from src.publishing_safety import external_transfer_enabled
 from src.review_packets import (
     TEXT_ONLY_POST_TYPES,
     build_review_manifest,
@@ -31,10 +31,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def live_public_dispatch_enabled():
-    return explicit_public_dispatch_enabled(
-        PREPARE_MANUAL_UPLOAD,
-        PUBLIC_PUBLISHING_ALLOWED,
-    )
+    """Legacy social APIs are retired; every Schatzsuche post stays review-only."""
+
+    return False
 
 
 def live_gdrive_transfer_enabled():

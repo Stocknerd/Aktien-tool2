@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
+import social_publisher
 
 from src.approve_canva_packet import approve_packet
 from src.native_browser_publisher import (
@@ -192,6 +193,13 @@ def test_public_dispatch_requires_two_independent_opt_ins():
     assert public_dispatch_enabled(prepare_only=True, public_allowed=True) is False
     assert public_dispatch_enabled(prepare_only=False, public_allowed=False) is False
     assert public_dispatch_enabled(prepare_only=False, public_allowed=True) is True
+
+
+def test_schatzsuche_legacy_social_api_dispatch_is_retired_even_with_live_env(monkeypatch):
+    monkeypatch.setattr(social_publisher, "PREPARE_MANUAL_UPLOAD", "false")
+    monkeypatch.setattr(social_publisher, "PUBLIC_PUBLISHING_ALLOWED", "true")
+
+    assert social_publisher.live_public_dispatch_enabled() is False
 
 
 def test_manual_mode_short_circuits_every_external_dispatch():
