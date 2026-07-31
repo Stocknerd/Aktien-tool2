@@ -27,6 +27,21 @@ def test_reel_background_is_always_normalized_to_native_vertical_size(tmp_path):
     assert REEL_FPS == 30
 
 
+def test_reel_hook_keeps_background_sharp_outside_local_text_panel(tmp_path):
+    source = tmp_path / "sharp-source.png"
+    destination = tmp_path / "prepared.png"
+    checkerboard = Image.new("RGB", (2, 2))
+    checkerboard.putdata([(0, 0, 0), (255, 255, 255), (255, 255, 255), (0, 0, 0)])
+    image = checkerboard.resize(REEL_SIZE, Image.Resampling.NEAREST)
+    image.save(source)
+
+    _prepare_reel_background(source, destination, hook_text="Chance oder Value Trap?")
+
+    with Image.open(source) as original, Image.open(destination) as rendered:
+        unaffected_box = (160, 1000, 920, 1700)
+        assert rendered.crop(unaffected_box).tobytes() == original.crop(unaffected_box).tobytes()
+
+
 def test_karaoke_layout_keeps_long_german_finance_words_inside_mobile_safe_area():
     words = [
         SimpleNamespace(word="DIVIDENDENWIEDERANLAGE"),

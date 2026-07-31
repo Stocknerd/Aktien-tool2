@@ -3,7 +3,7 @@ import requests
 import json
 import uuid
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 from moviepy import *
 import moviepy.video.fx as vfx
 import moviepy.audio.fx as afx
@@ -64,9 +64,6 @@ def _prepare_reel_background(background_image_path, destination_path, *, hook_te
         hook = str(hook_text).strip()
         if not hook or len(hook) > 40 or "\n" in hook or "\r" in hook:
             raise ValueError("Reel hook must be single-line text with at most 40 characters")
-        canvas = canvas.filter(ImageFilter.GaussianBlur(radius=10))
-        shade = Image.new("RGBA", REEL_SIZE, (4, 10, 18, 180))
-        canvas = Image.alpha_composite(canvas.convert("RGBA"), shade).convert("RGB")
         draw = ImageDraw.Draw(canvas)
         hook_font_path = FONT_PATHS.get("Outfit-Bold.ttf", "arial.ttf")
         lines = None
@@ -85,6 +82,17 @@ def _prepare_reel_background(background_image_path, destination_path, *, hook_te
             for line in lines
         ) + 18
         start_y = 450 - ((len(lines) - 1) * line_height // 2)
+        panel_top = start_y - (line_height // 2) - 34
+        panel_bottom = start_y + ((len(lines) - 1) * line_height) + (line_height // 2) + 34
+        hook_panel = Image.new("RGBA", REEL_SIZE, (0, 0, 0, 0))
+        panel_draw = ImageDraw.Draw(hook_panel)
+        panel_draw.rounded_rectangle(
+            (55, panel_top, REEL_SIZE[0] - 55, panel_bottom),
+            radius=34,
+            fill=(4, 10, 18, 165),
+        )
+        canvas = Image.alpha_composite(canvas.convert("RGBA"), hook_panel).convert("RGB")
+        draw = ImageDraw.Draw(canvas)
         for index, line in enumerate(lines):
             draw.text(
                 (REEL_SIZE[0] // 2, start_y + index * line_height),
