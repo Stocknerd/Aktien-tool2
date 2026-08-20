@@ -386,6 +386,7 @@ def build_reel_mp4(
     duration=10.0,
     mood=None,
     hook_text=None,
+    music_required=False,
 ):
     """
     Creates a 9:16 vertical video Reel:
@@ -394,6 +395,7 @@ def build_reel_mp4(
     - Pan/Zoom slow animation on background image
     - Double golden border drawn on the moving frame
     - Background music overlay & audio fade
+    - If music_required=True: fail closed instead of emitting a Reel without music
     - Progress bar at the bottom
     """
     temp_dir = os.path.join(BASE_DIR, "temp_assets")
@@ -488,7 +490,14 @@ def build_reel_mp4(
             else:
                 video_clip = video_clip.with_audio(bg_music)
         except Exception as e:
+            if music_required:
+                raise RuntimeError("Required background music could not be mixed") from e
             print(f"WARNING: Background music mix failed: {e}")
+    elif music_required:
+        raise RuntimeError("Required background music is unavailable")
+
+    if music_required and video_clip.audio is None:
+        raise RuntimeError("Required background music did not produce an audio stream")
             
     # Apply fade transitions
     video_clip = video_clip.with_effects([vfx.CrossFadeIn(0.4), vfx.CrossFadeOut(0.4)])
@@ -511,6 +520,28 @@ def build_reel_mp4(
         print(f"WARNING: Clean-up error: {e}")
 
     return output_mp4_path
+
+
+def build_music_only_reel(
+    background_image_path,
+    output_mp4_path,
+    *,
+    duration=15.0,
+    mood=None,
+):
+    """Create a strict picture-and-music Reel without voice, subtitles or text overlays."""
+
+    return build_reel_mp4(
+        script_text=None,
+        background_image_path=background_image_path,
+        output_mp4_path=output_mp4_path,
+        silent=True,
+        duration=duration,
+        mood=mood,
+        hook_text=None,
+        music_required=True,
+    )
+
 
 if __name__ == "__main__":
     # Test script for video synthesis

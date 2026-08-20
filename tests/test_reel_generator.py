@@ -1,13 +1,17 @@
+import ast
+from pathlib import Path
 from types import SimpleNamespace
 
 from PIL import Image
 
+import src.reel_generator as reel_generator
 from src.reel_generator import (
     REEL_FPS,
     REEL_SAFE_X,
     REEL_SIZE,
     _layout_karaoke_words,
     _prepare_reel_background,
+    build_music_only_reel,
 )
 
 
@@ -62,3 +66,44 @@ def test_karaoke_layout_keeps_long_german_finance_words_inside_mobile_safe_area(
     for item in layout["items"]:
         assert item["left"] >= REEL_SAFE_X
         assert item["right"] <= REEL_SIZE[0] - REEL_SAFE_X
+
+
+def test_music_only_reel_never_requests_voice_or_karaoke(monkeypatch):
+    captured = {}
+
+    def fake_build_reel_mp4(**kwargs):
+        captured.update(kwargs)
+        return kwargs["output_mp4_path"]
+
+    monkeypatch.setattr(reel_generator, "build_reel_mp4", fake_build_reel_mp4)
+
+    result = build_music_only_reel(
+        background_image_path="picture.png",
+        output_mp4_path="reel.mp4",
+        duration=15.0,
+        mood="happy",
+    )
+
+    assert result == "reel.mp4"
+    assert captured["script_text"] is None
+    assert captured["silent"] is True
+    assert captured["music_required"] is True
+    assert captured["hook_text"] is None
+
+
+def test_ai_track_is_wired_to_music_only_reels():
+    source = Path("src/social_reels_autoposter.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    run_track = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "run_track_ai"
+    )
+    call_names = {
+        node.func.id
+        for node in ast.walk(run_track)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+
+    assert "build_music_only_reel" in call_names
+    assert "build_reel_mp4" not in call_names

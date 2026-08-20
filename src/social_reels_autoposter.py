@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.config import BASE_DIR, COLORS, COLORS_HEX
 from src.graphic_generator import render_viral_list, render_dividend_calendar, render_pure_ai_infographic
-from src.reel_generator import build_reel_mp4
+from src.reel_generator import build_music_only_reel
 from src.content_generator import generate_structured_content
 from src.content_strategy import PRIORITY_EVERGREEN_TOPICS, choose_automated_topic
 from src.canva_packet import create_personal_canva_packet_from_json
@@ -440,7 +440,7 @@ def run_track_ai(topic=None):
     """
     Track 3: AI Infographics (3 times a week, Tue/Thu/Sat at 8:00 AM).
     Generates dynamic educational content via GPT, renders "Elterngeld"-style facts list,
-    synthesizes a Full Voiceover Reel (speech, whisper karaoke subtitles),
+    synthesizes a picture-and-music Reel without voice or subtitles,
     and posts to Instagram Reels + YouTube Shorts.
     """
     print("🚀 TRACK 3: RUNNING AI INFOGRAPHIC (EVERGREEN) PIPELINE...")
@@ -527,16 +527,13 @@ def run_track_ai(topic=None):
         detected_mood = "chill"
     print(f"AI TRACK: Dynamic background music mood detected: {detected_mood}")
 
-    # 3. Render Reel Video with Voiceover and Karaoke Subtitles
-    print("AI TRACK: Rendering Reel video with voiceover and karaoke subtitles...")
-    build_reel_mp4(
-        script_text=content.get("reel_script"),
+    # 3. Render a strict picture-and-music Reel without TTS, subtitles or overlays.
+    print("AI TRACK: Rendering picture-and-music Reel without voice or subtitles...")
+    build_music_only_reel(
         background_image_path=image_path,
         output_mp4_path=video_path,
-        silent=False,
         duration=15.0,
         mood=detected_mood,
-        hook_text=content.get("headline"),
     )
     
     # 4. Route all preparation/publication through one central fail-closed gate.
