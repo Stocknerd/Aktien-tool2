@@ -28,7 +28,7 @@ TARGET_CONTRACTS: dict[str, dict[str, str]] = {
         "page_name": "Schatzsuche4.0",
         "asset_id": "112395201353218",
         "business_id": "625626605438788",
-        "mode": "public_after_separate_draft_verification",
+        "mode": "public_after_separate_preflight",
     },
     "meta_instagram": {
         "account_name": "schatzsuche4.0",

@@ -53,6 +53,12 @@ def test_stock_packet_manifest_is_schema3_and_fail_closed(tmp_path):
         "meta_facebook",
         "meta_instagram",
     ]
+    assert manifest["publishing"]["targets"]["meta_facebook"]["mode"] == (
+        "public_after_separate_preflight"
+    )
+    assert manifest["publishing"]["targets"]["meta_instagram"]["mode"] == (
+        "public_after_separate_preflight"
+    )
     assert manifest["publishing"]["blocked_targets"] == {
         "pinterest": "stable target identity is not configured in the packet contract",
         "x": "stable target identity is not configured in the packet contract",
