@@ -1,6 +1,6 @@
 # Schatzsuche 4.0 – Traffic Opportunity Backlog
 
-Stand: 2026-07-27
+Stand: 2026-08-18
 Ziel: qualifizierte Websitezugriffe erhöhen; zuerst technische Basis und bestehende Chancen, danach skalieren.
 
 ## Rang 1 – WordPress-Zugang absichern — abgeschlossen 2026-07-25
@@ -23,17 +23,18 @@ Ziel: qualifizierte Websitezugriffe erhöhen; zuerst technische Basis und besteh
 
 **Wirkung:** Der unmittelbar ausnutzbare öffentliche Zugang ist geschlossen; lokale und serverseitige Laufwege beziehen Secrets nicht mehr aus dem Quellcode.
 
-## Rang 2 – GSC-/GA4-Baseline herstellen
+## Rang 2 – GSC-/GA4-Baseline herstellen — abgeschlossen 2026-07-29
 
-**Status, korrigiert 2026-07-27:** Site Kit ist autorisiert und Frank sieht die realen Search-Console-/Analytics-Zahlen im WordPress-Dashboard. Die separaten serverseitigen Berichtsprobes dieses Repositories liefern weiterhin HTTP 403 / `missing_required_scopes`; das ist eine Grenze des automatisierten Lesewegs und kein Beleg für eine fehlende Site-Kit-Verbindung. Aktuell ist keine menschliche Neuautorisierung erforderlich.
+**Umgesetzt und verifiziert:** Dediziertes Read-only-Servicekonto für GA4-Property `299646271` und die Search-Console-Property `https://schatzsuche40.de/` eingerichtet. Echte 7-/28-/90-Tage-Berichte einschließlich Vorperioden, Seiten, Queries, Geräte, Länder, Kanäle und organische Landingpages liefern HTTP 200.
 
-**Aktion:**
-1. Wenn ein automatischer Datenlauf eingerichtet wird, GSC-Leistung 28 und 90 Tage kontrolliert übernehmen: Seiten, Suchanfragen, Geräte, Länder.
-2. GSC-Indexierungsbericht exportieren.
-3. GA4 organische Landingpages und Engagement ergänzen.
-4. Danach `QUERY_URL_MAP.md` und `WEEKLY_GROWTH_SCORECARD.md` mit echten Daten füllen.
+**Artefakte:**
 
-**Wirkung:** Zeigt Near-Wins, CTR-Probleme, Kannibalisierung und die beste nächste URL.
+- Rohdaten: `traffic/exports/TRAFFIC_EXPORT_2026-07-29.json`
+- Bewertung: `traffic/TRAFFIC_ASSESSMENT_2026-07-29.md`
+- aktualisierte Query-/URL-Map: `traffic/QUERY_URL_MAP.md`
+- aktualisierte Scorecard: `traffic/WEEKLY_GROWTH_SCORECARD.md`
+ 
+**Datenentscheidung:** Sichtbarkeit wächst, Suchtraffic noch nicht. Nächste Reihenfolge: Value-Investing-Snippet als kleiner Near-Win (abgeschlossen 2026-08-10); Dividendenwachstum-Hub intern stärken (abgeschlossen 2026-08-11); Einsteiger-Guide-Snippet optimieren (abgeschlossen 2026-08-12); Kennzahlen-Hub-Linkstärkung (abgeschlossen 2026-08-13); Bodo Schäfer Buchrezensions-Snippet (abgeschlossen 2026-08-14); Andre Kostolany Buchrezensions-Snippet (abgeschlossen 2026-08-15); Aktien-Vergleichstool-Snippet (abgeschlossen 2026-08-16); Altersvorsorgedepot-Snippet (abgeschlossen 2026-08-17); Aktien-Analyse-Tool-Snippet (abgeschlossen 2026-08-19); Dividenden-Rechner-Snippet (abgeschlossen 2026-08-20); Dividenden-Kalender-Snippet (abgeschlossen 2026-08-21); Depot- und Broker-Vergleich-Snippet (abgeschlossen 2026-08-22); P2P-Plattformen-Snippet (abgeschlossen 2026-08-23); Aktien-bewerten-Leitfaden-Snippet (abgeschlossen 2026-08-24); Immobilien-investieren-Snippet (abgeschlossen 2026-08-25); Meine-Depots-Snippet (abgeschlossen 2026-08-26); KGV-Einsteigerseite-Snippet (abgeschlossen 2026-08-27); P2P-Dashboard-Snippet (abgeschlossen 2026-08-28); Deaktivierung KGV-Duplikat (abgeschlossen 2026-08-29). Keine blinde Massenkonsolidierung.
 
 ## Rang 3 – globales H1-/Template-Problem beheben — live abgeschlossen, verifiziert 2026-07-26
 
@@ -48,37 +49,31 @@ Ziel: qualifizierte Websitezugriffe erhöhen; zuerst technische Basis und besteh
 
 **Evidenz:** `traffic/H1_VERIFICATION_2026-07-26.md`.
 
-## Rang 4 – Startseite zu einem klaren Such- und Nutzerhub machen
+## Rang 4 – Startseite zu einem klaren Such- und Nutzerhub machen — abgeschlossen (Review am 2026-08-18)
 
-**Erledigter technischer Teil:** Die Startseite besitzt inzwischen den SEO-Titel `Aktienanalyse, Screener & Vergleich | Schatzsuche 4.0`, eine passende Meta-Description und genau ein sichtbares H1. Offen bleibt der redaktionelle Hub-Ausbau und dessen spätere Messung.
+**Erledigter technischer Teil & Hub-Ergänzung:** Startseite besitzt den SEO-Titel `Aktienanalyse, Screener & Vergleich | Schatzsuche 4.0`, eine Meta-Description, genau ein H1 sowie mobile-optimierte CTAs zu den Hauptbereichen.
 
-**Hub-Ergänzung, live verifiziert 2026-07-27:** Zwei konkrete Wege wurden ergänzt: `Alle Depots ansehen` führt zur Depotübersicht und `Online-Leitfaden direkt lesen` zum Aktienbewertungs-Leitfaden. Eine im unabhängigen Review gefundene mobile Überbreite wurde anschließend behoben. Beide CTA-Blöcke liegen bei 320, 360 und 390 px vollständig im Viewport; die Dokumentbreite entspricht jeweils exakt der Viewportbreite. HTTP 200, Canonical, genau ein H1 und `index, follow` blieben erhalten.
+**28-Tage-Review (2026-08-18):** Die durchschnittliche Suchposition verbesserte sich deutlich auf 1,85 (Brand-Rankings), aber Klicks (6 in 28 Tagen) und Impressionen (13) blieben nahezu unverändert minimal. Die organischen Einstiege über die Homepage sind sehr gering, und die Verweildauer sank.
 
-**Zielbild:** Ein klarer Einstieg rund um Aktienanalyse, Dividenden und die eigenen Werkzeuge.
+**Entscheidung:** `deprioritize / wait`. Keine weiteren Ressourcen auf der Startseite einsetzen, da die Brand-Sichtbarkeit voll stabilisiert ist, aber kein nennenswerter informationeller Such-Traffic über die Homepage generiert werden kann. Der Fokus wechselt vollständig auf informationelle Unterseiten und Themenhubs.
 
-**Aktion:**
-- präziser SEO-Titel und H1
-- verständliches Nutzenversprechen oberhalb des Folds
-- direkte Wege zu Aktien-Screener, Vergleich, Dividendenkalender, Aktienbewertungs-Leitfaden und Depotupdates
-- 3–5 redaktionell ausgewählte Grundlagen statt chronologischer Beliebigkeit
-- passende Meta-Description
-
-**Messung:** GSC-Impressionen/CTR der Startseite nach 14 und 28 Tagen; Klicks auf Kernwerkzeuge in GA4.
 
 ## Rang 5 – dauerhafte Themenhubs stärken
 
 Priorität nach vorhandener Site-Struktur, bis GSC eine andere Reihenfolge beweist:
 
-1. **Aktien bewerten / Kennzahlen**
-   - Leitfaden Aktienbewertung
-   - KGV, KUV, KBV, PEG
-   - fünf wichtigste Kennzahlen
+1. **Aktien bewerten / Kennzahlen** (intern gestärkt am 2026-08-13)
+   - Leitfaden Aktienbewertung (Hub-Ziel)
+   - KGV (interner Link am 2026-08-13 aus Post 2062 gesetzt; Duplikat ID 2068 am 2026-08-29 auf `draft` gesetzt)
+   - KUV, KBV, PEG (interner Link am 2026-08-13 aus Post 2067 gesetzt)
+   - fünf wichtigste Kennzahlen (interner Link am 2026-08-13 aus Post 2064 gesetzt)
    - Aktienvergleich und Screener
+
 2. **Dividenden**
    - Dividendenwachstum
    - Dividendenrendite
-   - Dividendenkalender
-   - Dividend-Rechner
+   - Dividendenkalender (SEO-optimiert am 2026-08-21)
+   - Dividend-Rechner (SEO-optimiert am 2026-08-20)
    - ausgewählte, wirklich unterschiedliche Aktienanalysen
 3. **Depot und Strategie**
    - Depotübersicht als Hub
