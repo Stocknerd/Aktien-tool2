@@ -1,6 +1,7 @@
 import os
 import requests
 import io
+import re
 from PIL import Image
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -242,46 +243,116 @@ def get_social_caption(stock_names_str, excerpt):
         print(f"Error generating social caption: {e}")
         return f"📊 Neue Aktien-Analyse online! Wir beleuchten die Fundamentaldaten von {stock_names_str} kritisch im Detail. Jetzt auf schatzsuche40.de lesen.\n\nHinweis: Keine Anlageberatung. #Aktien #Börse"
 
+TOOL_CAPTION_DISCLAIMER = "Hinweis: Keine Anlageberatung. Bilde dir eine eigene Meinung."
+TOOL_CAPTION_CTA = "Alle Daten & das Analysetool: schatzsuche40.de."
+TOOL_CAPTION_MAX_CHARS = 280
+
+
+def _bounded_caption_label(value, limit):
+    label = " ".join(str(value).split())
+    if len(label) <= limit:
+        return label
+    return label[: max(0, limit - 1)].rstrip() + "…"
+
+
+def _tool_discussion_question(is_comparison, names):
+    label = " ".join(str(names).split())
+    if is_comparison:
+        candidates = re.split(r"\s+vs\.?\s+", label, maxsplit=1, flags=re.IGNORECASE)
+        if len(candidates) == 2:
+            left = _bounded_caption_label(candidates[0], 33)
+            right = _bounded_caption_label(candidates[1], 33)
+            label = f"{left} vs. {right}"
+        else:
+            label = _bounded_caption_label(label, 70)
+        return f"Wer ist für dich aktuell stärker: {label}?"
+    label = _bounded_caption_label(label, 70)
+    return f"Chance oder Risiko: Wie bewertest du {label}?"
+
+
+def _ensure_tool_discussion_question(caption, is_comparison, names):
+    """Bind a concrete conversation prompt and final disclaimer to stock copy."""
+    text = str(caption or "").strip()
+    disclaimer_match = re.search(
+        r"(?:^|\n)[^\w\n]{0,8}(?:(?:hinweis|disclaimer)\s*:\s*)?"
+        r"(?:dies\s+ist\s+)?keine\s+anlageberatung\b[^\n]*\Z",
+        text,
+        flags=re.IGNORECASE,
+    )
+    body = text[:disclaimer_match.start()].strip() if disclaimer_match else text
+    body_segments = re.split(r"(?<=[.!?])(?:\s+|\n+)|\n+", body)
+    body = " ".join(
+        segment.strip()
+        for segment in body_segments
+        if segment.strip() and "schatzsuche40.de" not in segment.lower()
+    )
+    question = _tool_discussion_question(is_comparison, names)
+
+    reserved = len(TOOL_CAPTION_CTA) + len(question) + len(TOOL_CAPTION_DISCLAIMER) + 6
+    body_budget = max(0, TOOL_CAPTION_MAX_CHARS - reserved)
+    if len(body) > body_budget:
+        body = body[: max(0, body_budget - 1)].rstrip(" ,;:-") + "…"
+
+    parts = [
+        part
+        for part in (body, TOOL_CAPTION_CTA, question, TOOL_CAPTION_DISCLAIMER)
+        if part
+    ]
+    return "\n\n".join(parts)
+
+
 def get_tool_promotion_caption(is_comparison, names, symbols, financial_texts):
     """Generiert einen kritischen Social-Media-Post für das tägliche Standalone-Feature (mit Link zum Tool)."""
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-         return f"Aktuelle Kennzahlen für {names}. Analysiere selbst auf schatzsuche40.de!\n\nHinweis: Keine Anlageberatung."
-         
+        fallback = (
+            f"📊 Aktuelle Kennzahlen für {names}. "
+            "Mehr Analysen & dieses Tool findest du auf schatzsuche40.de."
+        )
+        return _ensure_tool_discussion_question(fallback, is_comparison, names)
+
     if is_comparison:
         prompt_type = f"den Vergleich der fundamentalen Daten der Aktien {names} ({symbols})"
     else:
         prompt_type = f"die aktuelle Bewertung der Aktie {names} ({symbols})"
-        
+
     prompt = f"""
     Schreibe einen fesselnden Instagram/Facebook-Post (max 280 Zeichen) über {prompt_type}.
-    
-    Nutze dafür folgende Daten als Grundlage: 
+
+    Nutze dafür folgende Daten als Grundlage:
     {financial_texts}
-    
+
     Achte auf folgenden Aufbau:
     1. Hook: Beginne mit einem starken Satz über die aktuelle Marktlage oder die Bewertung dieser speziellen Aktien.
     2. Insight: Gib einen kurzen, kritischen Einblick basierend auf den Zahlen.
     3. CTA: "Mehr Analysen & dieses Tool findest du auf schatzsuche40.de"
-    
+    4. Diskussionsfrage: Beende den Nutzteil mit einer konkreten Bewertungs- oder Auswahlfrage zur genannten Aktie bzw. zum Vergleich.
+
     Vorgaben:
     - Bleibe sachlich und seriös, vermeide Übertreibungen.
-    - Füge als LETZTEN Satz isoliert den Disclaimer hinzu: "Hinweis: Keine Anlageberatung. Bilde dir eine eigene Meinung."
+    - Füge als LETZTEN Satz isoliert den Disclaimer hinzu: "{TOOL_CAPTION_DISCLAIMER}"
     - Nutze 2-4 Emojis passend zum Thema Börse.
     - Nutze 3-5 relevante Hashtags.
     - Texte in deutscher Sprache.
     """
-    
+
     try:
         client = OpenAI(api_key=api_key)
         response = client.chat.completions.create(
           model="gpt-5.4-mini",
           messages=[{"role": "user", "content": prompt}]
         )
-        return response.choices[0].message.content.strip()
+        generated = response.choices[0].message.content
+        if not isinstance(generated, str) or not generated.strip():
+            raise ValueError("OpenAI returned an empty promotion caption")
+        return _ensure_tool_discussion_question(generated, is_comparison, names)
     except Exception as e:
         print(f"Error generating promotion caption: {e}")
-        return f"🧐 {names} ({symbols}) im Check. Wie sind die aktuellen KGV & Margen?\n\n👉 Alle Daten & das Analysetool: schatzsuche40.de\n\nHinweis: Keine Anlageberatung. #Investieren #Börse"
+        fallback = (
+            f"🧐 {names} ({symbols}) im Check. "
+            "Alle Daten & das Analysetool: schatzsuche40.de."
+        )
+        return _ensure_tool_discussion_question(fallback, is_comparison, names)
 
 if __name__ == "__main__":
     # Test block
