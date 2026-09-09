@@ -172,7 +172,7 @@
   </style>
 </head>
 
-<body>
+<body data-embedded="{{ '1' if is_embedded else '0' }}" data-s40-page="analysis_completed" data-s40-completion-id="{{ completion_id|default('') }}">
   <nav class="navbar">
     <div class="container d-flex justify-content-between align-items-center">
       <a href="/?edit=1&ticker={{ ticker }}{% if is_embedded %}&embed=1{% endif %}" class="btn-back">
@@ -384,6 +384,7 @@
 
     window.addEventListener('DOMContentLoaded', checkWatchlistStatus);
   </script>
+  {% include '_tracking.html' %}
 </body>
 
 </html>

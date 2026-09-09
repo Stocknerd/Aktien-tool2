@@ -1,6 +1,6 @@
 from flask import (
     Flask, render_template, request, jsonify, Response,
-    redirect, url_for, send_from_directory, flash, render_template_string
+    redirect, url_for, send_from_directory, flash, render_template_string, session
 )
 import os, pandas as pd, io, time
 import saas_logic
@@ -48,6 +48,42 @@ def build_analysis_title(company_name, ticker, max_length=60):
     if len(company_name) > available_company_length:
         company_name = company_name[: available_company_length - 1].rstrip(" .,-_") + "…"
     return f"{company_name}{analysis_suffix}"
+
+
+_TRACKED_COMPLETION_EVENTS = frozenset({'analysis_completed', 'comparison_completed'})
+
+
+def mark_pending_completion(event_name, result_id):
+    """Bind one completion event to the result created in this browser session."""
+    if event_name not in _TRACKED_COMPLETION_EVENTS:
+        raise ValueError(f"Unsupported completion event: {event_name}")
+    key = f's40_pending_{event_name}'
+    result_id = os.path.basename(str(result_id))
+    raw_pending = session.get(key, [])
+    pending = [raw_pending] if isinstance(raw_pending, str) else list(raw_pending)
+    pending = [os.path.basename(str(item)) for item in pending if item]
+    if result_id and result_id not in pending:
+        pending.append(result_id)
+    session[key] = pending[-8:]
+
+
+def consume_pending_completion(event_name, result_id):
+    """Consume a matching completion marker exactly once."""
+    if event_name not in _TRACKED_COMPLETION_EVENTS:
+        return ''
+    key = f's40_pending_{event_name}'
+    expected = os.path.basename(str(result_id))
+    raw_pending = session.get(key, [])
+    pending = [raw_pending] if isinstance(raw_pending, str) else list(raw_pending)
+    pending = [os.path.basename(str(item)) for item in pending if item]
+    if not expected or expected not in pending:
+        return ''
+    pending.remove(expected)
+    if pending:
+        session[key] = pending
+    else:
+        session.pop(key, None)
+    return expected
 
 
 def get_effective_token():
@@ -686,8 +722,11 @@ def generate_image():
     saas_logic.log_usage(token, "render")
 
     is_embedded_form = request.form.get('is_embedded') == '1'
+    is_embedded_result = is_embedded_form or request.args.get('embed') == '1'
+    if not is_embedded_result:
+        mark_pending_completion('analysis_completed', filename)
     kwargs = {'filename': filename, 'ticker': ticker}
-    if is_embedded_form or request.args.get('embed') == '1':
+    if is_embedded_result:
         kwargs['embed'] = '1'
     return redirect(url_for('display_result', **kwargs))
 
@@ -712,6 +751,7 @@ def upload_background():
 @app.route('/result/<path:filename>')
 def display_result(filename):
     is_embedded = request.args.get('embed') == '1'
+    completion_id = '' if is_embedded else consume_pending_completion('analysis_completed', filename)
     ticker = request.args.get('ticker', '').upper()
     if not ticker:
         base = os.path.basename(filename)
@@ -746,6 +786,7 @@ def display_result(filename):
         related_stocks=related_stocks,
         ai_verdict=ai_verdict,
         is_embedded=is_embedded,
+        completion_id=completion_id,
         stock_data=stock_data
     )
 
@@ -881,11 +922,13 @@ def generate_compare():
 
     saas_logic.log_usage(token, "compare")
 
-    is_embedded = request.form.get('embed') == '1'
+    is_embedded = request.form.get('embed') == '1' or request.args.get('embed') == '1'
+    if not is_embedded:
+        mark_pending_completion('comparison_completed', fname)
     kwargs = {'filename': fname, 't1': t1, 't2': t2}
     if m_param:
         kwargs['m_param'] = m_param
-    if is_embedded or request.args.get('embed') == '1':
+    if is_embedded:
         kwargs['embed'] = '1'
     return redirect(url_for('compare_result', **kwargs))
 
@@ -898,10 +941,19 @@ def compare_result(filename):
         return redirect(target, code=301)
 
     is_embedded = request.args.get('embed') == '1'
+    completion_id = '' if is_embedded else consume_pending_completion('comparison_completed', filename)
     t1 = request.args.get('t1', '')
     t2 = request.args.get('t2', '')
     m_param = request.args.get('m_param', '')
-    return render_template('compare_result.html', fname=filename, t1=t1, t2=t2, m_param=m_param, is_embedded=is_embedded)
+    return render_template(
+        'compare_result.html',
+        fname=filename,
+        t1=t1,
+        t2=t2,
+        m_param=m_param,
+        is_embedded=is_embedded,
+        completion_id=completion_id,
+    )
 
 # ─── SEO Sitemap (Hebel 1) ─────────────────────────────────
 @app.route('/sitemap.xml')

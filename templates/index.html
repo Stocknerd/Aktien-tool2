@@ -231,7 +231,7 @@
   </style>
 </head>
 
-<body>
+<body data-embedded="{{ '1' if is_embedded else '0' }}" data-s40-page="analysis_start">
   <div id="loader-overlay">
     <div class="spinner-premium"></div>
     <div class="loading-text">Analyse wird erstellt...</div>
@@ -308,7 +308,7 @@
     {% endif %}
     {% endwith %}
 
-    <form class="glass-card p-4 mx-auto shadow" style="max-width:640px" method="post"
+    <form class="glass-card p-4 mx-auto shadow" style="max-width:640px" method="post" data-s40-event="analysis_started"
       action="{{ url_for('generate_image') }}" id="mainForm" data-is-embedded="{{ '1' if is_embedded else '0' }}"
       data-defaults='{{ default_metrics | tojson }}' data-descriptions='{{ metric_descriptions | tojson }}'>
       
@@ -324,7 +324,7 @@
           </button>
           {% endif %}
         </div>
-        <input id="stock-search" type="text" class="form-control mt-2" placeholder="z.B. Apple, Microsoft, NVIDIA..." autocomplete="off" value="{% if ticker %}{{ company_name or ticker }}{% endif %}">
+        <input id="stock-search" type="text" class="form-control mt-2" placeholder="z.B. Apple, Microsoft, NVIDIA..." autocomplete="off" required value="{% if ticker %}{{ company_name or ticker }}{% endif %}">
         <ul id="suggestions" class="list-group position-absolute top-100 start-0 w-100 shadow-lg mt-1"></ul>
         <input type="hidden" name="ticker" id="ticker" value="{{ ticker if ticker else '' }}">
       </div>
@@ -619,7 +619,7 @@
       if (shouldAuto) {
         window.addEventListener('DOMContentLoaded', () => {
           showLoader();
-          setTimeout(() => document.getElementById('mainForm').submit(), 500);
+          setTimeout(() => document.getElementById('mainForm').requestSubmit(), 500);
         });
       }
     }
@@ -641,7 +641,7 @@
         if (parts.length > 1) {
           tickerInput.value = parts[0].trim().toUpperCase();
           showLoader();
-          this.submit();
+          this.requestSubmit();
           return;
         }
         
@@ -650,7 +650,7 @@
         if (exactSym) {
           tickerInput.value = exactSym.symbol;
           showLoader();
-          this.submit();
+          this.requestSubmit();
           return;
         }
         
@@ -664,7 +664,7 @@
         if (nameMatch) {
           tickerInput.value = nameMatch.symbol;
           showLoader();
-          this.submit();
+          this.requestSubmit();
           return;
         }
         
@@ -676,7 +676,7 @@
             const matches = await res.json();
             if (matches.length > 0) {
               tickerInput.value = matches[0].symbol;
-              this.submit();
+              this.requestSubmit();
               return;
             }
           }
@@ -686,7 +686,7 @@
         
         // 5. Fallback: Use the raw query
         tickerInput.value = searchVal;
-        this.submit();
+        this.requestSubmit();
         return;
       }
       
@@ -1372,6 +1372,7 @@
       };
     })();
   </script>
+  {% include '_tracking.html' %}
 </body>
 
 </html>

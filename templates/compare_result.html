@@ -23,7 +23,7 @@
         {% endif %}
     </style>
 </head>
-<body>
+<body data-embedded="{{ '1' if is_embedded else '0' }}" data-s40-page="comparison_completed" data-s40-completion-id="{{ completion_id|default('') }}">
     <img src="{{ url_for('generated_file', filename=fname) }}" class="result-img" alt="Vergleich {{ t1 }} vs {{ t2 }}">
     
     <!-- Interactive TradingView Side-by-Side Charts Widget -->
@@ -118,5 +118,6 @@
         }
         window.onload = postHeight;
     </script>
+    {% include '_tracking.html' %}
 </body>
 </html>

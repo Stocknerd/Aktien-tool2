@@ -94,6 +94,34 @@
 
   const cookieMatch = document.cookie.match(new RegExp('(?:^|; )' + storageKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
   const storedConsent = localStorage.getItem(storageKey) || (cookieMatch ? decodeURIComponent(cookieMatch[1]) : '');
+  let currentConsent = storedConsent;
+  const attributionStorageKey = 's40_social_attribution';
+  const attributionKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+
+  function currentUrlAttribution() {
+    const params = new URLSearchParams(window.location.search);
+    const attribution = {};
+    attributionKeys.forEach((key) => {
+      const value = (params.get(key) || '').trim();
+      if (value) attribution[key] = value.slice(0, 120);
+    });
+    return attribution;
+  }
+
+  function persistAttribution() {
+    if (currentConsent !== 'granted') return {};
+    const current = currentUrlAttribution();
+    try {
+      if (Object.keys(current).length) {
+        sessionStorage.setItem(attributionStorageKey, JSON.stringify(current));
+        return current;
+      }
+      const saved = JSON.parse(sessionStorage.getItem(attributionStorageKey) || '{}');
+      return saved && typeof saved === 'object' ? saved : {};
+    } catch (_error) {
+      return current;
+    }
+  }
 
   const setCookie = (value) => {
     document.cookie = `${storageKey}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
@@ -150,6 +178,40 @@
     document.head.appendChild(script);
   }
 
+  window.s40TrackEvent = function (eventName, parameters = {}) {
+    if (currentConsent !== 'granted' || !hasAnalyticsConfig || !/^[a-z][a-z0-9_]{1,39}$/.test(eventName)) {
+      return false;
+    }
+    ensureDataLayer();
+    window.gtag('event', eventName, {
+      ...persistAttribution(),
+      tool_page: document.body.dataset.s40Page || 'unknown',
+      page_path: window.location.pathname,
+      ...parameters
+    });
+    return true;
+  };
+
+  function trackPageMilestone() {
+    const page = document.body.dataset.s40Page || '';
+    const completionId = document.body.dataset.s40CompletionId || '';
+    if (!page.endsWith('_completed') || !completionId || window.__s40MilestoneTracked) return;
+    const completionKey = `s40_completion:${page}:${completionId}`;
+    try {
+      if (sessionStorage.getItem(completionKey) === '1') return;
+    } catch (_error) {
+      // Continue with the in-document guard when storage is unavailable.
+    }
+    if (window.s40TrackEvent(page, { result_id: completionId })) {
+      window.__s40MilestoneTracked = true;
+      try {
+        sessionStorage.setItem(completionKey, '1');
+      } catch (_error) {
+        // The in-document guard still prevents duplicate sends on this page.
+      }
+    }
+  }
+
   function loadAnalytics() {
     if (!hasAnalyticsConfig || window.__qcAnalyticsLoaded) return;
     window.__qcAnalyticsLoaded = true;
@@ -168,9 +230,12 @@
         send_page_view: true
       });
     }
+    persistAttribution();
+    trackPageMilestone();
   }
 
   function setConsent(value) {
+    currentConsent = value;
     localStorage.setItem(storageKey, value);
     setCookie(value);
     banner.hidden = true;
@@ -190,6 +255,14 @@
 
   banner.querySelectorAll('[data-qc-consent]').forEach((button) => {
     button.addEventListener('click', () => setConsent(button.dataset.qcConsent));
+  });
+
+  document.addEventListener('submit', (event) => {
+    const form = event.target.closest && event.target.closest('form[data-s40-event]');
+    if (!form || event.defaultPrevented || !form.checkValidity()) return;
+    window.s40TrackEvent(form.dataset.s40Event, {
+      form_id: form.id || 'unnamed'
+    });
   });
 })();
 </script>
