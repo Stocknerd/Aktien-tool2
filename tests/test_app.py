@@ -122,6 +122,26 @@ def test_compare_host_canonical_redirect_and_page(client):
     assert b'Aktien Vergleich' in page_response.data
 
 
+def test_compare_host_keeps_search_endpoints_same_origin(client):
+    """Autocomplete must not cross the compare/tool origin boundary."""
+    search_all = client.get(
+        '/api/search-all', base_url='https://compare.schatzsuche40.de'
+    )
+    legacy_search = client.get(
+        '/search?q=AAPL', base_url='https://compare.schatzsuche40.de'
+    )
+    unrelated_tool = client.get(
+        '/screener', base_url='https://compare.schatzsuche40.de'
+    )
+
+    assert search_all.status_code == 200
+    assert search_all.is_json
+    assert legacy_search.status_code == 200
+    assert legacy_search.is_json
+    assert unrelated_tool.status_code == 301
+    assert unrelated_tool.headers['Location'] == 'https://tool.schatzsuche40.de/screener'
+
+
 def test_analysis_title_keeps_brand_for_short_names():
     title = build_analysis_title('Apple Inc.', 'AAPL')
     assert title == 'Apple Inc. (AAPL) - Aktienanalyse | Schatzsuche 4.0'

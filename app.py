@@ -112,7 +112,9 @@ def enforce_compare_host_boundary():
     if request.method in {'GET', 'HEAD'}:
         if path == '/compare':
             return redirect('https://compare.schatzsuche40.de/', code=301)
-        if path in {'/', '/robots.txt', '/sitemap.xml'} or path.startswith(
+        if path in {
+            '/', '/robots.txt', '/sitemap.xml', '/api/search-all', '/search'
+        } or path.startswith(
             ('/compare/result/', '/output/', '/static/', '/download/')
         ):
             return None

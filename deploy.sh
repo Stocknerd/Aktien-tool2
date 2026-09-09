@@ -55,11 +55,61 @@ for SVC in $SERVICES; do
 done
 
 echo "🌐 Nginx Konfiguration aktualisieren"
+NGINX_CONFIG_CHANGED=0
+NGINX_BACKUP_DIR="$(mktemp -d)"
+NGINX_CONFIGS=()
+
+backup_and_install_nginx_config() {
+  local name="$1"
+  local source="$2"
+  local available="/etc/nginx/sites-available/$name"
+  local enabled="/etc/nginx/sites-enabled/$name"
+
+  NGINX_CONFIGS+=("$name")
+  if sudo test -e "$available" || sudo test -L "$available"; then
+    sudo cp -a "$available" "$NGINX_BACKUP_DIR/available-$name"
+  fi
+  if sudo test -e "$enabled" || sudo test -L "$enabled"; then
+    sudo cp -a "$enabled" "$NGINX_BACKUP_DIR/enabled-$name"
+  fi
+
+  sudo cp "$source" "$available"
+  sudo ln -sfn "$available" "$enabled"
+  NGINX_CONFIG_CHANGED=1
+}
+
+restore_nginx_configs() {
+  local name available enabled
+  for name in "${NGINX_CONFIGS[@]}"; do
+    available="/etc/nginx/sites-available/$name"
+    enabled="/etc/nginx/sites-enabled/$name"
+    sudo rm -f "$available" "$enabled"
+    if sudo test -e "$NGINX_BACKUP_DIR/available-$name" || sudo test -L "$NGINX_BACKUP_DIR/available-$name"; then
+      sudo cp -a "$NGINX_BACKUP_DIR/available-$name" "$available"
+    fi
+    if sudo test -e "$NGINX_BACKUP_DIR/enabled-$name" || sudo test -L "$NGINX_BACKUP_DIR/enabled-$name"; then
+      sudo cp -a "$NGINX_BACKUP_DIR/enabled-$name" "$enabled"
+    fi
+  done
+}
+
 if [[ -f "$PROJECT_DIR/configs/aktien-tool.nginx" ]]; then
-  sudo cp "$PROJECT_DIR/configs/aktien-tool.nginx" /etc/nginx/sites-available/aktien-tool
-  sudo ln -sf /etc/nginx/sites-available/aktien-tool /etc/nginx/sites-enabled/
-  sudo nginx -t && sudo systemctl reload nginx
+  backup_and_install_nginx_config "aktien-tool" "$PROJECT_DIR/configs/aktien-tool.nginx"
 fi
+if [[ -f "$PROJECT_DIR/configs/compare.nginx" ]]; then
+  backup_and_install_nginx_config "compare" "$PROJECT_DIR/configs/compare.nginx"
+fi
+if [[ "$NGINX_CONFIG_CHANGED" == "1" ]]; then
+  if ! sudo nginx -t; then
+    echo "❌ Nginx-Konfiguration ungültig – stelle vorherigen Stand wieder her" >&2
+    restore_nginx_configs
+    sudo nginx -t || true
+    sudo rm -rf "$NGINX_BACKUP_DIR"
+    exit 1
+  fi
+  sudo systemctl reload nginx
+fi
+sudo rm -rf "$NGINX_BACKUP_DIR"
 
 echo "🛑 Redundante Services stoppen falls aktiv"
 sudo systemctl stop compare-app.service || true
