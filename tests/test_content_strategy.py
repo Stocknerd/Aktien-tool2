@@ -345,7 +345,10 @@ def _valid_viral_content() -> dict:
         "highlight_label": "Kurzcheck",
         "card_points": [f"Punkt {index}: sachliche Erklärung" for index in range(1, 6)],
         "image_prompt": "Eine klar strukturierte 9:16-Finanzinfografik in Gold und Petrol.",
-        "caption_ig": "Was bedeutet das für Familien? Sachlicher Überblick. Keine Anlageberatung.",
+        "caption_ig": (
+            "Was bedeutet das für Familien? Sachlicher Überblick. "
+            "Keine Anlageberatung. Alle Angaben ohne Gewähr. Investments bergen Risiken."
+        ),
         "caption_tiktok": "ETF-Rente kurz erklärt. Keine Anlageberatung.",
         "caption_shorts": "ETF-Rente für Familien kompakt. Keine Anlageberatung.",
         "reel_script": voiceover,
@@ -398,7 +401,7 @@ def test_generated_content_contract_rejects_voiceover_outside_60_to_80_words():
 def test_generated_content_contract_rejects_caption_without_disclaimer():
     content = _valid_viral_content()
     content["caption_ig"] = "Kaufen, kaufen, kaufen!"
-    with pytest.raises(ValueError, match="Anlageberatung"):
+    with pytest.raises(ValueError, match="canonical disclaimer"):
         validate_structured_content(content, template_type="viral_list")
 
 
