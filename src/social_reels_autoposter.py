@@ -16,6 +16,7 @@ from src.graphic_generator import render_viral_list, render_dividend_calendar, r
 from src.reel_generator import build_music_only_reel
 from src.content_generator import generate_structured_content
 from src.content_strategy import PRIORITY_EVERGREEN_TOPICS, choose_automated_topic
+from src.social_growth_links import calendar_url, stock_analysis_url, stock_duel_url
 from src.canva_packet import create_personal_canva_packet_from_json
 from src.news_sources import (
     filter_fresh_headlines,
@@ -240,9 +241,10 @@ def run_track_stock():
         symbols = f"{sym_a} vs {sym_b}"
         fin_texts = f"{name_a}: {fin_a}\n{name_b}: {fin_b}"
         
+        destination_url = stock_duel_url(sym_a, sym_b)
         comment_text = (
             "👉 Vergleiche selbst deine Lieblingsaktien in unserem interaktiven Vergleichstool:\n"
-            "https://compare.schatzsuche40.de/\n\n"
+            f"{destination_url}\n\n"
             "Analysiere über 4.000 Aktien im Screener auf schatzsuche40.de! 📈"
         )
         
@@ -263,9 +265,10 @@ def run_track_stock():
         symbols = sym
         fin_texts = str(fin)
         
+        destination_url = stock_analysis_url(sym)
         comment_text = (
-            "👉 Analysiere diese Aktie interaktiv in unserem Aktien-Screener:\n"
-            "https://tool.schatzsuche40.de/\n\n"
+            "👉 Analysiere diese Aktie interaktiv in unserer Aktienanalyse:\n"
+            f"{destination_url}\n\n"
             "Dividenden-Termine findest du im Kalender auf schatzsuche40.de! 💰"
         )
         
@@ -288,7 +291,7 @@ def run_track_stock():
         symbol=symbols,
         caption=caption,
         image_path=image_path,
-        blog_url="https://schatzsuche40.de",
+        blog_url=destination_url,
         wp_img_url=None,
         title=names,
         comment_text=comment_text,
@@ -411,9 +414,10 @@ def run_track_calendar():
         "👉 Den interaktiven Dividendenkalender für über 4.000 Aktien findest du auf schatzsuche40.de! Link in der Bio.\n\n"
         "#dividenden #aktien #geldanlage #passiveseinkommen #etf #finanzen #investieren #boerse #reichwerden"
     )
+    destination_url = calendar_url()
     comment_text = (
         f"💡 Alle Ex-Dividenden-Termine im Jahr {datetime.today().year} findest du in unserem kostenlosen Dividendenkalender:\n"
-        "https://schatzsuche40.de/dividendenkalender/\n\n"
+        f"{destination_url}\n\n"
         "Verpasse keine Ausschüttungen mehr!"
     )
 
@@ -423,7 +427,7 @@ def run_track_calendar():
         symbol="DIVIDENDEN-KALENDER",
         caption=caption,
         image_path=image_path,
-        blog_url="https://schatzsuche40.de",
+        blog_url=destination_url,
         wp_img_url=None,
         title="Dividendenkalender der Woche",
         comment_text=comment_text,

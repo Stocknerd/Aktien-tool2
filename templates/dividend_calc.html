@@ -117,7 +117,7 @@
         .btn-broker:hover { opacity: 0.8; transform: translateY(-2px); color: white; }
     </style>
 </head>
-<body>
+<body data-embedded="{{ '1' if is_embedded else '0' }}" data-s40-page="dividend_calculator">
     <!-- Chart.js CDN for visual compounding curve -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -632,5 +632,6 @@
 
         loadDatabase();
     </script>
+    {% include '_tracking.html' %}
 </body>
 </html>

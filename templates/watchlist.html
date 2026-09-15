@@ -167,7 +167,7 @@
         {% endif %}
     </style>
 </head>
-<body>
+<body data-embedded="{{ '1' if is_embedded else '0' }}" data-s40-page="watchlist">
     <div class="container py-5">
         {% if not is_embedded %}
         <!-- Unified Top Navigation Header -->
@@ -422,5 +422,6 @@
                 });
         }
     </script>
+    {% include '_tracking.html' %}
 </body>
 </html>

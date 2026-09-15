@@ -127,7 +127,7 @@
         .calculated-return span { color: var(--accent); font-size: 1.3rem; }
     </style>
 </head>
-<body>
+<body data-embedded="{{ '1' if is_embedded else '0' }}" data-s40-page="p2p_dashboard">
 <div class="container">
     {% if not is_embedded %}
     <!-- Premium Top Navigation Action Header -->
@@ -284,5 +284,6 @@ if (window.parent !== window) {
     }).observe(document.body);
 }
 </script>
+{% include '_tracking.html' %}
 </body>
 </html>

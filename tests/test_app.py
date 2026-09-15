@@ -56,6 +56,31 @@ def test_compare_and_analysis_result_expose_completion_measurement(client):
     assert 'data-s40-completion-id=""' in compare_result.get_data(as_text=True)
 
 
+@pytest.mark.parametrize(
+    ("path", "page_name"),
+    [
+        ("/screener", "screener"),
+        ("/dividenden-kalender", "dividend_calendar"),
+        ("/dividend-rechner", "dividend_calculator"),
+        ("/watchlist", "watchlist"),
+        ("/p2p", "p2p_dashboard"),
+    ],
+)
+def test_secondary_tool_pages_have_consent_safe_traffic_measurement(client, path, page_name):
+    response = client.get(
+        f"{path}?utm_source=social&utm_medium=organic_social&utm_campaign=weekly_growth",
+        base_url="https://tool.schatzsuche40.de",
+    )
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert f'data-s40-page="{page_name}"' in html
+    assert 'data-embedded="0"' in html
+    assert 'id="qc-consent-banner"' in html
+    assert 'window.s40TrackEvent' in html
+    assert "utm_source" in html
+
+
 def test_analysis_completion_marker_is_bound_and_consumed_once(client):
     base_url = 'https://tool.schatzsuche40.de'
     with client.session_transaction(base_url=base_url) as flask_session:

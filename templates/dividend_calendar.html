@@ -406,7 +406,7 @@
         }
     </style>
 </head>
-<body>
+<body data-embedded="{{ '1' if is_embedded else '0' }}" data-s40-page="dividend_calendar">
 <!-- Add Chart.js CDN for interactive visual graph -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -1011,5 +1011,6 @@ if (window.parent !== window) {
     new ResizeObserver(sendHeight).observe(document.body);
 }
 </script>
+{% include '_tracking.html' %}
 </body>
 </html>
