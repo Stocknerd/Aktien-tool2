@@ -13,6 +13,13 @@ server {
     ssl_certificate /etc/letsencrypt/live/compare.schatzsuche40.de/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/compare.schatzsuche40.de/privkey.pem;
 
+    # Gzip Compression
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
     add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' https://securepubads.g.doubleclick.net https://pagead2.googlesyndication.com https://console.googletagservices.com https://www.googletagmanager.com https://s3.tradingview.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-src https://securepubads.g.doubleclick.net https://tpc.googlesyndication.com https://s.tradingview.com https://www.tradingview.com; connect-src 'self' https://securepubads.g.doubleclick.net https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://www.google-analytics.com https://*.google-analytics.com; frame-ancestors 'self' https://schatzsuche40.de https://*.schatzsuche40.de" always;
 
     location = /ads.txt {
@@ -29,5 +36,11 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_hide_header X-Frame-Options;
+        proxy_hide_header X-Robots-Tag;
+
+        if ($arg_embed = "1") {
+            add_header X-Robots-Tag "noindex, follow" always;
+            add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' https://securepubads.g.doubleclick.net https://pagead2.googlesyndication.com https://console.googletagservices.com https://www.googletagmanager.com https://s3.tradingview.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-src https://securepubads.g.doubleclick.net https://tpc.googlesyndication.com https://s.tradingview.com https://www.tradingview.com; connect-src 'self' https://securepubads.g.doubleclick.net https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://www.google-analytics.com https://*.google-analytics.com; frame-ancestors 'self' https://schatzsuche40.de https://*.schatzsuche40.de" always;
+        }
     }
 }

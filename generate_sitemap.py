@@ -36,6 +36,7 @@ def generate_sitemap(csv_path="stock_data.csv", output_path=None):
     xml_header = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     xml_footer = '</urlset>\n'
     
+    today = datetime.now().strftime("%Y-%m-%d")
     urls = [
         ("https://tool.schatzsuche40.de/", "daily", "1.0"),
         ("https://tool.schatzsuche40.de/screener", "daily", "0.8"),
@@ -46,9 +47,8 @@ def generate_sitemap(csv_path="stock_data.csv", output_path=None):
     
     xml_body = ""
     for url, freq, prio in urls:
-        xml_body += f"  <url>\n    <loc>{url}</loc>\n    <changefreq>{freq}</changefreq>\n    <priority>{prio}</priority>\n  </url>\n"
+        xml_body += f"  <url>\n    <loc>{url}</loc>\n    <lastmod>{today}</lastmod>\n    <changefreq>{freq}</changefreq>\n    <priority>{prio}</priority>\n  </url>\n"
         
-    today = datetime.now().strftime("%Y-%m-%d")
     for ticker in sorted(tickers):
         ticker_str = str(ticker).strip().upper()
         if not ticker_str or ticker_str.lower() in ["nan", "null", "none"]:
@@ -56,7 +56,7 @@ def generate_sitemap(csv_path="stock_data.csv", output_path=None):
         # Escape any special characters in ticker
         ticker_escaped = ticker_str.replace("&", "&amp;").replace("'", "&apos;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
         url = f"https://tool.schatzsuche40.de/analyse/{ticker_escaped}"
-        xml_body += f"  <url>\n    <loc>{url}</loc>\n    <lastmod>{today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n"
+        xml_body += f"  <url>\n    <loc>{url}</loc>\n    <lastmod>{today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>{prio if False else '0.6'}</priority>\n  </url>\n"
         
     try:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)

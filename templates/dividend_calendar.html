@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dividenden-Kalender 2026 | Schatzsuche 4.0</title>
     <meta name="description" content="Über 2.900 Dividenden-Aktien im Überblick. Sortiere nach Rendite, Sektor, KGV und mehr.">
-    <link rel="canonical" href="{{ request.base_url }}" />
+    <link rel="canonical" href="{{ canonical_url|default(request.base_url) }}" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -426,7 +426,9 @@
 
     <div class="hero">
         <div class="hero-left">
+            {% if not is_embedded %}
             <h1>Dividenden-<span>Kalender</span></h1>
+            {% endif %}
             <p>Alle Dividenden-Aktien aus deiner Datenbank auf einen Blick.</p>
         </div>
         <div class="stat-chips">
@@ -436,36 +438,36 @@
     </div>
 
     <!-- Sticky top broker referral banner (Funnels) -->
-    <div class="broker-banner">
-        <a href="https://www.financeads.net/tc.php?t=47128C46917042T" target="_blank" class="broker-card">
+    <div class="broker-banner" data-nosnippet>
+        <a href="https://www.financeads.net/tc.php?t=47128C46917042T" target="_blank" rel="sponsored noopener" class="broker-card">
             <div class="broker-meta">
                 <div class="broker-logo">CT</div>
                 <div>
-                    <div class="broker-name">CapTrader</div>
+                    <div class="broker-name">CapTrader <small style="font-size:0.65rem; opacity:0.7;">Anzeige *</small></div>
                     <div class="broker-desc">Profi-Broker & US-Optionen</div>
                 </div>
             </div>
-            <span class="broker-cta">Depot eröffnen</span>
+            <span class="broker-cta">Depot eröffnen *</span>
         </a>
-        <a href="https://www.financeads.net/tc.php?t=47128C142835927T" target="_blank" class="broker-card">
+        <a href="https://www.financeads.net/tc.php?t=47128C142835927T" target="_blank" rel="sponsored noopener" class="broker-card">
             <div class="broker-meta">
                 <div class="broker-logo">SC</div>
                 <div>
-                    <div class="broker-name">Scalable Capital</div>
+                    <div class="broker-name">Scalable Capital <small style="font-size:0.65rem; opacity:0.7;">Anzeige *</small></div>
                     <div class="broker-desc">0€ Depot • Sparpläne & Zinsen</div>
                 </div>
             </div>
-            <span class="broker-cta">Depot eröffnen</span>
+            <span class="broker-cta">Depot eröffnen *</span>
         </a>
-        <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" class="broker-card">
+        <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" rel="sponsored noopener" class="broker-card">
             <div class="broker-meta">
                 <div class="broker-logo">CB</div>
                 <div>
-                    <div class="broker-name">Consorsbank</div>
+                    <div class="broker-name">Consorsbank <small style="font-size:0.65rem; opacity:0.7;">Anzeige *</small></div>
                     <div class="broker-desc">50€ Prämie • Premium Broker</div>
                 </div>
             </div>
-            <span class="broker-cta">50€ Bonus holen</span>
+            <span class="broker-cta">50€ Bonus holen *</span>
         </a>
     </div>
 
@@ -499,10 +501,10 @@
                         <th data-col="sector">Sektor</th>
                         <th data-col="ex_date">Ex-Datum</th>
                         <th data-col="countdown">Countdown</th>
-                        <th data-col="div_yield" style="text-align:right">Rendite<a href="https://schatzsuche40.de/dividendenrendite-verstehen-berechnen-der-ultimative-guide/" target="_blank" onclick="event.stopPropagation();" style="text-decoration:none; margin-left:4px; font-size:0.8rem;" title="Dividendenrendite Ratgeber ansehen">ℹ️</a></th>
+                        <th data-col="div_yield" style="text-align:right">Rendite<a href="https://schatzsuche40.de/dividendenrendite-verstehen-berechnen-der-ultimative-guide/" target="_blank" onclick="event.stopPropagation();" style="text-decoration:none; margin-left:4px; font-size:0.8rem;" title="Dividendenrendite Ratgeber ansehen" aria-label="Dividendenrendite Ratgeber ansehen">ℹ️</a></th>
                         <th data-col="amount" style="text-align:right">Betrag</th>
-                        <th data-col="kgv" style="text-align:right" class="col-extra">KGV<a href="https://schatzsuche40.de/was-ist-das-kgv-einfach-erklaert-fuer-anfaenger/" target="_blank" onclick="event.stopPropagation();" style="text-decoration:none; margin-left:4px; font-size:0.8rem;" title="KGV Ratgeber ansehen">ℹ️</a></th>
-                        <th data-col="kuv" style="text-align:right" class="col-extra">KUV<a href="https://schatzsuche40.de/was-bedeuten-kuv-kbv-peg-das-grosse-kennzahlen-glossar/" target="_blank" onclick="event.stopPropagation();" style="text-decoration:none; margin-left:4px; font-size:0.8rem;" title="KUV Ratgeber ansehen">ℹ️</a></th>
+                        <th data-col="kgv" style="text-align:right" class="col-extra">KGV<a href="https://schatzsuche40.de/was-ist-das-kgv-einfach-erklaert-fuer-anfaenger/" target="_blank" onclick="event.stopPropagation();" style="text-decoration:none; margin-left:4px; font-size:0.8rem;" title="KGV Ratgeber ansehen" aria-label="KGV Ratgeber ansehen">ℹ️</a></th>
+                        <th data-col="kuv" style="text-align:right" class="col-extra">KUV<a href="https://schatzsuche40.de/was-bedeuten-kuv-kbv-peg-das-grosse-kennzahlen-glossar/" target="_blank" onclick="event.stopPropagation();" style="text-decoration:none; margin-left:4px; font-size:0.8rem;" title="KUV Ratgeber ansehen" aria-label="KUV Ratgeber ansehen">ℹ️</a></th>
                         <th data-col="mcap" style="text-align:right" class="col-extra">Mkt. Kap.</th>
                         <th style="text-align:center">Depot-Sparplan</th>
                         <th></th>
@@ -542,14 +544,14 @@
                         <span>Einmalige Anlage</span>
                         <span id="onceSimVal">1.000 €</span>
                     </div>
-                    <input type="range" id="onceSimSlider" min="0" max="50000" step="500" value="1000" class="range-slider">
+                    <input type="range" id="onceSimSlider" aria-label="Einmalige Anlage in Euro" min="0" max="50000" step="500" value="1000" class="range-slider">
                 </div>
                 <div class="sim-slider-row">
                     <div class="sim-slider-label">
                         <span>Monatlicher Sparplan</span>
                         <span id="monthlySimVal">100 €</span>
                     </div>
-                    <input type="range" id="monthlySimSlider" min="0" max="2000" step="25" value="100" class="range-slider">
+                    <input type="range" id="monthlySimSlider" aria-label="Monatlicher Sparplan in Euro" min="0" max="2000" step="25" value="100" class="range-slider">
                 </div>
                 
                 <div class="sim-results">

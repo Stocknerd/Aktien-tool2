@@ -34,8 +34,8 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # Ensure CSP is always present and X-Frame-Options is removed for embeds
+
+        # Ensure CSP is always present for embeds
         if ($arg_embed = "1") {
             add_header Content-Security-Policy "frame-ancestors 'self' https://schatzsuche40.de https://*.schatzsuche40.de;" always;
         }

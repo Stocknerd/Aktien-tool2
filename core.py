@@ -61,7 +61,23 @@ METRIC_LABELS = {
     "Nettoschulden/EBITDA": "Verschuldungsgrad", "Dividendenrendite": "Dividende (%)",
     "Operative Marge": "Op. Marge (%)", "Bruttomarge": "Bruttomarge (%)",
     "Marktkapitalisierung": "Börsenwert", "Ausschüttungsquote": "Payout-Ratio (%)",
-    "Gewinn je Aktie": "EPS", "ROIC": "ROIC", "PEG-Ratio": "PEG-Ratio"
+    "Gewinn je Aktie": "EPS", "ROIC": "ROIC", "PEG-Ratio": "PEG-Ratio",
+    "Current Price": "Aktueller Kurs",
+    "Vortagesschlusskurs": "Vortagesschlusskurs",
+    "Recommendation Key": "Analysten-Empfehlung",
+    "Number of Analysts": "Anzahl Analysten",
+    "Analyst Mean Target": "Ø Kursziel (Analysten)",
+    "Analyst High Target": "Höchstes Kursziel (Analysten)",
+    "Analyst Low Target": "Niedrigstes Kursziel (Analysten)",
+    "Return on Assets": "Gesamtkapitalrendite (ROA)",
+    "Free Cashflow": "Freier Cashflow (FCF)",
+    "Free Cashflow Yield": "FCF-Rendite (%)",
+    "Operativer Cashflow": "Operativer Cashflow",
+    "EV/EBITDA": "EV/EBITDA",
+    "EBIT": "EBIT (Operatives Ergebnis)",
+    "Dividenden-Betrag": "Dividende je Aktie",
+    "Dividenden-Frequenz": "Dividenden-Zyklus",
+    "Ex-Dividenden-Datum": "Ex-Dividenden-Tag"
 }
 
 METRIC_DESC = {
@@ -74,9 +90,28 @@ METRIC_DESC = {
     "Umsatzwachstum 3J (erwartet)": "Erwartetes durchschnittliches Wachstum p.a.",
     "Nettoschulden/EBITDA": "Verschuldungsgrad.",
     "Dividendenrendite": "Dividende / Kurs (in %).",
+    "Operative Marge": "Operativer Gewinn im Verhältnis zum Umsatz (in %).",
+    "Bruttomarge": "Bruttoergebnis vom Umsatz nach Herstellungskosten (in %).",
+    "Marktkapitalisierung": "Gesamter Börsenwert des Unternehmens.",
     "Ausschüttungsquote": "Dividende / Gewinn (in %).",
     "PEG-Ratio": "KGV / erwartetes Gewinnwachstum.",
-    "ROIC": "Return on Invested Capital."
+    "ROIC": "Rendite auf das investierte Kapital (Return on Invested Capital).",
+    "Current Price": "Aktueller Börsenkurs der Aktie.",
+    "Vortagesschlusskurs": "Schlusskurs des vorangegangenen Handelstages.",
+    "Recommendation Key": "Konsens-Einschätzung der Wall-Street-Analysten.",
+    "Number of Analysts": "Anzahl der Analysten, die die Aktie aktiv abdecken.",
+    "Analyst Mean Target": "Durchschnittliches 12-Monats-Kursziel der Analysten.",
+    "Analyst High Target": "Optimistischstes Kursziel der Analysten.",
+    "Analyst Low Target": "Konservativstes Kursziel der Analysten.",
+    "Return on Assets": "Gesamtkapitalrendite (ROA): Gewinn im Verhältnis zur Bilanzsumme.",
+    "Free Cashflow": "Freier Cashflow nach Abzug von Investitionen (CapEx).",
+    "Free Cashflow Yield": "Freier Cashflow im Verhältnis zum Börsenwert (in %).",
+    "Operativer Cashflow": "Mittelzufluss aus der laufenden Geschäftstätigkeit.",
+    "EV/EBITDA": "Unternehmenswert (Enterprise Value) im Verhältnis zum EBITDA.",
+    "EBIT": "Operatives Ergebnis vor Zinsen und Steuern.",
+    "Dividenden-Betrag": "Ausgeschüttete Jahresdividende pro Aktie.",
+    "Dividenden-Frequenz": "Häufigkeit bzw. Jahresrate der Dividendenausschüttung.",
+    "Ex-Dividenden-Datum": "Datum des letzten bzw. nächsten Dividendenabschlags."
 }
 
 # ───────────────────────── Shared Logic ─────────────────────────
@@ -240,8 +275,14 @@ def resize_cover(img, target_w, target_h):
 
 def all_metric_keys(df):
     cols = list(df.columns)
-    skip = ("Symbol", "Security", "GICS Sector", "GICS Sub-Industry", "Headquarters Location", "Date added", "CIK", "Founded", "valid_yahoo_ticker", "logo_path", "Rating", "Score", "last_update", "Währung", "Region", "Sektor", "Branche")
-    return [c for c in cols if c not in skip]
+    skip = (
+        "Symbol", "Security", "Langname", "GICS Sector", "GICS Sub-Industry",
+        "Headquarters Location", "Date added", "CIK", "Founded", "valid_yahoo_ticker",
+        "logo_path", "Rating", "Score", "last_update", "Währung", "Region", "Sektor",
+        "Branche", "resolved_name", "resolved_exchange", "resolved_score", "SourceIndex",
+        "Abfragedatum", "Datenquelle", "Datenqualität", "Fehlende_Kennzahlen"
+    )
+    return [c for c in cols if c not in skip and not str(c).startswith("Unnamed")]
 
 def display_value(key: str, row) -> str:
     val = row.get(key)
@@ -299,12 +340,12 @@ def _rating_label_color(key: str) -> Tuple[str, tuple]:
             return lbl, col
     return "KEINE DATEN", (148, 163, 184)
 
-def _draw_watermark(draw, W, H, text="schatzsuche40.de"):
+def _draw_watermark(draw, W, H, text="schatzsuche40.de | Kostenlose Aktienanalyse & Screener"):
     if not text: return
-    # Subtle watermark at the bottom right
-    f_water = _font(FONT_REG_PATH, 28, ImageFont.load_default())
+    # Branding footer centered at the bottom edge of the infographic
+    f_water = _font(FONT_REG_PATH, 24, ImageFont.load_default())
     tw = int(draw.textlength(text, font=f_water))
-    draw.text((W - tw - 40, H - 70), text, fill=(255, 255, 255, 90), font=f_water)
+    draw.text(((W - tw) // 2, H - 55), text, fill=(220, 232, 248, 210), font=f_water)
 
 # ─── Rendering Tools ──────────────────────────────────────────────────────────
 

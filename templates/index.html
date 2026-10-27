@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% if ticker %}{{ seo_title }}{% else %}Aktien-Bild Generator | Schatzsuche 4.0{% endif %}</title>
   <meta name="description" content="{% if ticker %}Aktuelle Kennzahlen, Analysten-Ratings und Kursziele für {{ company_name }} ({{ ticker }}). Erstelle jetzt deine eigene Infografik.{% else %}Professionelle Aktien-Infografiken erstellen und vergleichen. Kostenlose Analyse-Tools für Dividenden-Investoren.{% endif %}">
-  <link rel="canonical" href="{{ request.base_url }}" />
+  <link rel="canonical" href="{{ canonical_url|default(request.base_url) }}" />
   
   <!-- Open Graph -->
   <meta property="og:title" content="{% if ticker %}{{ company_name }} Analyse{% else %}Aktien-Bild Generator{% endif %}">
@@ -232,23 +232,23 @@
 </head>
 
 <body data-embedded="{{ '1' if is_embedded else '0' }}" data-s40-page="analysis_start">
-  <div id="loader-overlay">
+  <div id="loader-overlay" data-nosnippet>
     <div class="spinner-premium"></div>
-    <div class="loading-text">Analyse wird erstellt...</div>
-    <div class="text-muted mt-3">Schatzsuche 4.0 Pro Tool</div>
+    <div class="loading-text" id="loader-text"></div>
+    <div class="text-muted mt-3" id="loader-subtext"></div>
   </div>
 
   <div class="container {% if not is_embedded %}py-5{% else %}py-2{% endif %}">
     
     <!-- Premium Top Navigation Action Header -->
     <div class="nav-actions mb-4">
-        <a href="/" class="btn btn-outline-light btn-sm rounded-pill px-3 active" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🏠 Home</a>
-        <a href="/screener{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🎯 Screener</a>
-        <a href="/dividenden-kalender{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📅 Kalender</a>
-        <a href="https://compare.schatzsuche40.de/{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📊 Vergleich</a>
-        <a href="/p2p{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💳 P2P</a>
-        <a href="/dividend-rechner{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💰 Rechner</a>
-        <a href="/watchlist{% if is_embedded %}?embed=1{% endif %}" class="btn btn-outline-warning btn-sm rounded-pill px-3" style="border: 1px solid rgba(201, 162, 39, 0.3); color: #C9A227; font-weight:600;">⭐ Watchlist</a>
+        <a href="{{ 'https://schatzsuche40.de/aktien-tool/' if is_embedded else '/' }}" {% if is_embedded %}target="_top"{% endif %} class="btn btn-outline-light btn-sm rounded-pill px-3 active" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🏠 Home</a>
+        <a href="{{ 'https://schatzsuche40.de/screener/' if is_embedded else '/screener' }}" {% if is_embedded %}target="_top"{% endif %} class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">🎯 Screener</a>
+        <a href="{{ 'https://schatzsuche40.de/dividenden-kalender/' if is_embedded else '/dividenden-kalender' }}" {% if is_embedded %}target="_top"{% endif %} class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📅 Kalender</a>
+        <a href="{{ 'https://schatzsuche40.de/aktien-vergleichstool/' if is_embedded else 'https://compare.schatzsuche40.de/' }}" {% if is_embedded %}target="_top"{% endif %} class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">📊 Vergleich</a>
+        <a href="{{ 'https://schatzsuche40.de/p2p-dashboard/' if is_embedded else '/p2p' }}" {% if is_embedded %}target="_top"{% endif %} class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💳 P2P</a>
+        <a href="{{ 'https://schatzsuche40.de/dividend-rechner/' if is_embedded else '/dividend-rechner' }}" {% if is_embedded %}target="_top"{% endif %} class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💰 Rechner</a>
+        <a href="{{ 'https://tool.schatzsuche40.de/watchlist' if is_embedded else '/watchlist' }}" {% if is_embedded %}target="_top"{% endif %} class="btn btn-outline-warning btn-sm rounded-pill px-3" style="border: 1px solid rgba(201, 162, 39, 0.3); color: #C9A227; font-weight:600;">⭐ Watchlist</a>
     </div>
 
     {% if not is_embedded %}
@@ -353,12 +353,12 @@
           <div class="col-md-6">
             <div class="form-check form-switch p-0 d-flex align-items-center mb-2">
               <input class="form-check-input ms-0 me-2" type="checkbox" name="ai_insight" value="1" id="ai_insight_chk" checked>
-              <label class="form-check-label fw-bold" for="ai_insight_chk" style="color: #C9A227;">✦ KI-Insights (Gemini)</label>
+              <label class="form-check-label fw-bold" for="ai_insight_chk" style="color: #C9A227;">✦ Schatzsuche KI-Analyse</label>
             </div>
             <small class="text-muted d-block" style="font-size: 0.75rem; margin-top: -5px; margin-left: 36px;">Automatische KI-Analyse & Fazit hinzufügen.</small>
           </div>
           <div class="col-md-6">
-            <input name="watermark" class="form-control form-control-sm" placeholder="Dein Wasserzeichen (optional)" style="height: 38px;">
+            <input name="watermark" class="form-control form-control-sm" placeholder="Dein Wasserzeichen (optional)" aria-label="Eigenes Wasserzeichen (optional)" style="height: 38px;">
           </div>
         </div>
       </div>
@@ -377,7 +377,7 @@
             id="chk_{{ m.key|replace(' ','_') }}" checked>
           <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">
             {{ m.label }}
-            <span class="ms-1 text-info" tabindex="0" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
+            <span class="ms-1 text-info" tabindex="0" role="button" aria-label="Erklärung zu {{ m.label }}" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
           </label>
         </div>
         {% endfor %}
@@ -400,7 +400,7 @@
               id="chk_{{ m.key|replace(' ','_') }}">
             <label class="form-check-label" for="chk_{{ m.key|replace(' ','_') }}">
               {{ m.label }}
-              <span class="ms-1 text-info" tabindex="0" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
+              <span class="ms-1 text-info" tabindex="0" role="button" aria-label="Erklärung zu {{ m.label }}" data-key="{{ m.key }}" style="cursor:help;">&#9432;</span>
             </label>
           </div>
           {% endfor %}
@@ -429,36 +429,36 @@
         </div>
 
         <!-- Sticky top partner broker widgets inside landing page section -->
-        <div class="broker-banner mb-4">
-            <a href="https://www.financeads.net/tc.php?t=47128C46917042T" target="_blank" class="broker-card">
+        <div class="broker-banner mb-4" data-nosnippet>
+            <a href="https://www.financeads.net/tc.php?t=47128C46917042T" target="_blank" rel="sponsored noopener" class="broker-card">
                 <div class="broker-meta">
                     <div class="broker-logo">CT</div>
                     <div>
-                        <div class="broker-name">CapTrader</div>
+                        <div class="broker-name">CapTrader <small style="font-size:0.65rem; opacity:0.7;">Anzeige *</small></div>
                         <div class="broker-desc">Profi-Broker & US-Optionen</div>
                     </div>
                 </div>
-                <span class="broker-cta">Depot eröffnen</span>
+                <span class="broker-cta">Depot eröffnen *</span>
             </a>
-            <a href="https://www.financeads.net/tc.php?t=47128C142835927T" target="_blank" class="broker-card">
+            <a href="https://www.financeads.net/tc.php?t=47128C142835927T" target="_blank" rel="sponsored noopener" class="broker-card">
                 <div class="broker-meta">
                     <div class="broker-logo">SC</div>
                     <div>
-                        <div class="broker-name">Scalable Capital</div>
+                        <div class="broker-name">Scalable Capital <small style="font-size:0.65rem; opacity:0.7;">Anzeige *</small></div>
                         <div class="broker-desc">0€ Depot • Sparpläne & Zinsen</div>
                     </div>
                 </div>
-                <span class="broker-cta">Depot eröffnen</span>
+                <span class="broker-cta">Depot eröffnen *</span>
             </a>
-            <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" class="broker-card">
+            <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" rel="sponsored noopener" class="broker-card">
                 <div class="broker-meta">
                     <div class="broker-logo">CB</div>
                     <div>
-                        <div class="broker-name">Consorsbank</div>
+                        <div class="broker-name">Consorsbank <small style="font-size:0.65rem; opacity:0.7;">Anzeige *</small></div>
                         <div class="broker-desc">50€ Premium Freetrade Bonus</div>
                     </div>
                 </div>
-                <span class="broker-cta">Prämie abholen</span>
+                <span class="broker-cta">Prämie abholen *</span>
             </a>
         </div>
 
@@ -494,7 +494,7 @@
                         <label for="divAmount">Investition (€)</label>
                         <span id="divAmountDisplay" style="color: var(--accent); font-weight: 700;">1.000 €</span>
                     </div>
-                    <input type="range" id="divAmountSlider" min="100" max="50000" step="500" value="1000" class="range-slider">
+                    <input type="range" id="divAmountSlider" min="100" max="50000" step="500" value="1000" class="range-slider" aria-label="Investitionsbetrag in Euro">
                     <input type="number" id="divAmount" value="1000" min="0" step="100" style="display:none;">
                 </div>
 
@@ -504,7 +504,7 @@
                         <label for="divShares">Aktienanteile</label>
                         <span id="divSharesDisplay" style="color: var(--accent); font-weight: 700;">10</span>
                     </div>
-                    <input type="range" id="divSharesSlider" min="1" max="1000" step="5" value="10" class="range-slider">
+                    <input type="range" id="divSharesSlider" min="1" max="1000" step="5" value="10" class="range-slider" aria-label="Anzahl der Aktienanteile">
                     <input type="number" id="divShares" value="10" min="0" step="1" style="display:none;">
                 </div>
                 
@@ -513,7 +513,7 @@
                         <label for="monthlySparplanSlider">Sparplan Regler</label>
                         <span id="monthlySparplanDisplay" style="color: var(--blue); font-weight: 700;">100 €</span>
                     </div>
-                    <input type="range" id="monthlySparplanSlider" min="0" max="2000" step="25" value="100" class="range-slider">
+                    <input type="range" id="monthlySparplanSlider" min="0" max="2000" step="25" value="100" class="range-slider" aria-label="Monatlicher Sparplan in Euro">
                 </div>
             </div>
 
@@ -587,6 +587,10 @@
     const isEmbedded = (document.getElementById('mainForm').dataset.isEmbedded === '1');
 
     function showLoader() {
+      const txt = document.getElementById('loader-text');
+      const sub = document.getElementById('loader-subtext');
+      if (txt && !txt.textContent) txt.textContent = 'Analyse wird erstellt...';
+      if (sub && !sub.textContent) sub.textContent = 'Schatzsuche 4.0 Pro Tool';
       document.getElementById('loader-overlay').style.display = 'flex';
       document.body.style.overflow = 'hidden';
     }
@@ -1224,14 +1228,15 @@
       observer.observe(document.body, { attributes: true, childList: true, subtree: true });
     }
 
-    // ─── Auto-Analysis for Landing Pages ──────────────────────
+    // ─── Auto-Analysis for Landing Pages (only when autorun=1) ───
     {% if ticker %}
     window.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('autorun') !== '1' || params.get('edit') === '1') return;
         const form = document.querySelector('form[action="{{ url_for("generate_image") }}"]');
         const tickerInput = document.getElementById('ticker');
-        if (tickerInput && tickerInput.value) {
-            const loader = document.getElementById('loader-overlay');
-            if (loader) loader.style.display = 'flex';
+        if (form && tickerInput && tickerInput.value) {
+            showLoader();
             setTimeout(() => form.submit(), 600);
         }
     });

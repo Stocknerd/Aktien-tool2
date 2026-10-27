@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Dividenden-Rechner | Schatzsuche 4.0</title>
     <meta name="description" content="Simuliere und berechne dein passives Dividenden-Einkommen mit deinen Lieblingsaktien und unserem Zinseszins-Rechner.">
-    <link rel="canonical" href="{{ request.base_url }}" />
+    <link rel="canonical" href="{{ canonical_url|default(request.base_url) }}" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/dividend.css') }}" rel="stylesheet">
@@ -137,52 +137,54 @@
         {% if not is_embedded %}
         <!-- Premium Top Navigation Action Header -->
         <div class="nav-actions">
-            <a href="/{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">🏠 Home</a>
-            <a href="/screener{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">🎯 Screener</a>
-            <a href="/dividenden-kalender{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">📅 Kalender</a>
-            <a href="https://compare.schatzsuche40.de/{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">📊 Vergleich</a>
-            <a href="/p2p{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">💳 P2P</a>
-            <a href="/dividend-rechner{% if is_embedded %}?embed=1{% endif %}" class="nav-btn active">💰 Rechner</a>
-            <a href="/watchlist{% if is_embedded %}?embed=1{% endif %}" class="nav-btn">⭐ Watchlist</a>
+            <a href="/" class="nav-btn">🏠 Home</a>
+            <a href="/screener" class="nav-btn">🎯 Screener</a>
+            <a href="/dividenden-kalender" class="nav-btn">📅 Kalender</a>
+            <a href="https://compare.schatzsuche40.de/" class="nav-btn">📊 Vergleich</a>
+            <a href="/p2p" class="nav-btn">💳 P2P</a>
+            <a href="/dividend-rechner" class="nav-btn active">💰 Rechner</a>
+            <a href="/watchlist" class="nav-btn">⭐ Watchlist</a>
         </div>
         {% endif %}
         <!-- Sticky top partner broker funnels -->
-        <div class="broker-banner mb-4">
-            <a href="https://www.financeads.net/tc.php?t=47128C46917042T" target="_blank" class="broker-card">
+        <div class="broker-banner mb-4" data-nosnippet>
+            <a href="https://www.financeads.net/tc.php?t=47128C46917042T" target="_blank" rel="sponsored noopener" class="broker-card">
                 <div class="broker-meta">
                     <div class="broker-logo">CT</div>
                     <div>
-                        <div class="broker-name">CapTrader</div>
+                        <div class="broker-name">CapTrader <small style="font-size:0.65rem; opacity:0.7;">Anzeige *</small></div>
                         <div class="broker-desc">Profi-Broker & US-Optionen</div>
                     </div>
                 </div>
-                <span class="broker-cta">Depot eröffnen</span>
+                <span class="broker-cta">Depot eröffnen *</span>
             </a>
-            <a href="https://www.financeads.net/tc.php?t=47128C142835927T" target="_blank" class="broker-card">
+            <a href="https://www.financeads.net/tc.php?t=47128C142835927T" target="_blank" rel="sponsored noopener" class="broker-card">
                 <div class="broker-meta">
                     <div class="broker-logo">SC</div>
                     <div>
-                        <div class="broker-name">Scalable Capital</div>
+                        <div class="broker-name">Scalable Capital <small style="font-size:0.65rem; opacity:0.7;">Anzeige *</small></div>
                         <div class="broker-desc">0€ Depot • Sparpläne & Zinsen</div>
                     </div>
                 </div>
-                <span class="broker-cta">Depot eröffnen</span>
+                <span class="broker-cta">Depot eröffnen *</span>
             </a>
-            <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" class="broker-card">
+            <a href="https://www.financeads.net/tc.php?t=47128C15212339T" target="_blank" rel="sponsored noopener" class="broker-card">
                 <div class="broker-meta">
                     <div class="broker-logo">CB</div>
                     <div>
-                        <div class="broker-name">Consorsbank</div>
+                        <div class="broker-name">Consorsbank <small style="font-size:0.65rem; opacity:0.7;">Anzeige *</small></div>
                         <div class="broker-desc">50€ Freetrade Prämie</div>
                     </div>
                 </div>
-                <span class="broker-cta">Prämie abholen</span>
+                <span class="broker-cta">Prämie abholen *</span>
             </a>
         </div>
 
         <div class="calc-container">
             <div class="calc-header">
+                {% if not is_embedded %}
                 <h1>Dividenden-<span>Rechner</span></h1>
+                {% endif %}
                 <p class="text-secondary">Simuliere dein passives Einkommen, plane Sparpläne und nutze den Zinseszins-Effekt.</p>
             </div>
 
@@ -218,7 +220,7 @@
                             <label for="investAmount">Investition (€)</label>
                             <span id="investAmountDisplay" style="color: var(--accent); font-weight: 700;">1.000 €</span>
                         </div>
-                        <input type="range" id="investAmountSlider" min="100" max="50000" step="500" value="1000" class="range-slider">
+                        <input type="range" id="investAmountSlider" aria-label="Investition in Euro" min="100" max="50000" step="500" value="1000" class="range-slider">
                         <input type="number" id="investAmount" value="1000" min="0" step="100" style="display:none;">
                     </div>
 
@@ -228,7 +230,7 @@
                             <label for="investShares">Aktienanteile</label>
                             <span id="investSharesDisplay" style="color: var(--accent); font-weight: 700;">10</span>
                         </div>
-                        <input type="range" id="investSharesSlider" min="1" max="1000" step="5" value="10" class="range-slider">
+                        <input type="range" id="investSharesSlider" aria-label="Anzahl Aktienanteile" min="1" max="1000" step="5" value="10" class="range-slider">
                         <input type="number" id="investShares" value="10" min="0" step="1" style="display:none;">
                     </div>
                     
@@ -237,7 +239,7 @@
                             <label for="monthlySparplanSlider">Sparplan Regler</label>
                             <span id="monthlySparplanDisplay" style="color: var(--blue); font-weight: 700;">100 €</span>
                         </div>
-                        <input type="range" id="monthlySparplanSlider" min="0" max="2000" step="25" value="100" class="range-slider">
+                        <input type="range" id="monthlySparplanSlider" aria-label="Monatlicher Sparplan in Euro" min="0" max="2000" step="25" value="100" class="range-slider">
                     </div>
                 </div>
 

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>P2P Dashboard | Schatzsuche 4.0</title>
     <meta name="description" content="Vergleiche P2P-Plattformen und berechne deine potenziellen Zinsen.">
-    <link rel="canonical" href="{{ request.base_url }}" />
+    <link rel="canonical" href="{{ canonical_url|default(request.base_url) }}" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -142,7 +142,9 @@
     </div>
     {% endif %}
     <div class="hero">
+        {% if not is_embedded %}
         <h1>P2P <span>Dashboard</span></h1>
+        {% endif %}
         <p>Vergleiche die besten Plattformen für P2P-Kredite und berechne dein passives Einkommen.</p>
     </div>
 
@@ -150,11 +152,11 @@
         <div class="calc-controls">
             <div class="input-group">
                 <label>Einmalanlage <span class="val-display" id="valAmount">10.000 €</span></label>
-                <input type="range" id="sliderAmount" min="500" max="50000" step="500" value="10000">
+                <input type="range" id="sliderAmount" aria-label="Einmalanlage in Euro" min="500" max="50000" step="500" value="10000">
             </div>
             <div class="input-group">
                 <label>Anlagedauer <span class="val-display" id="valYears">5 Jahre</span></label>
-                <input type="range" id="sliderYears" min="1" max="20" step="1" value="5">
+                <input type="range" id="sliderYears" aria-label="Anlagedauer in Jahren" min="1" max="20" step="1" value="5">
             </div>
             <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 10px;">
                 * Die Berechnung geht von einer Reinvestition der Zinsen (Zinseszinseffekt) aus. Die angegebenen Renditen sind historische Durchschnitte.

@@ -152,7 +152,9 @@
         
         <div class="glass-card shadow">
             <div class="text-center mb-4">
+                {% if not is_embedded %}
                 <h1 class="fw-bold m-0" style="background: linear-gradient(135deg, #fff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aktien-Duell ⚡</h1>
+                {% endif %}
                 <p class="text-muted small mt-1">Wähle zwei Aktien aus, um deren Kennzahlen direkt gegenüberzustellen.</p>
             </div>
 

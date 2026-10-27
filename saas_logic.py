@@ -52,10 +52,21 @@ def init_db():
     """)
     
     # Register default tokens
-    cursor.execute("INSERT OR IGNORE INTO tokens (token, user_id, plan) VALUES (?, ?, ?)", 
-                   ("b2831286e14844faa0782f69d4649825", "guest_premium", "premium"))
-    cursor.execute("INSERT OR IGNORE INTO tokens (token, user_id, plan) VALUES (?, ?, ?)", 
-                   ("e5b1cf863b6f4fa3a3bcc1bab27bb754", "guest_free", "free"))
+    env_guest_token = os.environ.get("SCHATZSUCHE_GUEST_TOKEN", "").strip()
+    if env_guest_token:
+        cursor.execute(
+            "DELETE FROM tokens WHERE user_id IN ('guest_premium', 'guest_free') AND token != ?",
+            (env_guest_token,),
+        )
+        cursor.execute(
+            "INSERT OR REPLACE INTO tokens (token, user_id, plan) VALUES (?, ?, ?)",
+            (env_guest_token, "guest_premium", "premium"),
+        )
+    else:
+        cursor.execute("INSERT OR IGNORE INTO tokens (token, user_id, plan) VALUES (?, ?, ?)", 
+                       ("b2831286e14844faa0782f69d4649825", "guest_premium", "premium"))
+        cursor.execute("INSERT OR IGNORE INTO tokens (token, user_id, plan) VALUES (?, ?, ?)", 
+                       ("e5b1cf863b6f4fa3a3bcc1bab27bb754", "guest_free", "free"))
 
     conn.commit()
     conn.close()
@@ -76,6 +87,14 @@ def get_token_info(token):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM tokens WHERE token = ?", (token,))
     row = cursor.fetchone()
+    if not row:
+        env_guest_token = os.environ.get("SCHATZSUCHE_GUEST_TOKEN", "").strip()
+        if env_guest_token and token == env_guest_token:
+            cursor.execute("INSERT OR REPLACE INTO tokens (token, user_id, plan) VALUES (?, ?, ?)",
+                           (env_guest_token, "guest_premium", "premium"))
+            conn.commit()
+            cursor.execute("SELECT * FROM tokens WHERE token = ?", (token,))
+            row = cursor.fetchone()
     conn.close()
     return dict(row) if row else None
 
@@ -90,13 +109,16 @@ def check_quota(token):
     """
     Check if the token has exceeded its daily quota.
     Free: 10 actions/day
-    Premium: 1000 actions/day (effectively unlimited for human use)
+    Premium: 1000 actions/day (effectively unlimited for shared public guest_premium token)
     """
     info = get_token_info(token)
     if not info:
         return False, "Ungültiger Token"
     
-    limit = 10 if info['plan'] == 'free' else 1000
+    if info.get('user_id') == 'guest_premium':
+        limit = 1000000
+    else:
+        limit = 10 if info['plan'] == 'free' else 1000
     today = date.today().isoformat()
     
     conn = get_db()

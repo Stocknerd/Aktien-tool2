@@ -56,23 +56,10 @@ def setup_ops(app, csv_path):
         app.logger.setLevel(logging.INFO)
         logging.getLogger('werkzeug').setLevel(logging.INFO)
 
-    # In-memory Rate Limit
-    rate_limits = {}
-
     @app.before_request
     def before_request():
         g.start_time = time.time()
         g.request_id = request.headers.get("X-Request-Id", str(uuid.uuid4()))
-        
-        # Rate Limit (einfach: 60 req / min per IP)
-        ip = request.remote_addr
-        now = time.time()
-        if ip not in rate_limits:
-            rate_limits[ip] = []
-        rate_limits[ip] = [t for t in rate_limits[ip] if now - t < 60]
-        if len(rate_limits[ip]) > 60:
-            return "Too Many Requests", 429
-        rate_limits[ip].append(now)
 
     @app.after_request
     def after_request(response):
@@ -83,7 +70,15 @@ def setup_ops(app, csv_path):
         response.headers['X-XSS-Protection'] = '1; mode=block'
         
         # Allow framing from the main blog if embed mode is active
-        if request.args.get('embed') == '1' or getattr(g, 'is_landing_page', False) or request.form.get('is_embedded') == '1':
+        is_embed_req = (
+            request.args.get('embed') == '1'
+            or request.form.get('is_embedded') == '1'
+            or request.form.get('embed') == '1'
+        )
+        if is_embed_req or request.path.startswith(('/result/', '/compare/result/')):
+            response.headers['X-Robots-Tag'] = 'noindex, follow'
+
+        if is_embed_req or getattr(g, 'is_landing_page', False):
             response.headers['Content-Security-Policy'] = "frame-ancestors 'self' https://schatzsuche40.de https://*.schatzsuche40.de;"
             # We'll let Nginx handle the removal of X-Frame-Options for better reliability
         else:

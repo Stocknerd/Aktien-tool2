@@ -6,14 +6,86 @@ from PIL import Image
 from openai import OpenAI
 from dotenv import load_dotenv
 import json
+import time
+import threading
 
 # Load .env file if it exists
 load_dotenv()
 
-def get_ai_verdict(ticker, company_name, financial_data):
+CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
+AI_CACHE_TTL = 86400  # 24 hours in seconds
+_ai_cache_lock = threading.Lock()
+
+
+def _get_ai_cache_path(ticker):
+    safe_ticker = re.sub(r'[^A-Z0-9._-]', '_', str(ticker or 'UNKNOWN').upper().strip())
+    return os.path.join(CACHE_DIR, f"ai_analysis_{safe_ticker}.json")
+
+
+def get_cached_ai_analysis(ticker, mode="verdict", ttl=AI_CACHE_TTL):
+    """Return cached AI analysis string if present and younger than ttl (24h), else None."""
+    if not ticker:
+        return None
+    cache_path = _get_ai_cache_path(ticker)
+    with _ai_cache_lock:
+        if not os.path.exists(cache_path):
+            return None
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+            entries = payload.get("entries", {})
+            entry = entries.get(mode)
+            if entry and (time.time() - float(entry.get("timestamp", 0))) < ttl:
+                val = entry.get("value")
+                if val:
+                    return val
+            # Backwards-compatible top-level check for default 'verdict' mode
+            if mode == "verdict" and "verdict" in payload and (time.time() - float(payload.get("timestamp", 0))) < ttl:
+                return payload["verdict"]
+        except Exception:
+            return None
+    return None
+
+
+def set_cached_ai_analysis(ticker, value, mode="verdict"):
+    """Persist AI analysis result in cache/ai_analysis_<SAFE_TICKER>.json with current timestamp."""
+    if not ticker or not value:
+        return
+    cache_path = _get_ai_cache_path(ticker)
+    now = time.time()
+    with _ai_cache_lock:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        payload = {"ticker": str(ticker).upper().strip(), "timestamp": now, "entries": {}}
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    existing = json.load(f)
+                if isinstance(existing, dict):
+                    payload.update(existing)
+                    if not isinstance(payload.get("entries"), dict):
+                        payload["entries"] = {}
+            except Exception:
+                pass
+        payload["timestamp"] = now
+        if mode == "verdict":
+            payload["verdict"] = value
+        payload["entries"][mode] = {"timestamp": now, "value": value}
+        try:
+            with open(cache_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"AI Cache write error for {ticker}: {e}")
+
+
+def get_ai_verdict(ticker, company_name, financial_data, use_cache=True):
     """
-    Generiert ein kurzes (max 100 Zeichen) Investment-Fazit mit OpenAI.
+    Generiert ein kurzes Investment-Fazit mit OpenAI (inkl. 24h Server-Side Cache).
     """
+    if use_cache and ticker:
+        cached = get_cached_ai_analysis(ticker, mode="verdict")
+        if cached:
+            return cached
+
     # Use environment variable
     api_key = os.environ.get("OPENAI_API_KEY")
     
@@ -49,15 +121,23 @@ def get_ai_verdict(ticker, company_name, financial_data):
         if len(verdict) > 250:
             verdict = verdict[:247] + "..."
             
+        if use_cache and ticker and verdict and not verdict.startswith("KI-Fazit:"):
+            set_cached_ai_analysis(ticker, verdict, mode="verdict")
+
         return verdict
     except Exception as e:
         print(f"OpenAI Error for {ticker}: {e}")
         return f"KI-Fazit: Dienst momentan nicht erreichbar."
 
-def get_ai_long_analysis(ticker, company_name, financial_data, business_summary=None):
+def get_ai_long_analysis(ticker, company_name, financial_data, business_summary=None, use_cache=True):
     """
-    Generates a detailed multi-paragraph investment thesis for blog posts.
+    Generates a detailed multi-paragraph investment thesis for blog posts (with 24h cache).
     """
+    if use_cache and ticker:
+        cached = get_cached_ai_analysis(ticker, mode="long_analysis")
+        if cached:
+            return cached
+
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         return "<p>Bitte füge deinen OpenAI API Key hinzu, um die detaillierte Aktienanalyse zu generieren.</p>"
@@ -98,6 +178,8 @@ def get_ai_long_analysis(ticker, company_name, financial_data, business_summary=
         
         if not ans or len(ans) < 50:
              return f"<p><strong>{company_name}</strong> zeigt derzeit interessante Entwicklungen in den Fundamentaldaten. Besonders die Dividenden-Kontinuität und die Marktstellung machen den Titel für langfristige Portfolios beobachtenswert.</p>"
+        if use_cache and ticker:
+            set_cached_ai_analysis(ticker, ans, mode="long_analysis")
         return ans
     except Exception as e:
         print(f"OpenAI Error for {ticker}: {e}")

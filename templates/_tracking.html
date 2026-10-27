@@ -69,7 +69,8 @@
   }
 </style>
 
-<div id="qc-consent-banner" class="qc-consent-banner" hidden>
+{% if not is_embedded %}
+<div id="qc-consent-banner" class="qc-consent-banner" hidden data-nosnippet>
   <div class="qc-consent-inner">
     <div class="qc-consent-copy">
       <strong>Cookies & Analyse</strong>
@@ -81,11 +82,12 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 <script>
 (function () {
   const banner = document.getElementById('qc-consent-banner');
-  if (!banner || document.body.dataset.embedded === '1') return;
+  if (!banner || document.body.dataset.embedded === '1' || window.self !== window.top) return;
 
   const storageKey = {{ consent_storage_key|default('qc_cookie_consent')|tojson }};
   const gaId = {{ analytics_measurement_id|default('')|tojson }};

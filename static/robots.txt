@@ -1,10 +1,20 @@
+# AI Search Engines & LLM Crawlers
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: PerplexityBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+Disallow: /result/
+Disallow: /*?embed=1
+
+# Standard Bots
 User-agent: *
 Allow: /
-Disallow: /api/
-Disallow: /admin/
-Disallow: /generate_image
-Disallow: /upload-background
+Allow: /llms.txt
 Disallow: /result/
-Disallow: /download/
+Disallow: /*?embed=1
 
 Sitemap: https://tool.schatzsuche40.de/sitemap.xml
+Sitemap: https://schatzsuche40.de/sitemap_index.xml

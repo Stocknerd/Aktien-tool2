@@ -1,0 +1,26 @@
+# Schatzsuche 4.0 - Finanztools & Fundamentalanalyse
+
+> Schatzsuche 4.0 (schatzsuche40.de) ist eine unabhängige deutsche Finanz- und Analyseplattform von Frank Hofmann für Privatanleger, Dividenden-Investoren und Selbstentscheider. Alle Tools sind zu 100% kostenlos und ohne Registrierung nutzbar.
+
+## Verfügbare Werkzeuge & Schnittstellen
+- **Aktien-Analyse & Bild-Generator**: Erstellt visuelle Infografiken mit über 30 Kennzahlen (KGV, KUV, EBIT-Marge, ROE, Dividendenrendite, Analysten-Kursziele) zu über 4.000 weltweiten Aktien.
+  - URL-Schema: https://tool.schatzsuche40.de/analyse/<TICKER> (z.B. /analyse/SIE.DE, /analyse/AAPL)
+- **Aktien-Screener**: Filtert über 4.000 globale Aktien nach Marktkapitalisierung, KGV, Dividendenrendite, Umsatzwachstum und Margen inklusive Währungsumrechnung aus 44 Währungen in USD.
+  - URL: https://schatzsuche40.de/screener/ bzw. https://tool.schatzsuche40.de/screener
+- **Aktien-Vergleich (Duell-Modus)**: Direkter fundamentaler Vergleich zweier Unternehmen auf Bewertungs-, Dividenden- und Wachstumsebene.
+  - URL: https://compare.schatzsuche40.de/
+- **Dividenden-Kalender**: Interaktiver Ausschüttungskalender mit Ex-Tagen und Zahltagen für weltweite Dividendenwerte.
+  - URL: https://tool.schatzsuche40.de/dividenden-kalender
+- **Dividenden-Rechner & Cashflow-Simulator**: Simulation von Sparraten, Depotwachstum und passiven Monatserträgen.
+  - URL: https://tool.schatzsuche40.de/dividend-rechner
+- **P2P-Kredit-Dashboard**: Rendite- und Risikovergleich für P2P-Plattformen (Mintos, Bondora etc.).
+  - URL: https://tool.schatzsuche40.de/p2p
+
+## Reales Portfolio & Transparenz (Skin in the Game)
+- Echter Depotwert: Über 129.000 € (monatlich transparent dokumentiert).
+- Schwerpunkt: Dividendenwachstum, Cashflow-Strategie und langfristiger Vermögensaufbau.
+- Blog & Depot-Updates: https://schatzsuche40.de/blog/
+
+## Lizenz & Datenzugriff
+- Alle Analysen und Tools sind frei für redaktionelle Zitate, Recherche und Bildung.
+- Bei Zitationen bitte als Quelle angeben: "Schatzsuche 4.0 (schatzsuche40.de)".

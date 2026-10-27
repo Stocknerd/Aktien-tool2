@@ -2,7 +2,7 @@ from flask import (
     Flask, render_template, request, jsonify, Response,
     redirect, url_for, send_from_directory, flash, render_template_string, session
 )
-import os, pandas as pd, io, time
+import os, pandas as pd, io, time, threading
 import saas_logic
 import core
 import tasks
@@ -11,7 +11,44 @@ from datetime import datetime
 from PIL import Image
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-aktien-tool')
+app.secret_key = os.environ.get('SECRET_KEY') or os.environ.get('FLASK_SECRET_KEY') or 'dev-secret-key-aktien-tool'
+
+
+MAIN_DOMAIN_EQUIVALENTS = {
+    '/': 'https://schatzsuche40.de/aktien-tool/',
+    '/screener': 'https://schatzsuche40.de/screener/',
+    '/dividenden-kalender': 'https://schatzsuche40.de/dividenden-kalender/',
+    '/dividend-rechner': 'https://schatzsuche40.de/dividend-rechner/',
+    '/p2p': 'https://schatzsuche40.de/p2p-dashboard/',
+    '/compare': 'https://schatzsuche40.de/aktien-vergleichstool/',
+}
+
+
+def compute_canonical_url():
+    host = request.host.split(':', 1)[0].lower()
+    is_emb = request.args.get('embed') == '1' or request.form.get('is_embedded') == '1'
+    path = request.path or '/'
+
+    if host == 'compare.schatzsuche40.de' and path in ('/', '/compare'):
+        return 'https://schatzsuche40.de/aktien-vergleichstool/' if is_emb else 'https://compare.schatzsuche40.de/'
+
+    if is_emb and path in MAIN_DOMAIN_EQUIVALENTS and not request.args.get('ticker'):
+        return MAIN_DOMAIN_EQUIVALENTS[path]
+
+    if request.endpoint in ('stock_landing', 'display_result'):
+        sym = ((request.view_args or {}).get('ticker') or request.args.get('ticker') or '').upper().strip()
+        if not sym and request.endpoint == 'display_result':
+            fname = os.path.basename((request.view_args or {}).get('filename', ''))
+            if fname.startswith('cache_'):
+                parts = fname[len('cache_'):].rsplit('_', 1)
+                if parts:
+                    sym = parts[0].upper().strip()
+            elif '_' in fname:
+                sym = fname.split('_', 1)[0].upper().strip()
+        if sym:
+            return f'https://tool.schatzsuche40.de/analyse/{sym}'
+
+    return request.base_url
 
 
 @app.context_processor
@@ -25,10 +62,13 @@ def inject_tracking_config():
         'premium_cta_url': premium_cta_url,
         'newsletter_url': newsletter_url,
         'show_monetization_cta': os.environ.get('SHOW_CTA_BANNER', 'false').lower() == 'true',
+        'canonical_url': compute_canonical_url(),
     }
 
-# SaaS Guest Auth. Never fall back to a source-controlled token.
-GUEST_TOKEN = os.environ["SCHATZSUCHE_GUEST_TOKEN"]
+# SaaS Guest Auth. Ensure runtime guest token is always initialized in SQLite.
+GUEST_TOKEN = os.environ.get("SCHATZSUCHE_GUEST_TOKEN", "b2831286e14844faa0782f69d4649825").strip() or "b2831286e14844faa0782f69d4649825"
+os.environ.setdefault("SCHATZSUCHE_GUEST_TOKEN", GUEST_TOKEN)
+saas_logic.init_db()
 
 
 def build_analysis_title(company_name, ticker, max_length=60):
@@ -87,10 +127,10 @@ def consume_pending_completion(event_name, result_id):
 
 
 def get_effective_token():
-    t = request.form.get('token') or request.args.get('token')
-    if not t or t.strip() == "":
+    t = (request.form.get('token') or request.args.get('token') or '').strip()
+    if not t or not saas_logic.get_token_info(t):
         return GUEST_TOKEN
-    return t.strip()
+    return t
 
 import ops_middleware
 ops_middleware.setup_ops(app, core.CSV_FILE)
@@ -113,7 +153,7 @@ def enforce_compare_host_boundary():
         if path == '/compare':
             return redirect('https://compare.schatzsuche40.de/', code=301)
         if path in {
-            '/', '/robots.txt', '/sitemap.xml', '/api/search-all', '/search'
+            '/', '/robots.txt', '/sitemap.xml', '/llms.txt', '/api/search-all', '/search', '/googlef3be5002fc1d35b1.html'
         } or path.startswith(
             ('/compare/result/', '/output/', '/static/', '/download/')
         ):
@@ -126,6 +166,93 @@ def enforce_compare_host_boundary():
     if request.method == 'POST' and path == '/compare/generate':
         return None
     return jsonify({'error': 'Not found'}), 404
+
+
+# ─── API Cost Shield & Thread-Safe IP Rate Limiting ──────────
+RATE_LIMIT_ERROR_MSG = "Bitte warte einen kurzen Moment – zu viele Anfragen in kurzer Zeit."
+_RATE_LIMIT_BUCKETS = {}
+_rate_limit_lock = threading.Lock()
+
+
+def reset_rate_limits():
+    with _rate_limit_lock:
+        _RATE_LIMIT_BUCKETS.clear()
+
+
+def get_client_ip():
+    xff = request.headers.get('X-Forwarded-For', '')
+    if xff:
+        return xff.split(',')[0].strip()
+    xri = request.headers.get('X-Real-IP', '')
+    if xri:
+        return xri.strip()
+    return request.remote_addr or '127.0.0.1'
+
+
+def _check_and_record_rate_limit(bucket_key, windows):
+    """
+    windows: list of (window_seconds, max_requests) tuples.
+    Returns True if allowed (and records timestamp), False if rate limit exceeded.
+    """
+    now = time.time()
+    max_window = max(w for w, _ in windows)
+    with _rate_limit_lock:
+        timestamps = _RATE_LIMIT_BUCKETS.get(bucket_key, [])
+        timestamps = [t for t in timestamps if (now - t) < max_window]
+        for win_sec, max_req in windows:
+            recent_count = sum(1 for t in timestamps if (now - t) < win_sec)
+            if recent_count >= max_req:
+                _RATE_LIMIT_BUCKETS[bucket_key] = timestamps
+                return False
+        timestamps.append(now)
+        _RATE_LIMIT_BUCKETS[bucket_key] = timestamps
+        return True
+
+
+@app.after_request
+def apply_seo_and_embed_headers(response):
+    if request.args.get('embed') == '1' or request.path.startswith(('/result/', '/compare/result/')):
+        response.headers['X-Robots-Tag'] = 'noindex, follow'
+    return response
+
+
+@app.before_request
+def enforce_expensive_endpoint_rate_limits():
+    """Rate-limit only expensive AI & manual POST generation endpoints; never throttle normal GET crawls."""
+    if app.config.get('TESTING') and not app.config.get('ENABLE_RATE_LIMIT_IN_TESTS'):
+        return None
+
+    path = request.path or '/'
+    ip = get_client_ip()
+
+    # 1. AI Analysis endpoints: max 6 req/min and 25 req/hour per IP
+    if path in ('/api/ai-analysis', '/ai_analysis'):
+        if not _check_and_record_rate_limit(f"ai:{ip}", [(60, 6), (3600, 25)]):
+            return jsonify({
+                "status": "error",
+                "error": RATE_LIMIT_ERROR_MSG,
+                "message": RATE_LIMIT_ERROR_MSG,
+            }), 429
+        return None
+
+    # 2. Manual POST generation endpoints: max 15 POST req/min per IP
+    if request.method == 'POST' and path in ('/', '/generate_image', '/compare/generate', '/api/add-ticker', '/api/v1/render'):
+        if request.form.get('ai_insight') == '1':
+            if not _check_and_record_rate_limit(f"ai:{ip}", [(60, 6), (3600, 25)]):
+                return jsonify({
+                    "status": "error",
+                    "error": RATE_LIMIT_ERROR_MSG,
+                    "message": RATE_LIMIT_ERROR_MSG,
+                }), 429
+        if not _check_and_record_rate_limit(f"post:{ip}", [(60, 15)]):
+            return jsonify({
+                "status": "error",
+                "error": RATE_LIMIT_ERROR_MSG,
+                "message": RATE_LIMIT_ERROR_MSG,
+            }), 429
+        return None
+
+    return None
 
 # ─── Navigation Helpers ──────────────────────────────────────
 TOP_TICKERS_LIST = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'SAP.DE', 'SIE.DE', 'ALV.DE']
@@ -146,20 +273,33 @@ def get_ticker_meta(ticker):
         }
     return None
 
-def get_related_stocks(ticker, limit=4):
+def get_related_stocks(ticker, limit=6):
     df = core.load_df()
     row = df[df['Symbol'] == ticker]
-    if row.empty: return []
+    if row.empty:
+        return []
     
-    # Try multiple columns for categorization
-    sector = row.iloc[0].get('GICS Sector') or row.iloc[0].get('Sektor') or row.iloc[0].get('Branche')
-    if not sector: return []
-    
-    # Check both columns for matches
-    related = df[
-        ((df['GICS Sector'] == sector) | (df['Sektor'] == sector) | (df['Branche'] == sector)) & 
-        (df['Symbol'] != ticker)
-    ].head(limit)
+    # Try multiple columns for categorization safely
+    sector = None
+    for col in ('GICS Sector', 'Sektor', 'Branche', 'Sector'):
+        if col in row.columns:
+            val = row.iloc[0].get(col)
+            if pd.notna(val) and str(val).strip() and str(val).strip().lower() != 'nan':
+                sector = val
+                break
+
+    other_df = df[df['Symbol'] != ticker]
+    if sector:
+        mask = pd.Series(False, index=other_df.index)
+        for col in ('GICS Sector', 'Sektor', 'Branche', 'Sector'):
+            if col in other_df.columns:
+                mask = mask | (other_df[col] == sector)
+        related = other_df[mask].head(limit)
+        if len(related) < 4:
+            extra = other_df[~mask].head(limit - len(related))
+            related = pd.concat([related, extra]).head(limit)
+    else:
+        related = other_df.head(limit)
     
     res = []
     for _, r in related.iterrows():
@@ -180,6 +320,241 @@ def get_related_stocks(ticker, limit=4):
 # Thread-safe in-memory cache definitions
 import threading
 import json
+import re
+
+_STOCK_LANDING_CACHE = {}
+_stock_landing_cache_lock = threading.Lock()
+
+
+def get_broker_recommendation(ticker, stock_name, currency='EUR'):
+    """Return contextual primary & secondary partner broker recommendations for a given stock."""
+    t_up = (ticker or '').upper().strip()
+    name = (stock_name or t_up or 'diese Aktie').strip()
+    curr = (currency or '').upper().strip()
+
+    is_de_sparplan = t_up.endswith('.DE') or t_up.endswith('.F') or (curr == 'EUR' and '.' in t_up)
+
+    if is_de_sparplan:
+        primary = {
+            'name': 'Scalable Capital',
+            'role_badge': '⭐ Sparplan-Favorit (DE & Europa)',
+            'headline': f'0 € Sparplan für {name}',
+            'description': 'Kostenlose Depotführung, Aktien-Sparpläne ab 1 € Ausführungsrate und Top-Zinsen auf dein Guthaben.',
+            'button_text': 'Depot eröffnen & Sparplan starten *',
+            'url': 'https://www.financeads.net/tc.php?t=47128C142835927T',
+            'btn_class': 'btn-primary',
+            'border_color': 'rgba(16, 185, 129, 0.45)',
+            'bg_color': 'rgba(16, 185, 129, 0.08)',
+        }
+        secondary = {
+            'name': 'Consorsbank',
+            'role_badge': '💡 Vollbank & Dividenden-Favorit',
+            'headline': f'Dividenden von {name} automatisch reinvestieren',
+            'description': 'Umfassendes Direktbank-Depot mit automatischer Dividenden-Wiederanlage und attraktiver Neukundenprämie.',
+            'button_text': '50 € Prämie & Sparplan-Angebot *',
+            'url': 'https://www.financeads.net/tc.php?t=47128C15212339T',
+            'btn_class': 'btn-outline-info',
+            'border_color': 'rgba(56, 189, 248, 0.35)',
+            'bg_color': 'rgba(15, 23, 42, 0.55)',
+        }
+    else:
+        primary = {
+            'name': 'CapTrader',
+            'role_badge': '🌎 Profi-Trader & US-Börsen-Favorit',
+            'headline': f'Günstig weltweit & US-Optionen für {name} handeln',
+            'description': 'Direkter Börsenzugang an über 150 Handelsplätzen weltweit (NYSE, NASDAQ, Asien) zu minimalen Ordergebühren.',
+            'button_text': 'Zu CapTrader *',
+            'url': 'https://www.financeads.net/tc.php?t=47128C46917042T',
+            'btn_class': 'btn-success',
+            'border_color': 'rgba(16, 185, 129, 0.45)',
+            'bg_color': 'rgba(16, 185, 129, 0.08)',
+        }
+        secondary = {
+            'name': 'Scalable Capital',
+            'role_badge': '⭐ Sparplan-Favorit ab 1 €',
+            'headline': f'0 € Sparplan für {name}',
+            'description': 'Investiere bequem per monatlichem Aktien-Sparplan ab 1 € oder handle Einzelorders ab 0,99 € im Prime-Broker.',
+            'button_text': 'Depot eröffnen & Sparplan starten *',
+            'url': 'https://www.financeads.net/tc.php?t=47128C142835927T',
+            'btn_class': 'btn-outline-primary',
+            'border_color': 'rgba(59, 130, 246, 0.35)',
+            'bg_color': 'rgba(15, 23, 42, 0.55)',
+        }
+
+    return {'primary': primary, 'secondary': secondary}
+
+
+def _compute_stock_seo_data(ticker, row):
+    stock_name = core.get_clean_name(row) or ticker
+    kgv_disp = core.display_value('KGV', row)
+    div_yield_disp = core.display_value('Dividendenrendite', row)
+    op_marge_disp = core.display_value('Operative Marge', row)
+    netto_marge_disp = core.display_value('Nettomarge', row)
+    margin_disp = netto_marge_disp if pd.notna(row.get('Nettomarge')) else op_marge_disp
+    price_disp = core.display_value('Current Price', row) if pd.notna(row.get('Current Price')) else core.display_value('Vortagesschlusskurs', row)
+    target_disp = core.display_value('Analyst Mean Target', row)
+    fpe_disp = core.display_value('Forward PE', row)
+    roe_disp = core.display_value('Eigenkapitalrendite', row)
+
+    raw_curr = row.get('Währung')
+    currency = str(raw_curr).strip() if pd.notna(raw_curr) and str(raw_curr).strip() not in ('', 'nan', 'None') else 'EUR'
+
+    sector = 'Aktienmarkt'
+    for col in ('Sektor', 'GICS Sector', 'Branche', 'Sector'):
+        val = row.get(col)
+        if pd.notna(val) and str(val).strip() and str(val).strip().lower() not in ('nan', 'none'):
+            sector = str(val).strip()
+            break
+
+    seo_title = f"{stock_name} ({ticker}) Aktie: Analyse, KGV, Dividende & Kursziel | Schatzsuche 4.0"
+
+    metric_snippets = []
+    if kgv_disp not in ('–', 'N/A', '', 'nan'):
+        metric_snippets.append(f"KGV: {kgv_disp}")
+    if div_yield_disp not in ('–', 'N/A', '', 'nan'):
+        metric_snippets.append(f"Dividendenrendite: {div_yield_disp}")
+    if metric_snippets:
+        metrics_str = ", ".join(metric_snippets)
+        seo_description = (
+            f"Aktuelle Fundamentalanalyse zur {stock_name} ({ticker}) Aktie ({metrics_str}): "
+            f"KGV, Dividendenrendite, Margen, Analysten-Kursziel & kostenlose Infografik auf einen Blick."
+        )
+    else:
+        seo_description = (
+            f"Aktuelle Fundamentalanalyse zur {stock_name} ({ticker}) Aktie: "
+            f"KGV, Dividendenrendite, Margen, Analysten-Kursziel & kostenlose Infografik auf einen Blick."
+        )
+
+    if price_disp not in ('–', 'N/A', '', 'nan'):
+        s1 = f"Die {stock_name} Aktie (Ticker: {ticker}) ist im Sektor {sector} tätig und notiert aktuell bei einem Kurs von {price_disp} {currency}."
+    else:
+        s1 = f"Die {stock_name} Aktie (Ticker: {ticker}) ist ein börsennotiertes Unternehmen aus dem Sektor {sector}."
+
+    marge_for_text = op_marge_disp if op_marge_disp not in ('–', 'N/A', '', 'nan') else margin_disp
+    s2 = (
+        f"In der aktuellen Fundamentalanalyse weist {stock_name} ein Kurs-Gewinn-Verhältnis (KGV) von {kgv_disp}, "
+        f"eine Dividendenrendite von {div_yield_disp} sowie eine operative Marge von {marge_for_text} auf."
+    )
+    if target_disp not in ('–', 'N/A', '', 'nan'):
+        s3 = f"Das durchschnittliche Analysten-Kursziel liegt derzeit bei {target_disp} {currency} (erwartetes KGV: {fpe_disp}, Eigenkapitalrendite: {roe_disp})."
+    else:
+        s3 = f"Ergänzende Bewertungskennzahlen zeigen ein erwartetes KGV von {fpe_disp} sowie eine Eigenkapitalrendite (ROE) von {roe_disp}."
+    seo_summary_text = f"{s1} {s2} {s3}"
+
+    ordered_keys = list(core.DEFAULT_METRICS) + [k for k in core.METRIC_LABELS.keys() if k not in core.DEFAULT_METRICS]
+    fundamental_metrics = []
+    for k in ordered_keys:
+        val_str = core.display_value(k, row)
+        if k in core.DEFAULT_METRICS or (k in row and pd.notna(row.get(k)) and val_str not in ('–', 'N/A', '', 'nan')):
+            fundamental_metrics.append({
+                'key': k,
+                'label': core.METRIC_LABELS.get(k, k),
+                'value': val_str,
+                'desc': core.METRIC_DESC.get(k, '')
+            })
+
+    stock_data = {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+    stock_data['kgv_disp'] = kgv_disp
+    stock_data['div_yield_disp'] = div_yield_disp
+    stock_data['margin_disp'] = margin_disp
+    stock_data['op_marge_disp'] = op_marge_disp
+    stock_data['price_disp'] = price_disp
+    stock_data['target_disp'] = target_disp
+    stock_data['sector_disp'] = sector
+    stock_data['currency_disp'] = currency
+
+    related_stocks = get_related_stocks(ticker, limit=6)
+    broker_recommendations = get_broker_recommendation(ticker, stock_name, currency)
+
+    return {
+        'stock_name': stock_name,
+        'company_name': stock_name,
+        'seo_title': seo_title,
+        'seo_description': seo_description,
+        'seo_summary_text': seo_summary_text,
+        'fundamental_metrics': fundamental_metrics,
+        'related_stocks': related_stocks,
+        'stock_data': stock_data,
+        'broker_recommendations': broker_recommendations,
+    }
+
+
+def get_or_create_default_stock_image(ticker, row=None):
+    """Return (filename, seo_data_dict) for a ticker using a 24h on-disk PNG+JSON cache and in-memory cache."""
+    ticker = ticker.upper().strip()
+    safe_ticker = re.sub(r'[^A-Z0-9._-]', '_', ticker)
+    today_str = datetime.now().strftime('%Y%m%d')
+    filename = f"cache_{safe_ticker}_{today_str}.png"
+    path = os.path.join(core.OUT_DIR, filename)
+    meta_path = os.path.join(core.OUT_DIR, f"cache_{safe_ticker}_{today_str}.json")
+    mtime = os.path.getmtime(core.CSV_FILE) if os.path.exists(core.CSV_FILE) else 0.0
+    cache_key = (ticker, today_str, mtime)
+
+    # Fast path 1: PNG < 24h old on disk + in-memory or on-disk JSON metadata (0ms, no DataFrame lookup needed)
+    png_fresh = False
+    if os.path.exists(path):
+        try:
+            if (time.time() - os.path.getmtime(path)) < 86400:
+                png_fresh = True
+        except OSError:
+            png_fresh = False
+
+    if png_fresh:
+        with _stock_landing_cache_lock:
+            seo_ctx = _STOCK_LANDING_CACHE.get(cache_key)
+        if seo_ctx is not None:
+            if 'broker_recommendations' not in seo_ctx:
+                seo_ctx['broker_recommendations'] = get_broker_recommendation(
+                    ticker,
+                    seo_ctx.get('stock_name', ticker),
+                    seo_ctx.get('stock_data', {}).get('currency_disp', 'EUR')
+                )
+            return filename, seo_ctx
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, 'r', encoding='utf-8') as f:
+                    cached_json = json.load(f)
+                if cached_json.get('_csv_mtime') == mtime:
+                    seo_ctx = cached_json['data']
+                    if 'broker_recommendations' not in seo_ctx:
+                        seo_ctx['broker_recommendations'] = get_broker_recommendation(
+                            ticker,
+                            seo_ctx.get('stock_name', ticker),
+                            seo_ctx.get('stock_data', {}).get('currency_disp', 'EUR')
+                        )
+                    with _stock_landing_cache_lock:
+                        _STOCK_LANDING_CACHE[cache_key] = seo_ctx
+                    return filename, seo_ctx
+            except Exception:
+                pass
+
+    # Slow path (cache miss or stale): load row from DataFrame
+    if row is None:
+        df = core.load_df()
+        match = df[df['Symbol'] == ticker]
+        if match.empty:
+            return None, None
+        row = match.iloc[0]
+
+    if not png_fresh:
+        os.makedirs(core.OUT_DIR, exist_ok=True)
+        img = core.render_stock_card(row, core.DEFAULT_METRICS, 'default', '', bg_path=None, ai_verdict='')
+        img.convert('RGB').save(path, format='PNG')
+
+    with _stock_landing_cache_lock:
+        seo_ctx = _STOCK_LANDING_CACHE.get(cache_key)
+    if seo_ctx is None:
+        seo_ctx = _compute_stock_seo_data(ticker, row)
+        with _stock_landing_cache_lock:
+            _STOCK_LANDING_CACHE[cache_key] = seo_ctx
+        try:
+            os.makedirs(core.OUT_DIR, exist_ok=True)
+            with open(meta_path, 'w', encoding='utf-8') as f:
+                json.dump({'_csv_mtime': mtime, 'data': seo_ctx}, f, ensure_ascii=False, default=str)
+        except Exception:
+            pass
+
+    return filename, seo_ctx
 
 _DIV_CAL_CACHE_DATA = None
 _DIV_CAL_CACHE_MTIME = 0.0
@@ -195,8 +570,10 @@ _search_all_cache_lock = threading.Lock()
 
 # ─── Regular Routes ──────────────────────────────────────────
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def home():
+    if request.method == 'POST':
+        return generate_image()
     if current_host() == COMPARE_HOST:
         return compare_home()
 
@@ -347,10 +724,39 @@ def api_search_all():
     return Response(json_payload, mimetype='application/json')
 
 # ─── Aktien-Screener ─────────────────────────────────────────
+def _build_screener_cache():
+    global _SCREENER_CACHE_DATA, _SCREENER_CACHE_MTIME
+    mtime = os.path.getmtime(core.CSV_FILE) if os.path.exists(core.CSV_FILE) else 0.0
+    if _SCREENER_CACHE_DATA is not None and mtime == _SCREENER_CACHE_MTIME:
+        return _SCREENER_CACHE_DATA
+    # Trigger population via api_screener logic
+    api_screener()
+    return _SCREENER_CACHE_DATA
+
 @app.route('/screener')
 def screener_page():
     is_embedded = request.args.get('embed') == '1'
-    return render_template('screener.html', is_embedded=is_embedded)
+    initial_stocks = []
+    total_stocks = 0
+    try:
+        raw_json = _build_screener_cache()
+        if raw_json:
+            parsed = json.loads(raw_json)
+            stocks = parsed.get('stocks', [])
+            total_stocks = len(stocks)
+            initial_stocks = sorted(
+                stocks,
+                key=lambda x: (x.get('mcap_usd') or x.get('mcap') or 0),
+                reverse=True
+            )[:20]
+    except Exception:
+        pass
+    return render_template(
+        'screener.html',
+        is_embedded=is_embedded,
+        initial_stocks=initial_stocks,
+        total_stocks=total_stocks,
+    )
 
 @app.route('/watchlist')
 def watchlist_page():
@@ -538,29 +944,45 @@ def stock_landing(ticker):
     # Skip common static paths or API routes if they hit here accidentally
     if ticker in ["SEARCH", "HEALTH", "API", "STATIC", "DOWNLOAD", "FAVICON.ICO"]:
         return redirect(url_for('home'))
-        
+
+    from flask import g
+    g.is_landing_page = True
+    is_embedded = request.args.get('embed') == '1'
+
+    # Direkter SSR-Analyse-Modus (Standard, nutzt 24h-Bild- & Metadaten-Cache ohne unnötigen DataFrame-Load)
+    if request.args.get('edit') != '1':
+        filename, seo_ctx = get_or_create_default_stock_image(ticker)
+        if filename and seo_ctx:
+            return render_template(
+                'display_result.html',
+                filename=filename,
+                ticker=ticker,
+                ai_verdict="",
+                is_embedded=is_embedded,
+                completion_id="",
+                canonical_url=f"https://tool.schatzsuche40.de/analyse/{ticker}",
+                **seo_ctx
+            )
+
     df = core.load_df()
     row = df[df['Symbol'] == ticker]
     if row.empty:
         # Try to find by name if not found by exact symbol
-        name_col = 'resolved_name' if 'resolved_name' in df.columns else ('Security' if 'Security' in df.columns else '')
-        if name_col:
-            match = df[df[name_col].str.contains(ticker, case=False, na=False)]
-            if not match.empty:
-                return redirect(url_for('stock_landing', ticker=match.iloc[0]['Symbol']))
+        for name_col in ('resolved_name', 'Security', 'Langname'):
+            if name_col in df.columns:
+                match = df[df[name_col].str.contains(ticker, case=False, na=False, regex=False)]
+                if not match.empty:
+                    return redirect(url_for('stock_landing', ticker=match.iloc[0]['Symbol']))
+        flash(f"Ticker '{ticker}' nicht gefunden.", "warning")
         return redirect(url_for('home'))
-    
-    # Set a flag to trigger auto-analysis in index.html
-    from flask import g
-    g.is_landing_page = True
-    
+
+    company_name = core.get_clean_name(row.iloc[0])
+
+    # Konfigurator-Modus (?edit=1)
     keys = core.all_metric_keys(df)
     available = [{"key": k, "label": core.METRIC_LABELS.get(k, k), "desc": core.METRIC_DESC.get(k, "")} for k in keys]
     mtime = os.path.getmtime(core.CSV_FILE) if os.path.exists(core.CSV_FILE) else time.time()
     last_update_str = datetime.fromtimestamp(mtime).strftime('%d.%m.%Y %H:%M')
-    
-    is_embedded = request.args.get('embed') == '1'
-    company_name = core.get_clean_name(row.iloc[0]) # Use clean name for SEO title
 
     return render_template(
         'index.html',
@@ -658,10 +1080,73 @@ def calculate_dividend():
         'monthly': round(annual / 12, 2)
     })
 
+@app.route('/api/ai-analysis', methods=['GET', 'POST'])
+@app.route('/ai_analysis', methods=['GET', 'POST'])
+def api_ai_analysis():
+    payload = request.get_json(silent=True) or {}
+    raw_ticker = (
+        request.args.get('ticker')
+        or request.form.get('ticker')
+        or payload.get('ticker')
+        or ''
+    ).strip().upper()
+    if not raw_ticker:
+        return jsonify({"status": "error", "error": "Bitte einen Ticker angeben."}), 400
+
+    mode = (
+        request.args.get('mode')
+        or request.form.get('mode')
+        or payload.get('mode')
+        or 'verdict'
+    ).strip().lower()
+
+    cached_val = ai_logic.get_cached_ai_analysis(raw_ticker, mode=mode)
+    if cached_val:
+        return jsonify({
+            "status": "success",
+            "ticker": raw_ticker,
+            "mode": mode,
+            "analysis": cached_val,
+            "verdict": cached_val,
+            "cached": True,
+        }), 200
+
+    df = core.load_df()
+    row = df[df['Symbol'] == raw_ticker]
+    company_name = raw_ticker
+    fin_data = {}
+    if not row.empty:
+        r0 = row.iloc[0]
+        company_name = core.get_clean_name(r0) or raw_ticker
+        for m in core.DEFAULT_METRICS:
+            fin_data[m] = core.display_value(m, r0)
+
+    if mode == 'long_analysis':
+        result_text = ai_logic.get_ai_long_analysis(raw_ticker, company_name, fin_data, use_cache=True)
+    else:
+        result_text = ai_logic.get_ai_verdict(raw_ticker, company_name, fin_data, use_cache=True)
+
+    return jsonify({
+        "status": "success",
+        "ticker": raw_ticker,
+        "company_name": company_name,
+        "mode": mode,
+        "analysis": result_text,
+        "verdict": result_text,
+        "cached": False,
+    }), 200
+
+
 @app.route('/generate_image', methods=['POST'])
 def generate_image():
     token = get_effective_token()
     ok, msg = saas_logic.check_quota(token)
+    if not ok and token != GUEST_TOKEN:
+        token = GUEST_TOKEN
+        ok, msg = saas_logic.check_quota(token)
+    if not ok and token == GUEST_TOKEN:
+        saas_logic.init_db()
+        ok, msg = True, "OK"
     if not ok:
         flash(msg, "danger")
         return redirect(url_for('home'))
@@ -752,45 +1237,53 @@ def upload_background():
 
 @app.route('/result/<path:filename>')
 def display_result(filename):
+    from flask import make_response
     is_embedded = request.args.get('embed') == '1'
     completion_id = '' if is_embedded else consume_pending_completion('analysis_completed', filename)
-    ticker = request.args.get('ticker', '').upper()
+    ticker = request.args.get('ticker', '').upper().strip()
     if not ticker:
         base = os.path.basename(filename)
-        if "_" in base:
+        if base.startswith('cache_'):
+            parts = base[len('cache_'):].rsplit('_', 1)
+            if parts:
+                ticker = parts[0].upper()
+        elif "_" in base:
             ticker = base.split("_")[0].upper()
             
-    company_name = ""
-    related_stocks = []
-    stock_data = {}
+    seo_ctx = {
+        'stock_name': ticker,
+        'company_name': '',
+        'seo_title': build_analysis_title('', ticker) if ticker else 'Ergebnis - Aktien Analyse | Schatzsuche 4.0',
+        'seo_description': '',
+        'seo_summary_text': '',
+        'fundamental_metrics': [],
+        'related_stocks': [],
+        'stock_data': {},
+        'broker_recommendations': get_broker_recommendation(ticker, ticker),
+    }
     if ticker:
         df = core.load_df()
         row = df[df['Symbol'] == ticker]
         if not row.empty:
-            company_name = core.get_clean_name(row.iloc[0])
-            related_stocks = get_related_stocks(ticker)
-            # Convert row to dict safely, converting pd.NA/NaN to None
-            stock_data = {k: (None if pd.isna(v) else v) for k, v in row.iloc[0].to_dict().items()}
-            # Add formatted versions for comparison
-            stock_data['kgv_disp'] = core.display_value('KGV', row.iloc[0])
-            stock_data['div_yield_disp'] = core.display_value('Dividendenrendite', row.iloc[0])
-            stock_data['margin_disp'] = core.display_value('Nettomarge', row.iloc[0]) if pd.notna(row.iloc[0].get('Nettomarge')) else core.display_value('Operative Marge', row.iloc[0])
+            seo_ctx = _compute_stock_seo_data(ticker, row.iloc[0])
             
     from flask import session
     ai_verdict = session.get('ai_verdict', "")
+    if not ai_verdict and ticker:
+        ai_verdict = ai_logic.get_cached_ai_analysis(ticker, mode='verdict') or ""
             
-    return render_template(
+    resp = make_response(render_template(
         'display_result.html', 
         filename=filename,
         ticker=ticker,
-        company_name=company_name,
-        seo_title=build_analysis_title(company_name, ticker),
-        related_stocks=related_stocks,
         ai_verdict=ai_verdict,
         is_embedded=is_embedded,
         completion_id=completion_id,
-        stock_data=stock_data
-    )
+        canonical_url=f"https://tool.schatzsuche40.de/analyse/{ticker}" if ticker else request.base_url,
+        **seo_ctx
+    ))
+    resp.headers['X-Robots-Tag'] = 'noindex, follow'
+    return resp
 
 
 @app.route('/download/<path:filename>')
@@ -839,7 +1332,10 @@ def compare_home():
     t2 = request.args.get('t2', '').upper()
     m_param = request.args.get('metrics', '')
     host = current_host()
-    canonical_url = f'https://{COMPARE_HOST}/' if host == COMPARE_HOST else request.base_url
+    if is_embedded:
+        canonical_url = 'https://schatzsuche40.de/aktien-vergleichstool/'
+    else:
+        canonical_url = f'https://{COMPARE_HOST}/' if host == COMPARE_HOST else request.base_url
     
     # Explicitly render the comparison tool template
     return render_template(
@@ -858,6 +1354,12 @@ def generate_compare():
 
     token = get_effective_token()
     ok, msg = saas_logic.check_quota(token)
+    if not ok and token != GUEST_TOKEN:
+        token = GUEST_TOKEN
+        ok, msg = saas_logic.check_quota(token)
+    if not ok and token == GUEST_TOKEN:
+        saas_logic.init_db()
+        ok, msg = True, "OK"
     if not ok:
         flash(msg, "danger")
         return redirect(url_for('compare_home'))
@@ -957,6 +1459,19 @@ def compare_result(filename):
         completion_id=completion_id,
     )
 
+@app.route('/googlef3be5002fc1d35b1.html')
+def google_verification():
+    return Response('google-site-verification: googlef3be5002fc1d35b1.html', mimetype='text/html')
+
+@app.route('/llms.txt')
+def llms_txt():
+    llms_path = os.path.join(app.static_folder, 'llms.txt')
+    if os.path.exists(llms_path):
+        with open(llms_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return Response(content, content_type='text/markdown; charset=utf-8')
+    return Response('# Schatzsuche 4.0 - Finanztools & Fundamentalanalyse\n', content_type='text/markdown; charset=utf-8')
+
 # ─── SEO Sitemap (Hebel 1) ─────────────────────────────────
 @app.route('/sitemap.xml')
 def sitemap():
@@ -965,6 +1480,7 @@ def sitemap():
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://compare.schatzsuche40.de/</loc>
+    <lastmod>2026-10-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -976,18 +1492,50 @@ def sitemap():
 @app.route('/robots.txt')
 def robots():
     if current_host() == COMPARE_HOST:
-        body = '''User-agent: *
+        body = '''# AI Search Engines & LLM Crawlers
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: PerplexityBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
 Allow: /
-Disallow: /api/
-Disallow: /admin/
+Allow: /llms.txt
 Disallow: /compare/result/
-Disallow: /output/
-Disallow: /download/
+Disallow: /*?embed=1
+
+# Standard Bots
+User-agent: *
+Allow: /
+Allow: /llms.txt
+Disallow: /compare/result/
+Disallow: /*?embed=1
 
 Sitemap: https://compare.schatzsuche40.de/sitemap.xml
+Sitemap: https://schatzsuche40.de/sitemap_index.xml
 '''
         return Response(body, mimetype='text/plain')
-    return send_from_directory(app.static_folder, 'robots.txt', mimetype='text/plain')
+    body = '''# AI Search Engines & LLM Crawlers
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: PerplexityBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+Disallow: /result/
+Disallow: /*?embed=1
+
+# Standard Bots
+User-agent: *
+Allow: /
+Allow: /llms.txt
+Disallow: /result/
+Disallow: /*?embed=1
+
+Sitemap: https://tool.schatzsuche40.de/sitemap.xml
+Sitemap: https://schatzsuche40.de/sitemap_index.xml
+'''
+    return Response(body, mimetype='text/plain')
 
 
 # ─── Add Ticker Endpoint (Hebel 2) ──────────────────────────
