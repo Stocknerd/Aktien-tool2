@@ -365,3 +365,21 @@ def test_rate_limiting_protects_ai_and_post_while_keeping_get_routes_unthrottled
     finally:
         app.config.pop('ENABLE_RATE_LIMIT_IN_TESTS', None)
         reset_rate_limits()
+
+def test_directory_and_related_stocks_links(client):
+    rv = client.get('/verzeichnis', base_url='https://tool.schatzsuche40.de')
+    assert rv.status_code == 200
+    html = rv.get_data(as_text=True)
+    assert '/analyse/' in html
+
+    rv_s = client.get('/verzeichnis/S', base_url='https://tool.schatzsuche40.de')
+    assert rv_s.status_code == 200
+    html_s = rv_s.get_data(as_text=True)
+    assert '/analyse/SIE.DE' in html_s
+
+    rv_sie = client.get('/analyse/SIE.DE', base_url='https://tool.schatzsuche40.de')
+    assert rv_sie.status_code == 200
+    html_sie = rv_sie.get_data(as_text=True)
+    assert 'Weitere Aktienanalysen' in html_sie
+    assert html_sie.count('/analyse/') >= 6
+

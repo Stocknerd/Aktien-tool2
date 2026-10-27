@@ -273,50 +273,6 @@ def get_ticker_meta(ticker):
         }
     return None
 
-def get_related_stocks(ticker, limit=6):
-    df = core.load_df()
-    row = df[df['Symbol'] == ticker]
-    if row.empty:
-        return []
-    
-    # Try multiple columns for categorization safely
-    sector = None
-    for col in ('GICS Sector', 'Sektor', 'Branche', 'Sector'):
-        if col in row.columns:
-            val = row.iloc[0].get(col)
-            if pd.notna(val) and str(val).strip() and str(val).strip().lower() != 'nan':
-                sector = val
-                break
-
-    other_df = df[df['Symbol'] != ticker]
-    if sector:
-        mask = pd.Series(False, index=other_df.index)
-        for col in ('GICS Sector', 'Sektor', 'Branche', 'Sector'):
-            if col in other_df.columns:
-                mask = mask | (other_df[col] == sector)
-        related = other_df[mask].head(limit)
-        if len(related) < 4:
-            extra = other_df[~mask].head(limit - len(related))
-            related = pd.concat([related, extra]).head(limit)
-    else:
-        related = other_df.head(limit)
-    
-    res = []
-    for _, r in related.iterrows():
-        # Get formatted values safely
-        kgv_disp = core.display_value('KGV', r)
-        div_yield_disp = core.display_value('Dividendenrendite', r)
-        marge_disp = core.display_value('Nettomarge', r) if pd.notna(r.get('Nettomarge')) else core.display_value('Operative Marge', r)
-
-        res.append({
-            'symbol': r['Symbol'],
-            'name': core.get_clean_name(r),
-            'kgv': kgv_disp,
-            'div_yield': div_yield_disp,
-            'margin': marge_disp
-        })
-    return res
-
 # Thread-safe in-memory cache definitions
 import threading
 import json
@@ -382,6 +338,102 @@ def get_broker_recommendation(ticker, stock_name, currency='EUR'):
         }
 
     return {'primary': primary, 'secondary': secondary}
+
+_ALL_CATALOG_STOCKS = None
+_ALL_CATALOG_STOCKS_MTIME = 0.0
+
+def load_screener_data():
+    raw = _build_screener_cache()
+    if raw:
+        try:
+            return json.loads(raw)
+        except Exception:
+            pass
+    return []
+
+def get_all_catalog_stocks():
+    """Lädt eine sortierte Liste aller verfügbaren Aktien [{ticker, name}] für Verzeichnis & Ring-Linking."""
+    global _ALL_CATALOG_STOCKS, _ALL_CATALOG_STOCKS_MTIME
+    mtime = os.path.getmtime(core.CSV_FILE) if os.path.exists(core.CSV_FILE) else 0.0
+    if _ALL_CATALOG_STOCKS is not None and mtime == _ALL_CATALOG_STOCKS_MTIME:
+        return _ALL_CATALOG_STOCKS
+
+    stocks = []
+    seen = set()
+    try:
+        data = load_screener_data() if 'load_screener_data' in globals() else []
+        if isinstance(data, dict):
+            data = data.get('stocks') or data.get('data') or list(data.values())
+        for item in (data or []):
+            if isinstance(item, dict):
+                t = str(item.get('ticker') or item.get('symbol') or item.get('Ticker') or '').strip().upper()
+                n = str(item.get('name') or item.get('company_name') or item.get('Name') or t).strip()
+                if t and t not in seen:
+                    seen.add(t)
+                    stocks.append({'ticker': t, 'name': n})
+    except Exception:
+        pass
+    if not stocks:
+        # Fallback aus static/sitemap.xml lesen
+        import re
+        sitemap_path = os.path.join(os.path.dirname(__file__), 'static', 'sitemap.xml')
+        if os.path.exists(sitemap_path):
+            with open(sitemap_path, 'r', encoding='utf-8') as f:
+                for m in re.finditer(r'/analyse/([^<]+)</loc>', f.read()):
+                    t = m.group(1).strip().upper()
+                    if t and t not in seen:
+                        seen.add(t)
+                        stocks.append({'ticker': t, 'name': t})
+    stocks.sort(key=lambda x: x['ticker'])
+    if stocks:
+        _ALL_CATALOG_STOCKS = stocks
+        _ALL_CATALOG_STOCKS_MTIME = mtime
+    return stocks
+
+def get_related_stocks(ticker, limit=8):
+    """Deterministisches Ring-Verfahren über alle Aktien (0 Orphan Pages)."""
+    t_clean = (ticker or '').strip().upper()
+    all_stocks = get_all_catalog_stocks()
+    if not all_stocks:
+        return []
+    n = len(all_stocks)
+    idx = 0
+    for i, s in enumerate(all_stocks):
+        if s['ticker'] == t_clean:
+            idx = i
+            break
+    related = []
+    seen = {t_clean}
+    # 1. Gleiches Suffix (.DE etc.) im Ring suchen (max 4)
+    suffix = '.' + t_clean.split('.')[-1] if '.' in t_clean else ''
+    if suffix:
+        for offset in range(1, n):
+            cand = all_stocks[(idx + offset) % n]
+            if cand['ticker'] not in seen and cand['ticker'].endswith(suffix):
+                seen.add(cand['ticker'])
+                related.append({
+                    'ticker': cand['ticker'],
+                    'name': cand['name'],
+                    'url': f"https://tool.schatzsuche40.de/analyse/{cand['ticker']}",
+                    'compare_url': f"https://compare.schatzsuche40.de/?t1={t_clean}&t2={cand['ticker']}"
+                })
+                if len(related) >= 4:
+                    break
+    # 2. Direkte Ring-Nachbarn in der Gesamtliste auffüllen bis limit=8
+    for offset in range(1, n):
+        if len(related) >= limit:
+            break
+        cand = all_stocks[(idx + offset) % n]
+        if cand['ticker'] not in seen:
+            seen.add(cand['ticker'])
+            related.append({
+                'ticker': cand['ticker'],
+                'name': cand['name'],
+                'url': f"https://tool.schatzsuche40.de/analyse/{cand['ticker']}",
+                'compare_url': f"https://compare.schatzsuche40.de/?t1={t_clean}&t2={cand['ticker']}"
+            })
+    return related
+
 
 
 def _compute_stock_seo_data(ticker, row):
@@ -463,7 +515,7 @@ def _compute_stock_seo_data(ticker, row):
     stock_data['sector_disp'] = sector
     stock_data['currency_disp'] = currency
 
-    related_stocks = get_related_stocks(ticker, limit=6)
+    related_stocks = get_related_stocks(ticker, limit=8)
     broker_recommendations = get_broker_recommendation(ticker, stock_name, currency)
 
     return {
@@ -936,6 +988,39 @@ def api_screener():
         
     return Response(json_payload, mimetype='application/json')
 
+@app.route('/verzeichnis')
+@app.route('/verzeichnis/<letter>')
+def stock_directory(letter=None):
+    all_stocks = get_all_catalog_stocks()
+    letters = [chr(c) for c in range(ord('A'), ord('Z') + 1)] + ['0-9']
+    selected = (letter or '').strip().upper()
+    if selected and selected not in letters:
+        selected = 'A'
+    grouped = {l: [] for l in letters}
+    for s in all_stocks:
+        first = s['ticker'][0].upper() if s['ticker'] else 'A'
+        key = first if 'A' <= first <= 'Z' else '0-9'
+        grouped[key].append(s)
+    if selected:
+        display_stocks = grouped.get(selected, [])
+        title = f"Aktien-Verzeichnis {selected} – Alle Aktienanalysen ({len(display_stocks)} Werte) | Schatzsuche 4.0"
+        canonical = f"https://tool.schatzsuche40.de/verzeichnis/{selected}"
+    else:
+        # Auf /verzeichnis: Alle .DE Aktien + Top-Werte aus allen Buchstaben zeigen
+        de_stocks = [s for s in all_stocks if s['ticker'].endswith('.DE')]
+        display_stocks = de_stocks[:120] + all_stocks[:120]
+        title = f"Aktien-Verzeichnis A–Z ({len(all_stocks)} Aktienanalysen) | Schatzsuche 4.0"
+        canonical = "https://tool.schatzsuche40.de/verzeichnis"
+    return render_template(
+        'verzeichnis.html',
+        letters=letters,
+        selected_letter=selected,
+        stocks=display_stocks,
+        total_count=len(all_stocks),
+        page_title=title,
+        canonical_url=canonical
+    )
+
 @app.route('/analyse/<ticker>')
 @app.route('/<ticker>')
 def stock_landing(ticker):
@@ -953,6 +1038,8 @@ def stock_landing(ticker):
     if request.args.get('edit') != '1':
         filename, seo_ctx = get_or_create_default_stock_image(ticker)
         if filename and seo_ctx:
+            seo_ctx = dict(seo_ctx)
+            seo_ctx['related_stocks'] = get_related_stocks(ticker)
             return render_template(
                 'display_result.html',
                 filename=filename,
@@ -1272,6 +1359,8 @@ def display_result(filename):
     if not ai_verdict and ticker:
         ai_verdict = ai_logic.get_cached_ai_analysis(ticker, mode='verdict') or ""
             
+    seo_ctx = dict(seo_ctx) if seo_ctx else {}
+    seo_ctx['related_stocks'] = get_related_stocks(ticker)
     resp = make_response(render_template(
         'display_result.html', 
         filename=filename,

@@ -43,7 +43,11 @@ def generate_sitemap(csv_path="stock_data.csv", output_path=None):
         ("https://tool.schatzsuche40.de/dividenden-kalender", "daily", "0.8"),
         ("https://tool.schatzsuche40.de/dividend-rechner", "daily", "0.8"),
         ("https://tool.schatzsuche40.de/p2p", "daily", "0.8"),
+        ("https://tool.schatzsuche40.de/verzeichnis", "daily", "0.8"),
     ]
+    directory_letters = [chr(c) for c in range(ord('A'), ord('Z') + 1)] + ['0-9']
+    for letter in directory_letters:
+        urls.append((f"https://tool.schatzsuche40.de/verzeichnis/{letter}", "daily", "0.7"))
     
     xml_body = ""
     for url, freq, prio in urls:

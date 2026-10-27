@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ page_title }}</title>
+  <meta name="description" content="Durchsuche alle {{ total_count }} kostenlosen Aktienanalysen von A bis Z mit KGV, Dividende und Kennzahlen auf Schatzsuche 4.0.">
+  <link rel="canonical" href="{{ canonical_url }}">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0B1E21;
+      --card-bg: rgba(20, 44, 48, 0.7);
+      --accent: #C9A227;
+      --accent-hover: #A8861B;
+    }
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(201, 162, 39, 0.04) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(26, 83, 92, 0.05) 0px, transparent 50%);
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .navbar {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 1rem 0;
+    }
+    .letter-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 38px;
+      height: 38px;
+      padding: 0 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-decoration: none;
+      color: #94a3b8;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      transition: all 0.2s ease;
+    }
+    .letter-btn:hover {
+      color: #38bdf8;
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      transform: translateY(-1px);
+    }
+    .letter-btn.active {
+      color: #0f172a;
+      background: #38bdf8;
+      border-color: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+    .stock-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 10px;
+      padding: 12px 14px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .stock-card:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: rgba(56, 189, 248, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    }
+    .stock-link {
+      color: #38bdf8;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.92rem;
+      line-height: 1.35;
+    }
+    .stock-link:hover {
+      color: #7dd3fc;
+    }
+    .footer-link {
+      color: #94a3b8;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-link:hover {
+      color: #f8fafc;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <nav class="navbar">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <a href="https://tool.schatzsuche40.de/" class="navbar-brand text-white fw-bold d-flex align-items-center gap-2" style="font-size: 1.1rem;">
+        <span style="font-size: 1.3rem;">🔍</span> Schatzsuche 4.0
+      </a>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="https://tool.schatzsuche40.de/" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.15); font-weight:600;">🏠 Tool Home</a>
+        <a href="https://tool.schatzsuche40.de/screener" class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.15); font-weight:600;">🎯 Screener</a>
+        <a href="https://compare.schatzsuche40.de/" class="btn btn-outline-info btn-sm rounded-pill px-3" style="font-weight:600;">⚖️ Vergleich</a>
+        <a href="https://tool.schatzsuche40.de/verzeichnis" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold">📚 Verzeichnis</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container py-4 flex-grow-1">
+    <div class="text-center mb-4">
+      <h1 class="h2 fw-bold mb-2 text-white">📚 Aktien-Verzeichnis A–Z ({{ total_count }} Aktien)</h1>
+      <p class="text-secondary small mb-3">
+        Alle kostenlosen Aktienanalysen, Bewertungskennzahlen (KGV, Dividende, Margen) und Direktvergleiche auf einen Blick.
+      </p>
+
+      <!-- Letters Navigation -->
+      <div class="d-flex flex-wrap justify-content-center gap-1 my-3">
+        <a href="https://tool.schatzsuche40.de/verzeichnis" class="letter-btn px-3 {% if not selected_letter %}active{% endif %}">
+          Alle / Übersicht
+        </a>
+        {% for l in letters %}
+        <a href="https://tool.schatzsuche40.de/verzeichnis/{{ l }}" class="letter-btn {% if selected_letter == l %}active{% endif %}">
+          {{ l }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Stock Grid -->
+    <div class="card p-3 p-md-4 mb-5" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 14px;">
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: rgba(148, 163, 184, 0.15) !important;">
+        <span class="text-white fw-bold">
+          {% if selected_letter %}
+            Buchstabe {{ selected_letter }} ({{ stocks|length }} Aktien)
+          {% else %}
+            Aktien-Übersicht (.DE Favoriten & Top-Werte)
+          {% endif %}
+        </span>
+        <span class="badge bg-secondary text-uppercase">{{ stocks|length }} Werte</span>
+      </div>
+
+      <div class="row g-2">
+        {% for s in stocks %}
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+          <div class="stock-card">
+            <a href="https://tool.schatzsuche40.de/analyse/{{ s.ticker }}" class="stock-link">
+              {{ s.name }} ({{ s.ticker }}) Analyse
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-4 border-top" style="background: rgba(15, 23, 42, 0.95); border-color: rgba(255,255,255,0.08) !important;">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div class="text-secondary small">
+        © 2026 Schatzsuche 4.0 – Alle Rechte vorbehalten.
+      </div>
+      <div class="d-flex gap-4 small">
+        <a href="https://tool.schatzsuche40.de/" class="footer-link">🏠 Aktien-Tool</a>
+        <a href="https://tool.schatzsuche40.de/screener" class="footer-link">🎯 Screener</a>
+        <a href="https://schatzsuche40.de/" class="footer-link">🌐 Schatzsuche40.de</a>
+      </div>
+    </div>
+  </footer>
+  {% include '_tracking.html' %}
+</body>
+</html>

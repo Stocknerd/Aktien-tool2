@@ -249,6 +249,7 @@
         <a href="{{ 'https://schatzsuche40.de/p2p-dashboard/' if is_embedded else '/p2p' }}" {% if is_embedded %}target="_top"{% endif %} class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💳 P2P</a>
         <a href="{{ 'https://schatzsuche40.de/dividend-rechner/' if is_embedded else '/dividend-rechner' }}" {% if is_embedded %}target="_top"{% endif %} class="btn btn-outline-light btn-sm rounded-pill px-3" style="border: 1px solid rgba(255,255,255,0.1); font-weight:600;">💰 Rechner</a>
         <a href="{{ 'https://tool.schatzsuche40.de/watchlist' if is_embedded else '/watchlist' }}" {% if is_embedded %}target="_top"{% endif %} class="btn btn-outline-warning btn-sm rounded-pill px-3" style="border: 1px solid rgba(201, 162, 39, 0.3); color: #C9A227; font-weight:600;">⭐ Watchlist</a>
+        <a href="/verzeichnis" class="btn btn-outline-info btn-sm rounded-pill px-3" style="font-weight:600;">📚 Aktien-Verzeichnis A–Z</a>
     </div>
 
     {% if not is_embedded %}
@@ -264,6 +265,7 @@
           <a href="/dividend-rechner" class="btn btn-outline-success px-4 rounded-pill">💰 Dividenden-Rechner</a>
           <a href="/watchlist" class="btn btn-outline-warning px-4 rounded-pill">⭐ Watchlist</a>
           <a href="/p2p" class="btn btn-outline-light px-4 rounded-pill" style="border-color: rgba(255,255,255,0.15)">💳 P2P-Dashboard</a>
+          <a href="/verzeichnis" class="btn btn-outline-info px-4 rounded-pill">📚 Aktien-Verzeichnis A–Z</a>
       </div>
     </div>
     {% endif %}
