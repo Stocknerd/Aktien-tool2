@@ -624,11 +624,16 @@
 
     // ─── Auto-Load for Embeds / Landing Pages ────────────────────
     const urlParams = new URLSearchParams(window.location.search);
-    const urlTicker = urlParams.get('ticker') || "{{ ticker if ticker else '' }}";
+    const urlTicker = (urlParams.get('ticker') || "{{ ticker if ticker else '' }}").trim().toUpperCase();
     const isEditMode = urlParams.get('edit') === '1';
     
     if (urlTicker) {
-      document.getElementById('ticker').value = urlTicker;
+      const tickerInput = document.getElementById('ticker');
+      const searchInput = document.getElementById('stock-search');
+      if (tickerInput) tickerInput.value = urlTicker;
+      if (searchInput && !searchInput.value) {
+        searchInput.value = urlTicker;
+      }
       if (urlParams.get('layout')) document.getElementById('layout').value = urlParams.get('layout');
       
       // Auto-submit NUR wenn explizit 'auto=1' UND NICHT 'edit=1'

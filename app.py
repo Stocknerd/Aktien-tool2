@@ -51,11 +51,67 @@ def compute_canonical_url():
     return request.base_url
 
 
+# ─── 100X Expedition Watch Highlights ──────────────────────────
+WATCH_100X_HIGHLIGHTS = {
+    'INOD': {
+        'ticker': 'INOD',
+        'name': 'Innodata Inc.',
+        'score': '83 / 100*',
+        'quality': '50 / 60',
+        'asymmetry': '33 / 40',
+        'proof_level': 'Level 4 (Kommerziell skaliert)',
+        'verdict': 'Quality & AI-Data-Engineering-Traktion hoch. Das Red Team prüft im aktuellen Lauf gezielt die Big-Tech-Kundenkonzentration und den normalisierten Free Cashflow.',
+        'tag': 'Archiv / P1-Review'
+    },
+    'OUST': {
+        'ticker': 'OUST',
+        'name': 'Ouster Inc.',
+        'score': '75 / 100',
+        'quality': '46 / 60',
+        'asymmetry': '29 / 40',
+        'proof_level': 'Level 5 (Hardware & Software Traktion)',
+        'verdict': 'Physische KI & Digitales LiDAR für Robotik und Industrie. Starke Bruttomargen-Expansion (Gross Margin > 40%) – Red Team überwacht den finalen Pfad zum Free-Cashflow-Breakeven.',
+        'tag': '100X Watch'
+    },
+    'IONQ': {
+        'ticker': 'IONQ',
+        'name': 'IonQ Inc.',
+        'score': '64 / 100',
+        'quality': '42 / 60',
+        'asymmetry': '22 / 40',
+        'proof_level': 'Level 4 (Technologische Validierung)',
+        'verdict': 'Führende Trapped-Ion-Quantenarchitektur mit hohem technologischem Burggraben. Sportliche Bewertung relativ zum aktuellen Umsatz – Valuation vs. Proof beachten.',
+        'tag': 'Deep Tech'
+    },
+    'QBTS': {
+        'ticker': 'QBTS',
+        'name': 'D-Wave Quantum Inc.',
+        'score': '63 / 100',
+        'quality': '39 / 60',
+        'asymmetry': '24 / 40',
+        'proof_level': 'Level 4 (Kommerzielles Annealing)',
+        'verdict': 'Kommerzielles Quantum Annealing für komplexe Optimierungsprobleme. Red-Team-Fokus liegt auf Buchungswachstum, Cash-Runway und Vermeidung von Kapitalverwässerung.',
+        'tag': 'Deep Tech'
+    },
+    'SLDP': {
+        'ticker': 'SLDP',
+        'name': 'Solid Power Inc.',
+        'score': '64 / 100',
+        'quality': '40 / 60',
+        'asymmetry': '24 / 40',
+        'proof_level': 'Level 3 (Pilotfertigung / OEM Sampling)',
+        'verdict': 'Sulfid-Festkörperbatterie-Elektrolyt & MOBIUS-Pilotanlage. Hohe Cash-Resilienz und starke Partner (BMW, Ford) – entscheidender Katalysator ist die Qualifikation der B-Samples.',
+        'tag': 'CleanTech / Solid-State'
+    }
+}
+
 @app.context_processor
 def inject_tracking_config():
     premium_cta_url = os.environ.get('PREMIUM_CTA_URL', '').strip() or os.environ.get('NEWSLETTER_URL', '').strip() or 'https://schatzsuche40.de/newsletter/'
     newsletter_url = os.environ.get('NEWSLETTER_URL', '').strip() or premium_cta_url
     return {
+        'WATCH_100X_HIGHLIGHTS': WATCH_100X_HIGHLIGHTS,
+        'get_100x_highlight': lambda t: WATCH_100X_HIGHLIGHTS.get((t or '').strip().upper()),
         'analytics_measurement_id': os.environ.get('GA_MEASUREMENT_ID', '').strip(),
         'analytics_container_id': os.environ.get('GTM_CONTAINER_ID', '').strip(),
         'consent_storage_key': os.environ.get('ANALYTICS_CONSENT_KEY', 'qc_cookie_consent').strip() or 'qc_cookie_consent',
@@ -657,7 +713,8 @@ def home():
         show_cta=show_cta,
         is_embedded=is_embedded,
         top_stocks=top_stocks,
-        ticker=request.args.get('ticker')
+        ticker=request.args.get('ticker', '').strip().upper() if request.args.get('ticker') else '',
+        company_name=get_ticker_meta(request.args.get('ticker').strip().upper()).get('name', request.args.get('ticker').strip().upper()) if request.args.get('ticker') and get_ticker_meta(request.args.get('ticker').strip().upper()) else (request.args.get('ticker').strip().upper() if request.args.get('ticker') else '')
     )
 
 @app.route('/dividenden-kalender')

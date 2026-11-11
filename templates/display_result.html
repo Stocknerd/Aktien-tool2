@@ -234,6 +234,69 @@
     </div>
     {% endif %}
 
+    {% set c100x = get_100x_highlight(ticker) if get_100x_highlight is defined else None %}
+    {% if c100x %}
+    <section class="w-100 mb-5" data-nosnippet style="max-width: 900px; padding: 0 16px;">
+      <div class="p-4 rounded-4 shadow" style="background: linear-gradient(135deg, rgba(6, 78, 59, 0.5) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1.5px solid #10b981; box-shadow: 0 12px 35px rgba(16, 185, 129, 0.18); backdrop-filter: blur(20px);">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <span style="font-size: 1.4rem;">🧭</span>
+            <div>
+              <span class="badge rounded-pill px-2.5 py-1 text-uppercase" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.72rem; letter-spacing: 0.06em; font-weight: 700;">
+                100X EXPEDITION // {{ c100x.tag }}
+              </span>
+              <h2 class="h5 fw-bold text-white mb-0 mt-1">🧭 100X EXPEDITION – KOMPASS-BEWERTUNG FÜR {{ c100x.name }} ({{ c100x.ticker }})</h2>
+            </div>
+          </div>
+          <div class="text-end">
+            <span class="badge rounded-pill px-3 py-1.5 shadow" style="background: #10b981; color: #022c22; font-size: 0.95rem; font-weight: 800;">
+              Score: {{ c100x.score }}
+            </span>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-12 col-md-4">
+            <div class="p-2.5 rounded-3 h-100" style="background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(148, 163, 184, 0.15);">
+              <div class="small text-secondary fw-semibold">Quality-Säule (max. 60)</div>
+              <div class="fw-bold fs-6 mt-0.5" style="color: #34d399;">{{ c100x.quality }}</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="p-2.5 rounded-3 h-100" style="background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(148, 163, 184, 0.15);">
+              <div class="small text-secondary fw-semibold">Asymmetry-Säule (max. 40)</div>
+              <div class="fw-bold fs-6 mt-0.5" style="color: #38bdf8;">{{ c100x.asymmetry }}</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="p-2.5 rounded-3 h-100" style="background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(148, 163, 184, 0.15);">
+              <div class="small text-secondary fw-semibold">Red-Team Proof Level</div>
+              <div class="fw-bold fs-6 mt-0.5" style="color: #ffd700;">{{ c100x.proof_level }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-3 mb-3" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(148, 163, 184, 0.2);">
+          <div class="small text-uppercase fw-bold mb-1" style="color: #f59e0b; font-size: 0.75rem; letter-spacing: 0.05em;">
+            🛡️ Red-Team Prüfpunkte &amp; Realitäts-Check:
+          </div>
+          <p class="mb-0 small text-light" style="line-height: 1.6;">
+            {{ c100x.verdict }}
+          </p>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2 border-top" style="border-color: rgba(16, 185, 129, 0.25) !important;">
+          <a href="https://docs.google.com/spreadsheets/d/1AEbY9Wr371b87W5gxheh8-nJOlytYx7YZtdU4n-ngUQ/edit" target="_blank" rel="noopener noreferrer" class="btn btn-sm rounded-pill fw-bold px-3 py-1.5" style="background: #10b981; color: #022c22;">
+            📊 Zur öffentlichen 100X-Schatzkarte (Google Sheet) →
+          </a>
+          <a href="https://schatzsuche40.de/adventure/" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-warning rounded-pill fw-bold px-3 py-1.5" style="color: #ffd700; border-color: rgba(255, 215, 0, 0.4);">
+            🏴‍☠️ Im 100X Retro-Adventure testen
+          </a>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
     {% if ticker and (seo_summary_text or fundamental_metrics) %}
     <section class="w-100 mb-5" style="max-width: 900px; padding: 0 16px;">
       <div class="glass-card p-4 shadow" style="background: rgba(30, 41, 59, 0.45); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; backdrop-filter: blur(20px);">
