@@ -57,8 +57,11 @@ WATCH_100X_HIGHLIGHTS = {
         'ticker': 'INOD',
         'name': 'Innodata Inc.',
         'score': '83 / 100*',
-        'quality': '50 / 60',
-        'asymmetry': '33 / 40',
+        'quality': '49 / 60',
+        'asymmetry': '34 / 40',
+        'score_stichtag': '28.09.2026',
+        'ereignischeck': '08.11.2026 – Q3-Umsatz 95,6 Mio. $ (+53%), kein bestätigter Kundenverlust; FY26-Wachstum >=42% erwartet',
+        'prueftiefe': 'Archivbewertung – Neubewertung offen',
         'proof_level': 'Level 4 (Kommerziell skaliert)',
         'verdict': 'Quality & AI-Data-Engineering-Traktion hoch. Das Red Team prüft im aktuellen Lauf gezielt die Big-Tech-Kundenkonzentration und den normalisierten Free Cashflow.',
         'tag': 'Archiv / P1-Review'
@@ -69,6 +72,9 @@ WATCH_100X_HIGHLIGHTS = {
         'score': '75 / 100',
         'quality': '46 / 60',
         'asymmetry': '29 / 40',
+        'score_stichtag': '24.09.2026',
+        'ereignischeck': '08.11.2026 – Q3-Ereignis geprüft, Gross Margin > 40%, Cash-Runway stabil',
+        'prueftiefe': 'Archivbewertung – Neubewertung offen',
         'proof_level': 'Level 5 (Hardware & Software Traktion)',
         'verdict': 'Physische KI & Digitales LiDAR für Robotik und Industrie. Starke Bruttomargen-Expansion (Gross Margin > 40%) – Red Team überwacht den finalen Pfad zum Free-Cashflow-Breakeven.',
         'tag': '100X Watch'
@@ -79,6 +85,9 @@ WATCH_100X_HIGHLIGHTS = {
         'score': '64 / 100',
         'quality': '42 / 60',
         'asymmetry': '22 / 40',
+        'score_stichtag': '24.09.2026',
+        'ereignischeck': '08.11.2026 – Q3 05.11.: USD 173,8M Umsatz inkl. SkyWater, RPO USD 1,2B; Verwässerung nach $2B Equity Offering',
+        'prueftiefe': 'Archivbewertung – Neubewertung offen',
         'proof_level': 'Level 4 (Technologische Validierung)',
         'verdict': 'Führende Trapped-Ion-Quantenarchitektur mit hohem technologischem Burggraben. Sportliche Bewertung relativ zum aktuellen Umsatz – Valuation vs. Proof beachten.',
         'tag': 'Deep Tech'
@@ -89,18 +98,24 @@ WATCH_100X_HIGHLIGHTS = {
         'score': '63 / 100',
         'quality': '39 / 60',
         'asymmetry': '24 / 40',
+        'score_stichtag': '24.09.2026',
+        'ereignischeck': '11.11.2026 – Q3-Zahlen vom 10.11. veröffentlicht: 4,5 Mio. $ Umsatz, 38,3 Mio. $ RPO; Detail-Neubewertung offen',
+        'prueftiefe': 'Archivbewertung – Neubewertung offen',
         'proof_level': 'Level 4 (Kommerzielles Annealing)',
-        'verdict': 'Kommerzielles Quantum Annealing für komplexe Optimierungsprobleme. Red-Team-Fokus liegt auf Buchungswachstum, Cash-Runway und Vermeidung von Kapitalverwässerung.',
+        'verdict': 'Kommerzielles Quantum Annealing für Optimierung. Q3 10.11. zeigt 4,5 Mio. $ GAAP-Umsatz und 38,3 Mio. $ RPO; Cash auf 79,2 Mio. $ gestärkt. Detail-11er-Neubewertung nach Q3 läuft.',
         'tag': 'Deep Tech'
     },
     'SLDP': {
         'ticker': 'SLDP',
         'name': 'Solid Power Inc.',
         'score': '64 / 100',
-        'quality': '40 / 60',
-        'asymmetry': '24 / 40',
+        'quality': '31 / 60',
+        'asymmetry': '33 / 40',
+        'score_stichtag': '26.10.2026',
+        'ereignischeck': '11.11.2026 – Pilotline-Startup Q4 weiterhin Plan, 419,3 Mio. $ Cash & Wertpapiere, keine Finanzschulden',
+        'prueftiefe': 'Full Deep Dive + Red Team (26.10.2026)',
         'proof_level': 'Level 3 (Pilotfertigung / OEM Sampling)',
-        'verdict': 'Sulfid-Festkörperbatterie-Elektrolyt & MOBIUS-Pilotanlage. Hohe Cash-Resilienz und starke Partner (BMW, Ford) – entscheidender Katalysator ist die Qualifikation der B-Samples.',
+        'verdict': 'Sulfid-Festkörperbatterie-Elektrolyt & Pilotanlage. Hohe Cash-Resilienz und starke Partner (BMW, Samsung SDI, SK On) – entscheidender Katalysator ist die Qualifikation der B-Samples.',
         'tag': 'CleanTech / Solid-State'
     }
 }
